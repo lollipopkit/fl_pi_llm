@@ -16,6 +16,8 @@ class MenuBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final error = context.theme.colorScheme.error;
     return MenuAnchor(
+      // Grows open and fades shut, as Material's menus do; off by default.
+      animated: true,
       menuChildren: [
         for (final a in actions)
           MenuItemButton(
