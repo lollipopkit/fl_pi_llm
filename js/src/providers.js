@@ -187,11 +187,10 @@ export function setCustomProviders(specs) {
   }
   customSpecs.clear();
   for (const spec of specs) {
+    if (!spec.id) throw new Error('A custom provider needs an id');
+    const s = normalize(spec);
+    const { baseUrl } = s;
     const api = CUSTOM_APIS[spec.api];
-    if (!api) throw new Error(`Unsupported api: ${spec.api}`);
-    if (!spec.id || !spec.baseUrl) throw new Error('A custom provider needs an id and a baseUrl');
-    const baseUrl = spec.baseUrl.replace(/\/+$/, '');
-    const s = { ...spec, baseUrl };
     const fixed = (spec.models ?? []).map((m) => toModel(s, { ...m, id: m.id }, undefined));
     models.setProvider(createProvider({
       id: spec.id,
@@ -213,6 +212,22 @@ export function setCustomProviders(specs) {
     }));
     customSpecs.set(spec.id, s);
   }
+}
+
+function normalize(spec) {
+  if (!CUSTOM_APIS[spec.api]) throw new Error(`Unsupported api: ${spec.api}`);
+  if (!spec.baseUrl) throw new Error('A custom provider needs a baseUrl');
+  return { ...spec, baseUrl: spec.baseUrl.replace(/\/+$/, '') };
+}
+
+/**
+ * The models an endpoint lists, without registering it: for a provider
+ * still being set up.
+ */
+export async function probeModels(spec, credential) {
+  const s = normalize({ ...spec, id: spec.id ?? '' });
+  if (!LISTING_APIS.has(s.api)) throw new Error(`${s.api} endpoints do not list their models`);
+  return (await listModels(s, credential)).map(modelInfo);
 }
 
 /** `GET {baseUrl}/models` of an OpenAI-compatible endpoint, as pi-ai models. */
