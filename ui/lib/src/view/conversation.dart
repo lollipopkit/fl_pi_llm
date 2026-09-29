@@ -82,7 +82,7 @@ class _LlmConversationState extends State<LlmConversation> {
           return EmptyPane(icon: Icons.error_outline, title: libL10n.error, label: '${snap.error}');
         }
         final chat = snap.data;
-        if (chat == null) return const Center(child: SizedLoading(25, builder: SizedLoading.circularBuilder));
+        if (chat == null) return const Center(child: SizedLoading(25, padding: 3, builder: SizedLoading.circularBuilder));
         // Not on each streamed token: that is the last block's alone.
         return ListenableBuilder(
           listenable: Listenable.merge([chat.entries, chat.error, chat.approvals, chat.running, chat.interrupted]),
