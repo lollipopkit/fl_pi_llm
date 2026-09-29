@@ -26,6 +26,7 @@ Then, at startup:
 2. Set `LlmUi`: the app's name and version, and its settings and navigation (title generation, trash days, soft wrap, scrolling, where a provider page is shown, how to open the provider settings).
 3. `await Llm.init()`.
 4. Add `LlmLocalizations.delegate` and call `context.setLlmL10n()` where the app sets its own l10n.
+5. Views are on [material_ui](https://pub.dev/packages/material_ui), like fl_lib. flutter_markdown_plus and flutter_highlight still look the theme up by `package:flutter/material.dart`'s types, so the app wraps `MaterialApp.builder`'s child in material_ui's `MaterialUiCompatibilityBridge` until they move.
 
 ## Development
 

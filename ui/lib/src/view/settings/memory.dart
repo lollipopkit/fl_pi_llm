@@ -3,7 +3,7 @@ import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/memory.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The model's memory files: what it keeps across chats, for the user to
 /// read, fix and prune.

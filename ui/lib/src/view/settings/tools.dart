@@ -5,7 +5,7 @@ import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
 import 'package:fl_pi_llm_ui/src/view/settings/memory.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tools: the switch, the built-in ones, and the MCP servers.
 class ToolsPage extends StatelessWidget {
