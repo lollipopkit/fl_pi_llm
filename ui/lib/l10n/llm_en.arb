@@ -1,0 +1,169 @@
+{
+  "@@locale": "en",
+  "addServer": "Add server",
+  "allow": "Allow",
+  "allowAlways": "Always allow",
+  "allowedWithoutAsking": "Allowed without asking",
+  "allowToolFmt": "Allow {tool}?",
+  "@allowToolFmt": {
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "allProviders": "All providers",
+  "alreadyExists": "{path} already exists",
+  "@alreadyExists": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "attachment": "Attachment",
+  "attachUnsupported": "Cannot attach {name}: only images and text files up to 512 KB",
+  "@attachUnsupported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "back": "Back",
+  "builtIn": "Built-in",
+  "camera": "Camera",
+  "charsFmt": "{n, plural, =1{1 character} other{{n} characters}}",
+  "@charsFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "chatRead": "Read chat",
+  "chatSearch": "Search chats",
+  "compacted": "Earlier messages were summarised",
+  "compaction": "Compact long chats",
+  "compactionTip": "When a chat no longer fits the model's context, earlier messages are summarised for the model. You still see all of them.",
+  "connectedFmt": "Connected · {n} tools",
+  "@connectedFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "copied": "Copied",
+  "customProvider": "Custom provider",
+  "defaultModel": "Default model",
+  "deleteKey": "Delete key",
+  "deny": "Deny",
+  "discard": "Discard",
+  "disconnected": "Disconnected",
+  "endpoint": "Endpoint",
+  "extraVars": "Extra variables",
+  "extraVarsTip": "KEY=VALUE per line, for providers that need more than a key (Azure resource, Cloudflare account).",
+  "favorite": "Favorites",
+  "history": "History",
+  "historyToolTip": "Search and read your other chats, without asking",
+  "httpToolTip": "Fetch web pages and APIs",
+  "image": "Image",
+  "invalidLinkFmt": "Invalid link: {uri}",
+  "key": "Key",
+  "keyInKeychain": "Stored in the system keychain, never in backups.",
+  "mcpServers": "MCP servers",
+  "memory": "Memory",
+  "memoryDelete": "Delete memory",
+  "memoryEdit": "Edit memory",
+  "memoryMove": "Move memory",
+  "memorySearch": "Search memory",
+  "memoryToolTip": "Files the model keeps across chats, read and written without asking",
+  "memoryView": "Read memory",
+  "memoryWrite": "Save memory",
+  "message": "Message",
+  "minutesSecondsFmt": "{m} min {s} s",
+  "@minutesSecondsFmt": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "model": "Model",
+  "modelsCountFmt": "{n, plural, =1{1 model} other{{n} models}}",
+  "@modelsCountFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsListedTip": "Optional: the endpoint's /models list is fetched. Add ids it does not list.",
+  "modelsRequired": "This API cannot list its models: enter at least one model id.",
+  "moreFmt": "{n} more",
+  "@moreFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noProviderKey": "No provider has a key yet. Add one to start chatting.",
+  "refreshModels": "Refresh models",
+  "regenerate": "Regenerate",
+  "replyInterrupted": "The reply was interrupted",
+  "replyWaits": "The reply waits for your answer.",
+  "resumeReply": "Continue",
+  "sameAsChat": "Same as the chat",
+  "searchModels": "Search models",
+  "searchProviders": "Search providers",
+  "secondsFmt": "{n} s",
+  "@secondsFmt": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "send": "Send",
+  "systemPrompt": "System prompt",
+  "thought": "Thought",
+  "thoughtForFmt": "Thought for {time}",
+  "@thoughtForFmt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "titleModel": "Model for titles",
+  "tokensFmt": "{n} tokens",
+  "@tokensFmt": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "tool": "Tool",
+  "toolHttpReqName": "HTTP request",
+  "unsavedChanges": "Save your changes before leaving?",
+  "untitled": "Untitled",
+  "usableModelsFmt": "{n} usable · {m, plural, =1{1 provider} other{{m} providers}}",
+  "@usableModelsFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "useTools": "Use tools",
+  "useToolsTip": "Each call asks first unless it is allowed below"
+}
