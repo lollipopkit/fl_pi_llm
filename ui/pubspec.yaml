@@ -1,0 +1,44 @@
+name: fl_pi_llm_ui
+description: Chats, tools and the provider settings on fl_pi_llm, for Flutter apps built on fl_lib. Shared by GPT Box and Server Box.
+version: 0.1.0
+publish_to: none
+repository: https://github.com/lollipopkit/fl_pi_llm
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  fl_pi_llm:
+    path: ..
+  # The apps have fl_lib as a submodule and override this with it.
+  fl_lib:
+    git:
+      url: https://github.com/lollipopkit/fl_lib
+      ref: main
+  dio: ^5.4.2+1
+  file_picker: ^12.3.0
+  flutter_highlight: ^0.7.0
+  flutter_markdown_plus: ^1.0.12
+  flutter_markdown_plus_latex: ^1.0.5
+  html: ^0.15.7
+  image_picker: ^1.2.0
+  markdown: ^7.3.0
+  mcp_dart:
+    git:
+      url: https://github.com/leehack/mcp_dart
+      ref: main
+  shortid: ^0.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  generate: true

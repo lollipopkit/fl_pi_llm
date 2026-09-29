@@ -73,3 +73,22 @@ jobs:
       - run: dart pub get
       - run: dart analyze --fatal-infos
       - run: dart test
+
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+      - run: flutter pub get
+      - name: Generated l10n is current
+        run: flutter gen-l10n && git diff --exit-code -- lib/generated
+      - run: flutter analyze --fatal-infos
+
