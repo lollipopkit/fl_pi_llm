@@ -387,4 +387,16 @@ void main() {
     final m = (await llm.providers()).firstWhere((p) => p.id == 'mock');
     expect(m.models, isEmpty);
   });
+
+  test('an endpoint being set up lists its models without being registered', () async {
+    final probe = LlmCustomProvider(id: 'new', name: 'New', api: LlmApi.openaiResponses, baseUrl: server.baseUrl);
+    final listed = await llm.listModels(probe, credential: LlmCredential.apiKey('sk-probe'));
+    expect(listed.map((e) => e.id), ['mock', 'mock-2']);
+    expect(server.authHeaders.last, 'Bearer sk-probe');
+    expect((await llm.providers()).map((p) => p.id), isNot(contains('new')));
+    await expectLater(
+      llm.listModels(LlmCustomProvider(id: 'a', name: 'A', api: LlmApi.anthropicMessages, baseUrl: server.baseUrl)),
+      throwsA(isA<LlmException>()),
+    );
+  });
 }

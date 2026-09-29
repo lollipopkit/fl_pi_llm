@@ -90,6 +90,17 @@ final class FlPiLlm {
       LlmModelInfo((m as Map).cast<String, Object?>()),
   ];
 
+  /// The models [provider]'s endpoint lists, fetched with [credential]
+  /// without registering it — while the user is still setting it up. Only
+  /// for an API that [LlmApi.listsModels].
+  Future<List<LlmModelInfo>> listModels(LlmCustomProvider provider, {LlmCredential? credential}) async => [
+    for (final m in await _request('providers.probe', {
+      'provider': provider.toJson(),
+      'credential': ?credential?.json,
+    }) as List)
+      LlmModelInfo((m as Map).cast<String, Object?>()),
+  ];
+
   /// Replaces the user's custom providers.
   Future<void> setCustomProviders(List<LlmCustomProvider> providers) =>
       _request('providers.setCustom', {'providers': [for (final p in providers) p.toJson()]});

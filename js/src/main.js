@@ -23,7 +23,7 @@ import {
   JsonlSessionRepo,
 } from '@earendil-works/pi-agent-core';
 import { hostFileSystem } from './fs.js';
-import { CUSTOM_APIS, models, modelInfo, providerInfo, resolveModel, setCustomProviders } from './providers.js';
+import { CUSTOM_APIS, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
 const host = globalThis.__host;
 const BG = BACKGROUND_CONTEXT;
@@ -214,6 +214,9 @@ const methods = {
   /** Models whose provider has usable auth. */
   'providers.available': async (p) =>
     (await models.getAvailable(p.providerId ?? undefined)).map(modelInfo),
+
+  /** The models an unregistered custom provider's endpoint lists. */
+  'providers.probe': (p) => probeModels(p.provider, p.credential ?? undefined),
 
   /** Replaces the custom providers. */
   'providers.setCustom': (p) => { setCustomProviders(p.providers ?? []); return null; },
