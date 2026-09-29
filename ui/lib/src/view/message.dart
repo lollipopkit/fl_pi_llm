@@ -320,7 +320,7 @@ class _Reply extends StatelessWidget {
       }
       if (s.text.isNotEmpty) children.add(ChatMarkdown(s.text));
       if (s.text.isEmpty && s.thinking.isEmpty && s.tools.isEmpty) {
-        children.add(const SizedLoading(20, padding: 3, builder: SizedLoading.circularBuilder));
+        children.add(const SizedLoading(20, padding: 6, builder: SizedLoading.circularBuilder));
       }
     } else if (last != null && !live && !forCapture) {
       children.add(_footer(context));
@@ -416,7 +416,7 @@ class _ToolCardState extends State<_ToolCard> {
     final failed = result?.json['isError'] == true;
     final summary = widget.args.isEmpty ? '' : Tools.summaryOf(widget.name, widget.args);
     final Widget state = widget.running || result == null
-        ? const SizedLoading(17, padding: 1, builder: SizedLoading.circularBuilder)
+        ? const SizedLoading(21, padding: 4, builder: SizedLoading.circularBuilder)
         : Icon(
             failed ? Icons.error : Icons.check_circle,
             size: 17,
