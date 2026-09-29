@@ -28,7 +28,9 @@ class ChatMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
+    // Flutter's own: flutter_markdown_plus takes nothing else, and fl_lib's
+    // `context.theme` is material_ui's on newer fl_lib.
+    final theme = Theme.of(context);
     final base = muted
         ? TextStyle(fontSize: 13, height: 1.55, color: UIs.textGrey.color)
         : const TextStyle(fontSize: 14, height: 1.6);
