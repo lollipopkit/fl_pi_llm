@@ -1,0 +1,6 @@
+.dart_tool/
+pubspec.lock
+rust/target/
+js/node_modules/
+js/meta.json
+.DS_Store

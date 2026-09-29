@@ -1,0 +1,17 @@
+{
+  "name": "fl_pi_llm_js",
+  "private": true,
+  "type": "module",
+  "description": "The JavaScript half of fl_pi_llm: pi-agent-core and pi-ai over a Web platform layer, bundled into one script the Rust runtime embeds.",
+  "scripts": {
+    "build": "bun build src/main.js --target=browser --format=esm --minify --outfile=../rust/js/fl_pi_llm.js --metafile=meta.json && node notices.mjs meta.json",
+    "build:dev": "bun build src/main.js --target=browser --format=esm --outfile=../rust/js/fl_pi_llm.js"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "0.87.1",
+    "@earendil-works/pi-ai": "0.87.1",
+    "core-js": "3.50.0",
+    "event-target-shim": "6.0.2",
+    "web-streams-polyfill": "4.3.0"
+  }
+}

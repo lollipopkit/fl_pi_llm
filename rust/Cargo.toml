@@ -1,0 +1,33 @@
+[package]
+name = "fl_pi_llm"
+version = "0.1.0"
+edition = "2024"
+description = "pi-agent-core and pi-ai on QuickJS, bridged to Dart"
+license = "AGPL-3.0-only"
+
+[lib]
+name = "fl_pi_llm"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+anyhow = "1"
+flutter_rust_bridge = "=2.13.0"
+getrandom = "0.4"
+rquickjs = { version = "0.14", features = ["either"] }
+serde_json = "1"
+
+# `rquickjs-sys` ships pre-generated bindings for neither iOS nor Android, so
+# those two generate them at build time. `hook/bindgen_environment.dart` hands
+# bindgen the platform's sysroot, which it cannot find on its own.
+[target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
+rquickjs = { version = "0.14", features = ["either", "bindgen"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[build-dependencies]
+rquickjs = "0.14"
