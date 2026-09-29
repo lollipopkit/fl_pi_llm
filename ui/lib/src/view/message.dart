@@ -3,7 +3,8 @@ import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy show Theme;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_markdown_plus_latex/flutter_markdown_plus_latex.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
@@ -28,9 +29,10 @@ class ChatMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Flutter's own: flutter_markdown_plus takes nothing else, and fl_lib's
-    // `context.theme` is material_ui's on newer fl_lib.
-    final theme = Theme.of(context);
+    // Flutter's own ThemeData: flutter_markdown_plus takes nothing else. The
+    // app provides it with material_ui's `MaterialUiCompatibilityBridge`.
+    // TODO: material_ui's, once flutter_markdown_plus moves to it.
+    final theme = legacy.Theme.of(context);
     final base = muted
         ? TextStyle(fontSize: 13, height: 1.55, color: UIs.textGrey.color)
         : const TextStyle(fontSize: 14, height: 1.6);

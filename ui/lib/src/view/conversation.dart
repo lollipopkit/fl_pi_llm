@@ -3,7 +3,7 @@ import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/view/message.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A chat's conversation: its thread, the reply being written, the tool
 /// call waiting on the user, and what went wrong. Opens the chat.
