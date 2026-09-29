@@ -152,7 +152,8 @@ class _ComposerState extends State<Composer> {
 
   /// A file on a computer; on a phone, a file, a photo or the camera.
   Widget _attachBtn() {
-    Widget btn(VoidCallback onTap) => Btn.icon(icon: const Icon(Icons.attach_file, size: 19), text: llmL10n.attachment, onTap: onTap);
+    Widget btn(VoidCallback onTap) =>
+        Btn.icon(icon: const Icon(Icons.attach_file, size: _iconSize), text: llmL10n.attachment, onTap: onTap, padding: _btnPadding);
     if (!isMobile) return btn(_pickFiles);
     return MenuBtn(
       actions: [
@@ -263,7 +264,11 @@ class _ComposerState extends State<Composer> {
 }
 
 
-/// Send, or stop: a 40 circle at the end of the row.
+/// The size of the icons in the row under the text, and around them.
+const double _iconSize = 16;
+const _btnPadding = EdgeInsets.all(5);
+
+/// Send, or stop: a 32 circle at the end of the row.
 class _CircleBtn extends StatelessWidget {
   const _CircleBtn({required this.icon, required this.tooltip, required this.color, required this.onColor, required this.onTap});
 
@@ -283,7 +288,7 @@ class _CircleBtn extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
-          child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 22, color: onColor)),
+          child: SizedBox(width: 32, height: 32, child: Icon(icon, size: 18, color: onColor)),
         ),
       ),
     );
@@ -303,10 +308,11 @@ class _ModelChip extends StatelessWidget {
     return Llm.providers.listenVal((_) {
       final name = Llm.info(model)?.name ?? model?.id ?? llmL10n.model;
       return Btn.row(
-        icon: Icon(Icons.auto_awesome, size: 18, color: primary),
+        icon: Icon(Icons.auto_awesome, size: _iconSize, color: primary),
         text: name,
-        textStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: primary, overflow: TextOverflow.ellipsis),
+        textStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: primary, overflow: TextOverflow.ellipsis),
         mainAxisSize: MainAxisSize.min,
+        padding: _btnPadding,
         onTap: () async {
           final picked = await pickModel(context, current: model);
           if (picked == null) return;
@@ -356,16 +362,18 @@ class _ThinkingChipState extends State<_ThinkingChip> {
       ],
       builder: (toggle) => widget.compact
           ? Btn.icon(
-              icon: const Icon(Icons.psychology_outlined, size: 19),
+              icon: const Icon(Icons.psychology_outlined, size: _iconSize),
               text: '${libL10n.thinking}: $cur',
               onTap: toggle,
+              padding: _btnPadding,
             )
           : Btn.row(
-              icon: const Icon(Icons.psychology_outlined, size: 18),
+              icon: const Icon(Icons.psychology_outlined, size: _iconSize),
               text: cur,
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
               mainAxisSize: MainAxisSize.min,
               onTap: toggle,
+              padding: _btnPadding,
             ),
     );
   }
@@ -389,10 +397,11 @@ class _ToolsToggleState extends State<_ToolsToggle> {
       return Btn.icon(
         icon: Icon(
           on ? Icons.build : Icons.build_outlined,
-          size: 19,
+          size: _iconSize,
           color: on ? context.theme.colorScheme.primary : null,
         ),
         text: llmL10n.tool,
+        padding: _btnPadding,
         onTap: () async {
           await Chats.setUseTools(widget.chatId, !on);
           setState(() {});

@@ -1,9 +1,9 @@
 part of '../tool.dart';
 
 /// Other chats, for the model to look things up in: [TfChatSearch] finds
-/// them, [TfChatRead] reads one. Off until the user turns them on — what was
-/// said in one chat then reaches the model of another — and, being read-only,
-/// run unasked once on.
+/// them, [TfChatRead] reads one. Read-only, so they run unasked; what was
+/// said in one chat can reach the model of another, and the switch is the
+/// user's to turn off.
 sealed class TfHistory extends ToolFunc {
   const TfHistory({required super.name, required super.parametersSchema});
 
@@ -14,9 +14,6 @@ sealed class TfHistory extends ToolFunc {
 
   @override
   String get group => groupName;
-
-  @override
-  bool get defaultEnabled => false;
 
   @override
   bool get trusted => true;

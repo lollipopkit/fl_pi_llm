@@ -7,8 +7,8 @@ final class ToolStore extends SqliteStore {
 
   static final instance = ToolStore._();
 
-  /// Whether the model is offered tools at all.
-  late final enabled = propertyDefault('enabled', false);
+  /// Whether the model is offered tools at all. On until turned off.
+  late final enabled = propertyDefault('enabled', true);
 
   /// Built-in tools turned off, by group.
   late final disabledTools = listProperty<String>('disabledTools');
