@@ -3,14 +3,19 @@ import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/view/message.dart';
+import 'package:fl_pi_llm_ui/src/view/pull_actions.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A chat's conversation: its thread, the reply being written, the tool
 /// call waiting on the user, and what went wrong. Opens the chat.
 class LlmConversation extends StatefulWidget {
-  const LlmConversation({super.key, required this.chatId});
+  const LlmConversation({super.key, required this.chatId, this.pullDown, this.pullUp});
 
   final String chatId;
+
+  /// What pulling down past the top does, and pulling up past the end.
+  final PullAction? pullDown;
+  final PullAction? pullUp;
 
   @override
   State<LlmConversation> createState() => _LlmConversationState();
@@ -135,8 +140,10 @@ class _LlmConversationState extends State<LlmConversation> {
             return LayoutBuilder(
               builder: (context, cons) {
                 final side = (cons.maxWidth * 0.04).clamp(13.0, 26.0);
-                return ListView.separated(
+                final pulls = widget.pullDown != null || widget.pullUp != null;
+                final list = ListView.separated(
                   controller: _scroll,
+                  physics: pulls ? PullActions.physics : null,
                   padding: EdgeInsets.fromLTRB(side, 17, side, 26),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 20),
@@ -147,6 +154,8 @@ class _LlmConversationState extends State<LlmConversation> {
                     ),
                   ),
                 );
+                if (!pulls) return list;
+                return PullActions(top: widget.pullDown, bottom: widget.pullUp, child: list);
               },
             );
           },

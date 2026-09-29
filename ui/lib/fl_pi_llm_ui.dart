@@ -28,6 +28,7 @@ export 'src/view/conversation.dart';
 export 'src/view/menu.dart';
 export 'src/view/message.dart';
 export 'src/view/model_picker.dart';
+export 'src/view/pull_actions.dart';
 export 'src/view/section_list.dart';
 export 'src/view/settings/custom_provider.dart';
 export 'src/view/settings/memory.dart';
