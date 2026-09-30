@@ -253,6 +253,30 @@ void main() {
     await rt.dispose();
   });
 
+  test('an answer that comes after dispose goes nowhere', () async {
+    // A host call — here an approval — still waiting when the runtime is
+    // disposed answered into an engine that was already freed.
+    final rt = await FlPiLlm.start(store: MemorySessionStore(), credentials: credentials);
+    await rt.setCustomProviders([mockProvider(server)]);
+    final asked = Completer<void>();
+    final disposed = Completer<void>();
+    final s = await rt.openSession(
+      id: 'late-answer',
+      model: mock,
+      tools: [timeTool([])],
+      approve: (_) async {
+        asked.complete();
+        await disposed.future;
+        return const LlmApproval.allow();
+      },
+    );
+    unawaited(s.prompt('What time is it?').then<void>((_) {}, onError: (_) {}));
+    await asked.future;
+    await rt.dispose();
+    disposed.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  });
+
   test('editing a message grows a branch and keeps the old one', () async {
     final s = await llm.openSession(id: 'branch', model: mock);
     await s.prompt('first');
