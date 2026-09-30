@@ -254,6 +254,8 @@ abstract final class McpAuth {
       opts: StreamableHttpClientTransportOptions(
         authProvider: provider,
         oauthUriValidator: acceptEndpoint,
+        // What the consent page calls the client it registers.
+        oauthClientMetadata: OAuthClientMetadata(clientName: LlmUi.appName, clientUri: LlmUi.appUri),
         requestInit: {'headers': headers},
       ),
     );

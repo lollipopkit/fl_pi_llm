@@ -10,6 +10,10 @@ abstract final class LlmUi {
   static String appName = 'fl_pi_llm';
   static String appVersion = '0';
 
+  /// The app's web page. Shown with [appName] where the app has to introduce
+  /// itself, such as an MCP server's sign-in.
+  static Uri? appUri;
+
   /// Whether a new chat is named by the model.
   static bool Function() genTitle = () => true;
 

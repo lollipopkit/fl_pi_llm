@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:fl_lib/fl_lib.dart';
+import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,7 @@ final class _Mock {
   final grants = <String>[];
   final bearers = <String>[];
   String? registeredRedirect;
+  Map? registration;
   int _issued = 0;
 
   Future<void> start() async {
@@ -65,6 +67,7 @@ final class _Mock {
         });
       case '/register':
         final body = jsonDecode(await utf8.decodeStream(req)) as Map;
+        registration = body;
         registeredRedirect = (body['redirect_uris'] as List).single as String;
         return _json(req, {'client_id': 'client-1', 'token_endpoint_auth_method': 'none'}, 201);
       case '/token':
@@ -165,7 +168,11 @@ void main() {
   late _Mock mock;
 
   // Real sockets to the mock: `flutter test` stubs `HttpClient` otherwise.
-  setUpAll(() => HttpOverrides.global = null);
+  setUpAll(() {
+    HttpOverrides.global = null;
+    LlmUi.appName = 'Test App';
+    LlmUi.appUri = Uri.parse('https://app.example/');
+  });
 
   setUp(() async {
     SqliteDb.openInMemory();
@@ -303,6 +310,9 @@ void main() {
       expect(mock.grants, ['authorization_code']);
       expect(mock.bearers.last, 'Bearer access-1');
       expect(Uri.parse(mock.registeredRedirect!).host, '127.0.0.1');
+      // What the consent page calls the client: the app, not the library.
+      expect(mock.registration!['client_name'], LlmUi.appName);
+      expect(mock.registration!['client_uri'], 'https://app.example/');
       final oauth = _stored(mock.url)!['oauth'] as Map;
       expect(oauth['accessToken'], 'access-1');
       expect(oauth['clientId'], 'client-1');
