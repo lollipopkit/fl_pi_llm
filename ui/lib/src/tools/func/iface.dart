@@ -37,8 +37,10 @@ abstract class ToolFunc {
   /// Its mark beside a call in the conversation.
   IconData? get icon => null;
 
-  /// A call, as the approval card shows it; null for [summary] on a line.
-  Widget? preview(BuildContext context, _Map args) => null;
+  /// A call in chat [chatId], as the approval card shows it; null for
+  /// [summary] on a line. It may answer the call itself — [Chats.decide] —
+  /// for a choice the card's buttons do not offer.
+  Widget? preview(BuildContext context, _Map args, String chatId) => null;
 
   String? get l10nTip => null;
 

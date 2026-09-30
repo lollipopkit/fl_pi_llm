@@ -450,6 +450,17 @@ abstract final class Chats {
     }
   }
 
+  /// Answers the tool call chat [id] is waiting on with [approval] itself —
+  /// a deny whose reason says what the user did instead, say. For the choices
+  /// a [ToolFunc.preview] adds to the approval card.
+  static void decide(String id, LlmApproval approval) {
+    final chat = _open[id];
+    final pending = chat?.approvals.value.firstOrNull;
+    if (chat == null || pending == null) return;
+    chat.approvals.value = chat.approvals.value.skip(1).toList();
+    pending._complete(approval);
+  }
+
   /// Marks [chat] as running, or refuses: one run at a time. Synchronous
   /// after the open, so two sends a moment apart cannot both start one.
   static void _claim(OpenChat chat) {

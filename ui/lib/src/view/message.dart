@@ -567,7 +567,7 @@ class ApprovalCard extends StatelessWidget {
                 ),
               ],
             ),
-            tool?.preview(context, call.args) ??
+            tool?.preview(context, call.args, chatId) ??
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
                   decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(9)),
