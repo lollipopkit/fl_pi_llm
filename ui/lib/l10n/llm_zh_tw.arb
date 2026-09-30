@@ -113,5 +113,7 @@
   "askUser": "向你詢問",
   "fieldRequired": "必填",
   "fieldInvalid": "格式不正確",
-  "waitingForYou": "等你處理"
+  "waitingForYou": "等你處理",
+  "otherAnswer": "其他",
+  "otherAnswerHint": "填寫你的答案"
 }

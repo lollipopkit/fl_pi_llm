@@ -113,5 +113,7 @@
   "askUser": "あなたに質問",
   "fieldRequired": "必須",
   "fieldInvalid": "形式が正しくありません",
-  "waitingForYou": "あなたの操作待ち"
+  "waitingForYou": "あなたの操作待ち",
+  "otherAnswer": "その他",
+  "otherAnswerHint": "自分の回答"
 }

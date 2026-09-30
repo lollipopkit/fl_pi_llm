@@ -113,5 +113,7 @@
   "askUser": "Спросить вас",
   "fieldRequired": "Обязательно",
   "fieldInvalid": "Неверный формат",
-  "waitingForYou": "Ждёт вас"
+  "waitingForYou": "Ждёт вас",
+  "otherAnswer": "Другое",
+  "otherAnswerHint": "Свой ответ"
 }

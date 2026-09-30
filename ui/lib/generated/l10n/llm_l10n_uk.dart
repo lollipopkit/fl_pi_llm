@@ -403,4 +403,10 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'Чекає на вас';
+
+  @override
+  String get otherAnswer => 'Інше';
+
+  @override
+  String get otherAnswerHint => 'Власна відповідь';
 }

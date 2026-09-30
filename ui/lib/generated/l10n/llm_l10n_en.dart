@@ -422,4 +422,10 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'Waiting for you';
+
+  @override
+  String get otherAnswer => 'Other';
+
+  @override
+  String get otherAnswerHint => 'Your own answer';
 }

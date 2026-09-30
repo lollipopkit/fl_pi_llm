@@ -113,5 +113,7 @@
   "askUser": "Bertanya padamu",
   "fieldRequired": "Wajib",
   "fieldInvalid": "Tidak valid",
-  "waitingForYou": "Menunggumu"
+  "waitingForYou": "Menunggumu",
+  "otherAnswer": "Lainnya",
+  "otherAnswerHint": "Jawabanmu sendiri"
 }

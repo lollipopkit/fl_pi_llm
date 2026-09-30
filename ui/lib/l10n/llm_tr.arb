@@ -113,5 +113,7 @@
   "askUser": "Sana sor",
   "fieldRequired": "Zorunlu",
   "fieldInvalid": "Geçersiz",
-  "waitingForYou": "Seni bekliyor"
+  "waitingForYou": "Seni bekliyor",
+  "otherAnswer": "Diğer",
+  "otherAnswerHint": "Kendi cevabın"
 }

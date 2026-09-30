@@ -251,5 +251,7 @@
   "askUser": "Ask you",
   "fieldRequired": "Required",
   "fieldInvalid": "Not valid",
-  "waitingForYou": "Waiting for you"
+  "waitingForYou": "Waiting for you",
+  "otherAnswer": "Other",
+  "otherAnswerHint": "Your own answer"
 }

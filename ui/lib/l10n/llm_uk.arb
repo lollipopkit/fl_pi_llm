@@ -113,5 +113,7 @@
   "askUser": "Запитати вас",
   "fieldRequired": "Обовʼязково",
   "fieldInvalid": "Неправильний формат",
-  "waitingForYou": "Чекає на вас"
+  "waitingForYou": "Чекає на вас",
+  "otherAnswer": "Інше",
+  "otherAnswerHint": "Власна відповідь"
 }

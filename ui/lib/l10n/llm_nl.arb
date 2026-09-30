@@ -113,5 +113,7 @@
   "askUser": "Jou vragen",
   "fieldRequired": "Verplicht",
   "fieldInvalid": "Ongeldig",
-  "waitingForYou": "Wacht op jou"
+  "waitingForYou": "Wacht op jou",
+  "otherAnswer": "Anders",
+  "otherAnswerHint": "Je eigen antwoord"
 }

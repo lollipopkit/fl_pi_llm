@@ -268,19 +268,9 @@ abstract final class Chats {
     }
   }
 
-  /// Fills in chat [id]'s form with [values], by field id. What a secret
-  /// field holds is sealed here ([LlmSecrets]): the model gets a handle.
-  static void submitInput(String id, Map<String, Object?> values) {
-    final pending = _open[id]?.pendingInput.value;
-    if (pending == null) return;
-    pending.complete(UserInputSubmitted({
-      for (final f in pending.request.fields)
-        if (values.containsKey(f.id))
-          f.id: f.type == UserInputType.secret && values[f.id] is String && (values[f.id] as String).isNotEmpty
-              ? {'secret': LlmSecrets.seal(id, values[f.id] as String)}
-              : values[f.id],
-    }));
-  }
+  /// Answers chat [id]'s form — see [PendingInput.submit].
+  static void submitInput(String id, {Map<String, Object?> answers = const {}, Map<String, Object?> values = const {}}) =>
+      _open[id]?.pendingInput.value?.submit(answers: answers, values: values);
 
   /// Leaves chat [id]'s form unfilled — with [message], what the user sent
   /// instead, for the model to go on from.

@@ -403,4 +403,10 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'Menunggumu';
+
+  @override
+  String get otherAnswer => 'Lainnya';
+
+  @override
+  String get otherAnswerHint => 'Jawabanmu sendiri';
 }

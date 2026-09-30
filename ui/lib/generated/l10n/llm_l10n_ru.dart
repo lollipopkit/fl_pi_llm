@@ -404,4 +404,10 @@ class LlmLocalizationsRu extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'Ждёт вас';
+
+  @override
+  String get otherAnswer => 'Другое';
+
+  @override
+  String get otherAnswerHint => 'Свой ответ';
 }

@@ -391,6 +391,12 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get waitingForYou => '等你处理';
+
+  @override
+  String get otherAnswer => '其他';
+
+  @override
+  String get otherAnswerHint => '填写你的答案';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -779,4 +785,10 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get waitingForYou => '等你處理';
+
+  @override
+  String get otherAnswer => '其他';
+
+  @override
+  String get otherAnswerHint => '填寫你的答案';
 }

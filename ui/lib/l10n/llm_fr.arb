@@ -113,5 +113,7 @@
   "askUser": "Vous demander",
   "fieldRequired": "Obligatoire",
   "fieldInvalid": "Non valide",
-  "waitingForYou": "Vous attend"
+  "waitingForYou": "Vous attend",
+  "otherAnswer": "Autre",
+  "otherAnswerHint": "Votre propre réponse"
 }

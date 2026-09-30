@@ -403,4 +403,10 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'Seni bekliyor';
+
+  @override
+  String get otherAnswer => 'Diğer';
+
+  @override
+  String get otherAnswerHint => 'Kendi cevabın';
 }

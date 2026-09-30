@@ -394,4 +394,10 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get waitingForYou => 'あなたの操作待ち';
+
+  @override
+  String get otherAnswer => 'その他';
+
+  @override
+  String get otherAnswerHint => '自分の回答';
 }

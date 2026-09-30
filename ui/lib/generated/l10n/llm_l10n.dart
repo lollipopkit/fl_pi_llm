@@ -802,6 +802,18 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for you'**
   String get waitingForYou;
+
+  /// No description provided for @otherAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherAnswer;
+
+  /// No description provided for @otherAnswerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own answer'**
+  String get otherAnswerHint;
 }
 
 class _LlmLocalizationsDelegate
