@@ -93,5 +93,13 @@
   "mcpAddHeader": "Ajouter un en-tête",
   "mcpNotSignedIn": "Non connecté",
   "mcpSignInTip": "Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement.",
-  "mcpConnecting": "Connexion…"
+  "mcpConnecting": "Connexion…",
+  "skills": "Skills",
+  "skillsTip": "Des instructions pour des tâches précises, que le modèle lit quand une tâche correspond. N’installez que depuis des sources de confiance : le modèle suit ce que dit un skill.",
+  "skillSourceInvalid": "Ni un dépôt, ni un lien, ni une commande `npx skills add`",
+  "skillsNotFound": "Aucun skill trouvé à cet endroit",
+  "skillsPick": "Skills à installer",
+  "skillsInstalledFmt": "{n} installés",
+  "skillsUpToDate": "À jour",
+  "skillsUpdatedFmt": "{n} mis à jour"
 }

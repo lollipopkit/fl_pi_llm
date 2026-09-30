@@ -93,5 +93,13 @@
   "mcpAddHeader": "Tambah header",
   "mcpNotSignedIn": "Belum masuk",
   "mcpSignInTip": "Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis.",
-  "mcpConnecting": "Menghubungkan…"
+  "mcpConnecting": "Menghubungkan…",
+  "skills": "Skills",
+  "skillsTip": "Petunjuk untuk tugas tertentu yang dibaca model saat tugasnya cocok. Pasang hanya dari sumber tepercaya: model mengikuti isi skill.",
+  "skillSourceInvalid": "Bukan repositori, tautan, atau perintah `npx skills add`",
+  "skillsNotFound": "Tidak ada skill di sana",
+  "skillsPick": "Skill yang akan dipasang",
+  "skillsInstalledFmt": "{n} dipasang",
+  "skillsUpToDate": "Sudah terbaru",
+  "skillsUpdatedFmt": "{n} diperbarui"
 }

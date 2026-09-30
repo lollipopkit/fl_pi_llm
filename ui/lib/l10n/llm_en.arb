@@ -189,5 +189,27 @@
   "mcpAddHeader": "Add header",
   "mcpNotSignedIn": "Not signed in",
   "mcpSignInTip": "For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.",
-  "mcpConnecting": "Connecting…"
+  "mcpConnecting": "Connecting…",
+  "skills": "Skills",
+  "skillsTip": "Instructions for particular tasks, which the model reads when a task matches one. Install only from sources you trust: the model follows what a skill says.",
+  "skillSourceInvalid": "Not a repository, link or `npx skills add` command",
+  "skillsNotFound": "No skills found there",
+  "skillsPick": "Skills to install",
+  "skillsInstalledFmt": "Installed {n}",
+  "@skillsInstalledFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsUpToDate": "Up to date",
+  "skillsUpdatedFmt": "Updated {n}",
+  "@skillsUpdatedFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

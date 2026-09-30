@@ -93,5 +93,13 @@
   "mcpAddHeader": "Başlık ekle",
   "mcpNotSignedIn": "Oturum açılmadı",
   "mcpSignInTip": "OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir.",
-  "mcpConnecting": "Bağlanıyor…"
+  "mcpConnecting": "Bağlanıyor…",
+  "skills": "Skills",
+  "skillsTip": "Belirli görevler için talimatlar; görev uyduğunda model bunları okur. Yalnızca güvendiğiniz kaynaklardan kurun: model skill içeriğine uyar.",
+  "skillSourceInvalid": "Bir depo, bağlantı ya da `npx skills add` komutu değil",
+  "skillsNotFound": "Orada skill bulunamadı",
+  "skillsPick": "Kurulacak skill’ler",
+  "skillsInstalledFmt": "{n} kuruldu",
+  "skillsUpToDate": "Güncel",
+  "skillsUpdatedFmt": "{n} güncellendi"
 }

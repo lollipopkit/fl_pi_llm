@@ -6,6 +6,7 @@ import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
+import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -568,18 +569,21 @@ abstract final class Chats {
   // ---------------------------------------------------------------------------
   // Settings applied to open sessions
 
-  /// The system prompt of [meta]'s chat: the user's, and the memory.
+  /// The system prompt of [meta]'s chat: the user's, the app's, the memory,
+  /// and the skills.
   ///
   /// Read when a chat opens or is reconfigured, not on every memory write:
   /// what the model saves mid-chat it already knows, and a prompt that stays
   /// put keeps the provider's prompt cache.
   static String systemPromptFor(ChatMeta? meta) {
-    final tools = _toolsFor(meta).isNotEmpty;
+    // The tools the switch is about, not the loader of skills.
+    final tools = _toolsFor(meta).any((t) => t.name != TfSkill.instance.name);
     return [
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
+      if (Tools.skillsOffered(meta)) ?Skills.prompt(TfSkill.instance.name),
     ].where((e) => e.isNotEmpty).join('\n\n');
   }
 
@@ -608,7 +612,8 @@ abstract final class Chats {
   }
 
   static List<LlmTool> _toolsFor(ChatMeta? meta) {
-    if (meta?.useTools == false) return const [];
+    // Off for this chat: the tools, not the skills.
+    if (meta?.useTools == false) return [if (Tools.skillsOffered(meta)) TfSkill.instance.llmTool];
     return Tools.enabledFor(meta);
   }
 

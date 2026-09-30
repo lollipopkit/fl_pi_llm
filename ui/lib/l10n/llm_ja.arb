@@ -93,5 +93,13 @@
   "mcpAddHeader": "ヘッダーを追加",
   "mcpNotSignedIn": "未サインイン",
   "mcpSignInTip": "OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。",
-  "mcpConnecting": "接続中…"
+  "mcpConnecting": "接続中…",
+  "skills": "Skills",
+  "skillsTip": "特定の作業のための手順書で、作業が合うとモデルが読み込みます。信頼できる提供元からのみインストールしてください。モデルは skill の内容に従います。",
+  "skillSourceInvalid": "リポジトリ、リンク、`npx skills add` コマンドのいずれでもありません",
+  "skillsNotFound": "skill が見つかりません",
+  "skillsPick": "インストールする skill",
+  "skillsInstalledFmt": "{n} 件インストールしました",
+  "skillsUpToDate": "最新です",
+  "skillsUpdatedFmt": "{n} 件更新しました"
 }

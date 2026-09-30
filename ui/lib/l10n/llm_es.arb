@@ -93,5 +93,13 @@
   "mcpAddHeader": "Añadir encabezado",
   "mcpNotSignedIn": "Sin iniciar sesión",
   "mcpSignInTip": "Para un servidor que usa OAuth. Inicias sesión en el navegador y el token se renueva solo.",
-  "mcpConnecting": "Conectando…"
+  "mcpConnecting": "Conectando…",
+  "skills": "Skills",
+  "skillsTip": "Instrucciones para tareas concretas que el modelo lee cuando una tarea encaja. Instala solo desde fuentes de confianza: el modelo sigue lo que dice un skill.",
+  "skillSourceInvalid": "No es un repositorio, enlace ni comando `npx skills add`",
+  "skillsNotFound": "No se encontraron skills ahí",
+  "skillsPick": "Skills para instalar",
+  "skillsInstalledFmt": "{n} instalados",
+  "skillsUpToDate": "Al día",
+  "skillsUpdatedFmt": "{n} actualizados"
 }

@@ -329,4 +329,34 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get mcpConnecting => 'Bağlanıyor…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Belirli görevler için talimatlar; görev uyduğunda model bunları okur. Yalnızca güvendiğiniz kaynaklardan kurun: model skill içeriğine uyar.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Bir depo, bağlantı ya da `npx skills add` komutu değil';
+
+  @override
+  String get skillsNotFound => 'Orada skill bulunamadı';
+
+  @override
+  String get skillsPick => 'Kurulacak skill’ler';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n kuruldu';
+  }
+
+  @override
+  String get skillsUpToDate => 'Güncel';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n güncellendi';
+  }
 }

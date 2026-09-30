@@ -93,5 +93,13 @@
   "mcpAddHeader": "Добавить заголовок",
   "mcpNotSignedIn": "Вход не выполнен",
   "mcpSignInTip": "Для сервера с OAuth. Вход выполняется в браузере, токен обновляется автоматически.",
-  "mcpConnecting": "Подключение…"
+  "mcpConnecting": "Подключение…",
+  "skills": "Skills",
+  "skillsTip": "Инструкции для определённых задач: модель читает их, когда задача подходит. Устанавливайте только из надёжных источников: модель следует тому, что написано в skill.",
+  "skillSourceInvalid": "Это не репозиторий, ссылка или команда `npx skills add`",
+  "skillsNotFound": "Там не найдено skills",
+  "skillsPick": "Какие skills установить",
+  "skillsInstalledFmt": "Установлено: {n}",
+  "skillsUpToDate": "Всё актуально",
+  "skillsUpdatedFmt": "Обновлено: {n}"
 }

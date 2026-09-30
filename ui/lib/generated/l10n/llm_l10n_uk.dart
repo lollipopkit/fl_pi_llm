@@ -329,4 +329,34 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get mcpConnecting => 'Підключення…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Інструкції для певних завдань: модель читає їх, коли завдання підходить. Встановлюйте лише з надійних джерел: модель дотримується того, що написано в skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Це не репозиторій, посилання чи команда `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Там не знайдено skills';
+
+  @override
+  String get skillsPick => 'Які skills встановити';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return 'Встановлено: $n';
+  }
+
+  @override
+  String get skillsUpToDate => 'Усе актуально';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return 'Оновлено: $n';
+  }
 }

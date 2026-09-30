@@ -93,5 +93,13 @@
   "mcpAddHeader": "新增請求標頭",
   "mcpNotSignedIn": "未登入",
   "mcpSignInTip": "適用於使用 OAuth 的伺服器。在瀏覽器中完成登入，token 會自動續期。",
-  "mcpConnecting": "連線中…"
+  "mcpConnecting": "連線中…",
+  "skills": "Skills",
+  "skillsTip": "特定任務的操作說明，任務符合時模型會讀取並遵循。只安裝你信任的來源：模型會依 skill 的內容執行。",
+  "skillSourceInvalid": "無法辨識：請輸入儲存庫、連結或 `npx skills add` 指令",
+  "skillsNotFound": "沒有找到 skill",
+  "skillsPick": "選擇要安裝的 skill",
+  "skillsInstalledFmt": "已安裝 {n} 個",
+  "skillsUpToDate": "已是最新",
+  "skillsUpdatedFmt": "已更新 {n} 個"
 }

@@ -319,6 +319,34 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get mcpConnecting => '连接中…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip => '特定任务的操作说明，任务符合时模型会读取并遵循。只安装你信任的来源：模型会按 skill 的内容执行。';
+
+  @override
+  String get skillSourceInvalid => '无法识别：请输入仓库、链接或 `npx skills add` 命令';
+
+  @override
+  String get skillsNotFound => '没有找到 skill';
+
+  @override
+  String get skillsPick => '选择要安装的 skill';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '已安装 $n 个';
+  }
+
+  @override
+  String get skillsUpToDate => '已是最新';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '已更新 $n 个';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -635,4 +663,32 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get mcpConnecting => '連線中…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip => '特定任務的操作說明，任務符合時模型會讀取並遵循。只安裝你信任的來源：模型會依 skill 的內容執行。';
+
+  @override
+  String get skillSourceInvalid => '無法辨識：請輸入儲存庫、連結或 `npx skills add` 指令';
+
+  @override
+  String get skillsNotFound => '沒有找到 skill';
+
+  @override
+  String get skillsPick => '選擇要安裝的 skill';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '已安裝 $n 個';
+  }
+
+  @override
+  String get skillsUpToDate => '已是最新';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '已更新 $n 個';
+  }
 }

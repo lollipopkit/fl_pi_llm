@@ -329,4 +329,34 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get mcpConnecting => 'Menghubungkan…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Petunjuk untuk tugas tertentu yang dibaca model saat tugasnya cocok. Pasang hanya dari sumber tepercaya: model mengikuti isi skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Bukan repositori, tautan, atau perintah `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Tidak ada skill di sana';
+
+  @override
+  String get skillsPick => 'Skill yang akan dipasang';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n dipasang';
+  }
+
+  @override
+  String get skillsUpToDate => 'Sudah terbaru';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n diperbarui';
+  }
 }

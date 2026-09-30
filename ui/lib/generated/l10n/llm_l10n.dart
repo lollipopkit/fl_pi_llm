@@ -682,6 +682,54 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Connecting…'**
   String get mcpConnecting;
+
+  /// No description provided for @skills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills'**
+  String get skills;
+
+  /// No description provided for @skillsTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for particular tasks, which the model reads when a task matches one. Install only from sources you trust: the model follows what a skill says.'**
+  String get skillsTip;
+
+  /// No description provided for @skillSourceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a repository, link or `npx skills add` command'**
+  String get skillSourceInvalid;
+
+  /// No description provided for @skillsNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No skills found there'**
+  String get skillsNotFound;
+
+  /// No description provided for @skillsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills to install'**
+  String get skillsPick;
+
+  /// No description provided for @skillsInstalledFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed {n}'**
+  String skillsInstalledFmt(int n);
+
+  /// No description provided for @skillsUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get skillsUpToDate;
+
+  /// No description provided for @skillsUpdatedFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {n}'**
+  String skillsUpdatedFmt(int n);
 }
 
 class _LlmLocalizationsDelegate

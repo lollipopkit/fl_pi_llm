@@ -93,5 +93,13 @@
   "mcpAddHeader": "Header hinzufügen",
   "mcpNotSignedIn": "Nicht angemeldet",
   "mcpSignInTip": "Für einen Server mit OAuth. Die Anmeldung erfolgt im Browser, das Token wird automatisch erneuert.",
-  "mcpConnecting": "Verbinde…"
+  "mcpConnecting": "Verbinde…",
+  "skills": "Skills",
+  "skillsTip": "Anleitungen für bestimmte Aufgaben, die das Modell liest, wenn eine Aufgabe passt. Nur aus vertrauenswürdigen Quellen installieren: Das Modell folgt dem, was ein Skill sagt.",
+  "skillSourceInvalid": "Kein Repository, Link oder `npx skills add`-Befehl",
+  "skillsNotFound": "Dort wurden keine Skills gefunden",
+  "skillsPick": "Zu installierende Skills",
+  "skillsInstalledFmt": "{n} installiert",
+  "skillsUpToDate": "Aktuell",
+  "skillsUpdatedFmt": "{n} aktualisiert"
 }
