@@ -295,4 +295,7 @@ class LlmLocalizationsEn extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.';
+
+  @override
+  String get configure => 'Configure';
 }

@@ -277,4 +277,7 @@ class LlmLocalizationsId extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Alamat ini http:// di luar perangkat ini: kunci API dikirim tanpa enkripsi dan dapat dibaca siapa pun di jalur jaringan. Izinkan hanya di jaringan tepercaya.';
+
+  @override
+  String get configure => 'Atur';
 }

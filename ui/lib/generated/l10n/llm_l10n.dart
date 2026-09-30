@@ -586,6 +586,12 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.'**
   String get allowInsecureTip;
+
+  /// No description provided for @configure.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get configure;
 }
 
 class _LlmLocalizationsDelegate

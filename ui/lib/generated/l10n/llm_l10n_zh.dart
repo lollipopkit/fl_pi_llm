@@ -270,6 +270,9 @@ class LlmLocalizationsZh extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       '该地址是本机以外的 http://，API Key 会以明文发送，网络路径上的任何人都能读取。仅在可信网络中开启。';
+
+  @override
+  String get configure => '配置';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -537,4 +540,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   @override
   String get allowInsecureTip =>
       '該位址是本機以外的 http://，API Key 會以明文傳送，網路路徑上的任何人都能讀取。僅在可信網路中開啟。';
+
+  @override
+  String get configure => '設定';
 }

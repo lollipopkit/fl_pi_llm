@@ -290,4 +290,7 @@ class LlmLocalizationsDe extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Diese Adresse ist http:// außerhalb dieses Geräts: Der API-Schlüssel wird unverschlüsselt gesendet und ist für jeden auf dem Netzwerkpfad lesbar. Nur in einem vertrauenswürdigen Netzwerk erlauben.';
+
+  @override
+  String get configure => 'Einrichten';
 }

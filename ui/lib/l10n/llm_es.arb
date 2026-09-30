@@ -77,5 +77,6 @@
   "useTools": "Usar herramientas",
   "useToolsTip": "Cada llamada pregunta primero salvo que esté permitida abajo",
   "allowInsecure": "Permitir HTTP sin cifrar",
-  "allowInsecureTip": "Esta dirección es http:// fuera de este dispositivo: la clave de API se envía sin cifrar y cualquiera en la ruta de red puede leerla. Permítelo solo en una red de confianza."
+  "allowInsecureTip": "Esta dirección es http:// fuera de este dispositivo: la clave de API se envía sin cifrar y cualquiera en la ruta de red puede leerla. Permítelo solo en una red de confianza.",
+  "configure": "Configurar"
 }

@@ -77,5 +77,6 @@
   "useTools": "使用工具",
   "useToolsTip": "每次调用都会先询问，除非已在下方允许",
   "allowInsecure": "允许明文 HTTP",
-  "allowInsecureTip": "该地址是本机以外的 http://，API Key 会以明文发送，网络路径上的任何人都能读取。仅在可信网络中开启。"
+  "allowInsecureTip": "该地址是本机以外的 http://，API Key 会以明文发送，网络路径上的任何人都能读取。仅在可信网络中开启。",
+  "configure": "配置"
 }

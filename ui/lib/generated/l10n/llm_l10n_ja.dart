@@ -272,4 +272,7 @@ class LlmLocalizationsJa extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'このアドレスはこの端末以外の http:// です。API キーは暗号化されずに送信され、ネットワーク経路上の誰でも読み取れます。信頼できるネットワークでのみ許可してください。';
+
+  @override
+  String get configure => '設定';
 }

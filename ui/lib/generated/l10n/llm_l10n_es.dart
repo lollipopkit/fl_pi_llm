@@ -289,4 +289,7 @@ class LlmLocalizationsEs extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Esta dirección es http:// fuera de este dispositivo: la clave de API se envía sin cifrar y cualquiera en la ruta de red puede leerla. Permítelo solo en una red de confianza.';
+
+  @override
+  String get configure => 'Configurar';
 }

@@ -277,4 +277,7 @@ class LlmLocalizationsUk extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Ця адреса — http:// поза цим пристроєм: ключ API надсилається без шифрування і доступний будь-кому на мережевому шляху. Дозволяйте лише в довіреній мережі.';
+
+  @override
+  String get configure => 'Налаштувати';
 }

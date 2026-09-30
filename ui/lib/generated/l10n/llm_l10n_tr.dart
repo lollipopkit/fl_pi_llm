@@ -276,4 +276,7 @@ class LlmLocalizationsTr extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Bu adres bu cihaz dışında http://: API anahtarı şifrelenmeden gönderilir ve ağ yolundaki herkes okuyabilir. Yalnızca güvendiğiniz bir ağda izin verin.';
+
+  @override
+  String get configure => 'Yapılandır';
 }

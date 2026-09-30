@@ -277,4 +277,7 @@ class LlmLocalizationsRu extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Этот адрес — http:// вне этого устройства: ключ API передаётся без шифрования и доступен любому на сетевом пути. Разрешайте только в доверенной сети.';
+
+  @override
+  String get configure => 'Настроить';
 }

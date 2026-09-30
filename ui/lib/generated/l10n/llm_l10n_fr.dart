@@ -291,4 +291,7 @@ class LlmLocalizationsFr extends LlmLocalizations {
   @override
   String get allowInsecureTip =>
       'Cette adresse est en http:// hors de cet appareil : la clé d\'API est envoyée en clair, lisible par quiconque sur le chemin réseau. À n\'autoriser que sur un réseau de confiance.';
+
+  @override
+  String get configure => 'Configurer';
 }

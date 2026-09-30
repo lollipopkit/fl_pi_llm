@@ -10,15 +10,22 @@ import 'package:fl_pi_llm_ui/src/view/section_list.dart';
 
 /// Picks a model among those whose provider has a key, favorites first, then
 /// by provider. A dialog on a wide window, a sheet on a phone. Offers the
-/// provider settings when there is nothing to pick.
+/// provider settings, in a toast, when there is nothing to pick.
 Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) async {
   if (Llm.usableModels.isEmpty) {
-    final go = await context.showRoundDialog<bool>(
-      title: llmL10n.model,
-      child: Text(llmL10n.noProviderKey),
-      actions: [Btn.ok(onTap: () => context.pop(true))],
+    final open = LlmUi.openProviders;
+    Toast.warn(
+      llmL10n.noProviderKey,
+      tag: 'llm.noProviderKey',
+      action: open == null
+          ? null
+          : ToastAction(
+              label: llmL10n.configure,
+              onTap: () {
+                if (context.mounted) open(context);
+              },
+            ),
     );
-    if (go == true && context.mounted) LlmUi.openProviders?.call(context);
     return null;
   }
   if (MediaQuery.sizeOf(context).width >= AdaptivePanes.kSplitWidth) {
