@@ -193,7 +193,7 @@ class _MemoryFilePageState extends State<MemoryFilePage> {
                 maxLines: null,
                 textAlignVertical: TextAlignVertical.top,
                 style: Mono.style(fontSize: 13, height: 1.5),
-                decoration: const InputDecoration(border: InputBorder.none, isCollapsed: true),
+                decoration: bareInputDecoration(isCollapsed: true),
               ),
             ),
           ),

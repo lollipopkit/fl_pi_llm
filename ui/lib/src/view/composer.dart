@@ -235,10 +235,9 @@ class _ComposerState extends State<Composer> {
                 style: const TextStyle(fontSize: 14, height: 20 / 14),
                 textInputAction: isDesktop ? TextInputAction.newline : TextInputAction.send,
                 onSubmitted: isDesktop ? null : (_) => _send(),
-                decoration: InputDecoration(
+                decoration: bareInputDecoration(
                   hintText: llmL10n.message,
                   hintStyle: UIs.textGrey.copyWith(fontSize: 14, height: 20 / 14),
-                  border: InputBorder.none,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
                 ),
