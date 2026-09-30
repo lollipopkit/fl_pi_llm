@@ -17,6 +17,8 @@ class ToolsPage extends StatelessWidget {
   static final _store = LlmStores.tool;
 
   static IconData _iconOf(ToolFunc t) => switch (t) {
+    ToolFunc(:final groupIcon?) => groupIcon,
+    ToolFunc(:final icon?) => icon,
     TfHistory() => Icons.history,
     TfHttpReq() => Icons.language,
     TfMemory() => Icons.psychology_alt_outlined,
