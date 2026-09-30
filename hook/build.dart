@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_rust_bridge_hooks/flutter_rust_bridge_hooks.dart';
 
 import 'bindgen_environment.dart';
+import 'deployment_target.dart';
 import 'rust_build_environment.dart';
 
 /// Builds `rust/` and hands the library to the Dart/Flutter SDK as a code
@@ -21,6 +22,7 @@ void main(List<String> args) async {
         // Only ever non-empty for iOS and Android, the two targets
         // `rquickjs-sys` ships no bindings for. See its own file.
         ...bindgenCrossCompileEnvironment(input),
+        ...deploymentTargetEnvironment(input),
       },
     ).run(input: input, output: output);
   });
