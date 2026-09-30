@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:flutter/material.dart' as legacy show Theme;
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_markdown_plus_latex/flutter_markdown_plus_latex.dart';
@@ -132,7 +132,7 @@ class ThreadBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (block) {
-      UserBlock(:final entry) => _UserMessage(chat: chat, entry: entry, forCapture: forCapture),
+      UserBlock(:final entry) => _UserMessage(key: ValueKey(entry.id), chat: chat, entry: entry, forCapture: forCapture),
       ReplyBlock(:final entries, :final to) => _Reply(
         entries: entries,
         to: to,
@@ -156,19 +156,57 @@ class StreamingView extends StatelessWidget {
   Widget build(BuildContext context) => _Reply(entries: const [], streaming: reply);
 }
 
-class _UserMessage extends StatelessWidget {
-  const _UserMessage({required this.chat, required this.entry, required this.forCapture});
+/// A message the user sent, edited in place: the bubble becomes the field.
+class _UserMessage extends StatefulWidget {
+  const _UserMessage({super.key, required this.chat, required this.entry, required this.forCapture});
 
   final OpenChat? chat;
   final LlmEntry entry;
   final bool forCapture;
 
   @override
+  State<_UserMessage> createState() => _UserMessageState();
+}
+
+class _UserMessageState extends State<_UserMessage> {
+  /// The text being edited, while it is.
+  TextEditingController? _editing;
+
+  LlmEntry get entry => widget.entry;
+
+  @override
+  void dispose() {
+    _editing?.dispose();
+    super.dispose();
+  }
+
+  void _startEdit() => setState(() => _editing = TextEditingController(text: entry.message!.text));
+
+  void _stopEdit() {
+    final c = _editing;
+    if (c == null) return;
+    setState(() => _editing = null);
+    // After the frame: the field is still in this one.
+    WidgetsBinding.instance.addPostFrameCallback((_) => c.dispose());
+  }
+
+  Future<void> _submit(OpenChat chat) async {
+    final text = _editing?.text ?? '';
+    if (text.trim().isEmpty || chat.running.value) return;
+    _stopEdit();
+    await Chats.edit(chat.id, entry, text);
+  }
+
+  static const _textStyle = TextStyle(fontSize: 14, height: 1.5);
+
+  @override
   Widget build(BuildContext context) {
+    final forCapture = widget.forCapture;
     final m = entry.message!;
     final images = _imagesOf(m);
-    final chat = this.chat;
+    final chat = widget.chat;
     final scheme = context.theme.colorScheme;
+    final editing = _editing;
     return LayoutBuilder(
       builder: (context, cons) {
         final maxWidth = cons.maxWidth * 0.86 < 560 ? cons.maxWidth * 0.86 : 560.0;
@@ -185,7 +223,9 @@ class _UserMessage extends StatelessWidget {
                   children: [for (final i in images) _ImageThumb(data: i.$1)],
                 ),
               ),
-            if (m.text.isNotEmpty)
+            if (editing != null && chat != null)
+              _editor(context, chat, editing, maxWidth)
+            else if (m.text.isNotEmpty)
               Container(
                 constraints: BoxConstraints(maxWidth: maxWidth),
                 padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
@@ -193,11 +233,9 @@ class _UserMessage extends StatelessWidget {
                   color: scheme.primaryContainer.withValues(alpha: 0.6),
                   borderRadius: CardX.borderRadius,
                 ),
-                child: forCapture
-                    ? Text(m.text, style: const TextStyle(fontSize: 14, height: 1.5))
-                    : SelectableText(m.text, style: const TextStyle(fontSize: 14, height: 1.5)),
+                child: forCapture ? Text(m.text, style: _textStyle) : SelectableText(m.text, style: _textStyle),
               ),
-            if (!forCapture && chat != null) ...[
+            if (!forCapture && chat != null && editing == null) ...[
               const SizedBox(height: 2),
               _actions(context, chat, m),
             ],
@@ -231,22 +269,55 @@ class _UserMessage extends StatelessWidget {
             Pfs.copy(m.text);
             Toast.show(llmL10n.copied);
           }),
-          if (!running) _SmallBtn(Icons.edit_outlined, libL10n.edit, () => _edit(context, chat)),
+          if (!running) _SmallBtn(Icons.edit_outlined, libL10n.edit, _startEdit),
         ],
       );
     });
   }
 
-  Future<void> _edit(BuildContext context, OpenChat chat) async {
-    final ctrl = TextEditingController(text: entry.message!.text);
-    final text = await context.showRoundDialog<String>(
-      title: libL10n.edit,
-      child: SizedBox(width: 500, child: Input(controller: ctrl, maxLines: 10, minLines: 3, autoFocus: true)),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+  /// The bubble as a field, as wide as a bubble gets: Esc leaves it, and
+  /// Ctrl/Cmd+Enter sends it, as a new version of the message.
+  Widget _editor(BuildContext context, OpenChat chat, TextEditingController ctrl, double maxWidth) {
+    final scheme = context.theme.colorScheme;
+    return Container(
+      width: maxWidth,
+      padding: const EdgeInsets.fromLTRB(13, 9, 7, 5),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: CardX.borderRadius,
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.5)),
+      ),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): _stopEdit,
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): () => _submit(chat),
+          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () => _submit(chat),
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 12,
+              keyboardType: TextInputType.multiline,
+              style: _textStyle,
+              decoration: const InputDecoration.collapsed(hintText: ''),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Btn.text(text: libL10n.cancel, onTap: _stopEdit),
+                chat.running.listenVal(
+                  (running) => Btn.text(text: llmL10n.send, onTap: running ? null : () => _submit(chat)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
-    ctrl.dispose();
-    if (text == null || text.trim().isEmpty) return;
-    await Chats.edit(chat.id, entry, text);
   }
 }
 

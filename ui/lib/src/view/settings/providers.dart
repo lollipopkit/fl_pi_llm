@@ -184,7 +184,7 @@ class _ProvidersPageState extends State<ProvidersPage> {
     final v = await context.showRoundDialog<String>(
       title: llmL10n.systemPrompt,
       child: SizedBox(width: 520, child: Input(controller: ctrl, maxLines: 12, minLines: 4, autoFocus: true)),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+      actions: [Btn.ok(onTap: () => context.popDialog(ctrl.text))],
     );
     ctrl.dispose();
     if (v == null) return;
