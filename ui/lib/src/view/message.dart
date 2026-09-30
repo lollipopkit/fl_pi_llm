@@ -207,6 +207,7 @@ class _UserMessageState extends State<_UserMessage> {
     final chat = widget.chat;
     final scheme = context.theme.colorScheme;
     final editing = _editing;
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : Durations.medium1;
     return LayoutBuilder(
       builder: (context, cons) {
         final maxWidth = cons.maxWidth * 0.86 < 560 ? cons.maxWidth * 0.86 : 560.0;
@@ -223,17 +224,32 @@ class _UserMessageState extends State<_UserMessage> {
                   children: [for (final i in images) _ImageThumb(data: i.$1)],
                 ),
               ),
-            if (editing != null && chat != null)
-              _editor(context, chat, editing, maxWidth)
-            else if (m.text.isNotEmpty)
-              Container(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withValues(alpha: 0.6),
-                  borderRadius: CardX.borderRadius,
+            if (editing != null && chat != null || m.text.isNotEmpty)
+              // The bubble grows into the field and back: the two cross-fade
+              // while the size follows.
+              AnimatedSize(
+                duration: duration,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topRight,
+                child: AnimatedSwitcher(
+                  duration: duration,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.topRight,
+                    children: [...previous, ?current],
+                  ),
+                  child: editing != null && chat != null
+                      ? KeyedSubtree(key: const ValueKey('edit'), child: _editor(context, chat, editing, maxWidth))
+                      : Container(
+                          key: const ValueKey('text'),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: scheme.primaryContainer.withValues(alpha: 0.6),
+                            borderRadius: CardX.borderRadius,
+                          ),
+                          child: forCapture ? Text(m.text, style: _textStyle) : SelectableText(m.text, style: _textStyle),
+                        ),
                 ),
-                child: forCapture ? Text(m.text, style: _textStyle) : SelectableText(m.text, style: _textStyle),
               ),
             if (!forCapture && chat != null && editing == null) ...[
               const SizedBox(height: 2),
@@ -285,7 +301,6 @@ class _UserMessageState extends State<_UserMessage> {
       decoration: BoxDecoration(
         color: scheme.primaryContainer.withValues(alpha: 0.6),
         borderRadius: CardX.borderRadius,
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.5)),
       ),
       child: CallbackShortcuts(
         bindings: {
