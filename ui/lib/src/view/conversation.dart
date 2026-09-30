@@ -9,7 +9,13 @@ import 'package:material_ui/material_ui.dart';
 /// A chat's conversation: its thread, the reply being written, the tool
 /// call waiting on the user, and what went wrong. Opens the chat.
 class LlmConversation extends StatefulWidget {
-  const LlmConversation({super.key, required this.chatId, this.pullDown, this.pullUp});
+  const LlmConversation({super.key, required this.chatId, this.pullDown, this.pullUp, this.showLoading = true});
+
+  /// Whether the thread itself says a reply is on its way: a spinner while
+  /// the chat opens, and while it runs with nothing written yet. Off for an
+  /// app that shows a running chat elsewhere — in its bar, in its list of
+  /// chats — where a second spinner is only noise.
+  final bool showLoading;
 
   final String chatId;
 
@@ -87,7 +93,11 @@ class _LlmConversationState extends State<LlmConversation> {
           return EmptyPane(icon: Icons.error_outline, title: libL10n.error, label: '${snap.error}');
         }
         final chat = snap.data;
-        if (chat == null) return const Center(child: SizedLoading(25, padding: 3, builder: SizedLoading.circularBuilder));
+        if (chat == null) {
+          return widget.showLoading
+              ? const Center(child: SizedLoading(25, padding: 3, builder: SizedLoading.circularBuilder))
+              : UIs.placeholder;
+        }
         // Not on each streamed token: that is the last block's alone.
         return ListenableBuilder(
           listenable: Listenable.merge([chat.entries, chat.error, chat.approvals, chat.running, chat.interrupted]),
@@ -116,7 +126,10 @@ class _LlmConversationState extends State<LlmConversation> {
                 // the model has not started, or a turn ended and the next is
                 // on its way — is still a reply being written, and an empty
                 // one draws as the spinner. Not while a call waits on the user.
-                final s = streamed ?? (chat.running.value && pending == null ? const StreamingReply() : null);
+                final loading = widget.showLoading;
+                var s = streamed ?? (loading && chat.running.value && pending == null ? const StreamingReply() : null);
+                // Without the spinner, a reply with nothing in it yet is not drawn.
+                if (!loading && s != null && s.isEmpty) s = null;
                 final last = blocks.lastOrNull;
                 final lastView = last == null ? null : view(blocks.length - 1, last, lastIsReply ? s : null);
                 if (s == null || lastIsReply) return lastView ?? UIs.placeholder;

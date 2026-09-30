@@ -16,6 +16,9 @@ import 'package:shortid/shortid.dart';
 final class StreamingReply {
   const StreamingReply({this.text = '', this.thinking = '', this.tools = const []});
 
+  /// Nothing written yet: no text, no thinking, no tool called.
+  bool get isEmpty => text.isEmpty && thinking.isEmpty && tools.isEmpty;
+
   final String text;
   final String thinking;
 
