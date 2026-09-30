@@ -92,5 +92,6 @@
   "mcpInsecure": "只有 https 地址可以使用请求头或登录。",
   "mcpAddHeader": "添加请求头",
   "mcpNotSignedIn": "未登录",
-  "mcpSignInTip": "适用于使用 OAuth 的服务器。在浏览器中完成登录，token 会自动续期。"
+  "mcpSignInTip": "适用于使用 OAuth 的服务器。在浏览器中完成登录，token 会自动续期。",
+  "mcpConnecting": "连接中…"
 }

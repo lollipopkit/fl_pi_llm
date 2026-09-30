@@ -92,5 +92,6 @@
   "mcpInsecure": "ヘッダーの送信やサインインは https のアドレスでのみ使えます。",
   "mcpAddHeader": "ヘッダーを追加",
   "mcpNotSignedIn": "未サインイン",
-  "mcpSignInTip": "OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。"
+  "mcpSignInTip": "OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。",
+  "mcpConnecting": "接続中…"
 }

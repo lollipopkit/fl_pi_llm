@@ -92,5 +92,6 @@
   "mcpInsecure": "Solo una dirección https puede recibir encabezados o iniciar sesión.",
   "mcpAddHeader": "Añadir encabezado",
   "mcpNotSignedIn": "Sin iniciar sesión",
-  "mcpSignInTip": "Para un servidor que usa OAuth. Inicias sesión en el navegador y el token se renueva solo."
+  "mcpSignInTip": "Para un servidor que usa OAuth. Inicias sesión en el navegador y el token se renueva solo.",
+  "mcpConnecting": "Conectando…"
 }

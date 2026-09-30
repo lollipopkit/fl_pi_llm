@@ -326,4 +326,7 @@ class LlmLocalizationsUk extends LlmLocalizations {
   @override
   String get mcpSignInTip =>
       'Для сервера з OAuth. Вхід виконується в браузері, токен оновлюється автоматично.';
+
+  @override
+  String get mcpConnecting => 'Підключення…';
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
@@ -32,7 +34,14 @@ class ToolsPage extends StatelessWidget {
               icon: Icons.build_outlined,
               title: llmL10n.useTools,
               subtitle: llmL10n.useToolsTip,
-              trailing: StoreSwitch(prop: _store.enabled, callback: (_) => Chats.reconfigureSoon()),
+              trailing: StoreSwitch(
+                prop: _store.enabled,
+                callback: (on) {
+                  // Not connected at launch while off.
+                  if (on) unawaited(McpTools.connectStored());
+                  Chats.reconfigureSoon();
+                },
+              ),
             ),
           ],
         ),
@@ -99,7 +108,10 @@ class ToolsPage extends StatelessWidget {
     final err = McpTools.errorOf(name);
     final String subtitle;
     final Widget? trailing;
-    if (McpTools.isSigningIn(name)) {
+    if (McpTools.isConnecting(name)) {
+      subtitle = llmL10n.mcpConnecting;
+      trailing = null;
+    } else if (McpTools.isSigningIn(name)) {
       subtitle = llmL10n.mcpSigningIn;
       trailing = Btn.text(text: libL10n.cancel, onTap: () => McpTools.cancelSignIn(name));
     } else if (on) {
@@ -117,7 +129,7 @@ class ToolsPage extends StatelessWidget {
       trailing = Btn.text(
         text: libL10n.retry,
         onTap: () async {
-          await McpTools.retryConnection(name);
+          await McpTools.retryConnection(url);
           Chats.reconfigureSoon();
         },
       );

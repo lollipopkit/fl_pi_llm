@@ -188,5 +188,6 @@
   "mcpInsecure": "Only an https address can be sent headers or signed in to.",
   "mcpAddHeader": "Add header",
   "mcpNotSignedIn": "Not signed in",
-  "mcpSignInTip": "For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own."
+  "mcpSignInTip": "For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.",
+  "mcpConnecting": "Connecting…"
 }

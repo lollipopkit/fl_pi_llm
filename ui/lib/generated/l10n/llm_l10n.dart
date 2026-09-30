@@ -676,6 +676,12 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.'**
   String get mcpSignInTip;
+
+  /// No description provided for @mcpConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get mcpConnecting;
 }
 
 class _LlmLocalizationsDelegate

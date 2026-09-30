@@ -297,6 +297,23 @@ void main() {
     expect(McpTools.serverOfTool('memory_read'), isNull);
   });
 
+  test('a stored server connects at launch, and asks for a sign-in', () async {
+    LlmStores.tool.mcpServers.set([mock.url]);
+    final id = McpTools.nameFor(mock.url);
+    final connecting = McpTools.connectStored();
+    expect(McpTools.isConnecting(id), isTrue);
+    await connecting;
+    expect(McpTools.isConnecting(id), isFalse);
+    expect(McpTools.needsSignIn(id), isTrue);
+  });
+
+  test('a retry connects a server never tried this run', () async {
+    mock.apiKey = 'k';
+    McpSecrets.write(McpTools.nameFor(mock.url), const McpSecret(headers: {'X-Api-Key': 'k'}));
+    await McpTools.retryConnection(mock.url);
+    expect(McpTools.isServerConnected(McpTools.nameFor(mock.url)), isTrue);
+  });
+
   group('sign-in', () {
     test('goes through the browser, and connects with what it got', () async {
       final id = McpTools.nameFor(mock.url);

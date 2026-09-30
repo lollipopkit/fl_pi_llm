@@ -92,5 +92,6 @@
   "mcpInsecure": "Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk.",
   "mcpAddHeader": "Tambah header",
   "mcpNotSignedIn": "Belum masuk",
-  "mcpSignInTip": "Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis."
+  "mcpSignInTip": "Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis.",
+  "mcpConnecting": "Menghubungkan…"
 }

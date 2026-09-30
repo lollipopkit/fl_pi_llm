@@ -164,7 +164,7 @@ class _McpServerPageState extends State<McpServerPage> {
           onRefresh: _id == null
               ? null
               : () async {
-                  await McpTools.retryConnection(_id!);
+                  await McpTools.retryConnection(_saved!);
                   Chats.reconfigureSoon();
                 },
         ),
@@ -202,6 +202,7 @@ class _McpServerPageState extends State<McpServerPage> {
   }
 
   static String _status(String id) {
+    if (McpTools.isConnecting(id)) return llmL10n.mcpConnecting;
     if (McpTools.isSigningIn(id)) return llmL10n.mcpSigningIn;
     if (McpTools.isServerConnected(id)) return llmL10n.connectedFmt(McpTools.toolCounts[id] ?? 0);
     if (McpTools.needsSignIn(id)) return llmL10n.mcpNeedsSignIn;

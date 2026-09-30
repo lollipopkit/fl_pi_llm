@@ -92,5 +92,6 @@
   "mcpInsecure": "只有 https 位址可以使用請求標頭或登入。",
   "mcpAddHeader": "新增請求標頭",
   "mcpNotSignedIn": "未登入",
-  "mcpSignInTip": "適用於使用 OAuth 的伺服器。在瀏覽器中完成登入，token 會自動續期。"
+  "mcpSignInTip": "適用於使用 OAuth 的伺服器。在瀏覽器中完成登入，token 會自動續期。",
+  "mcpConnecting": "連線中…"
 }

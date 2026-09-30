@@ -341,4 +341,7 @@ class LlmLocalizationsFr extends LlmLocalizations {
   @override
   String get mcpSignInTip =>
       'Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement.';
+
+  @override
+  String get mcpConnecting => 'Connexion…';
 }

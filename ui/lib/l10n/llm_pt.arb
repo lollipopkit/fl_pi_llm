@@ -92,5 +92,6 @@
   "mcpInsecure": "Só um endereço https pode receber cabeçalhos ou login.",
   "mcpAddHeader": "Adicionar cabeçalho",
   "mcpNotSignedIn": "Sem login",
-  "mcpSignInTip": "Para um servidor que usa OAuth. O login é feito no navegador e o token é renovado sozinho."
+  "mcpSignInTip": "Para um servidor que usa OAuth. O login é feito no navegador e o token é renovado sozinho.",
+  "mcpConnecting": "Conectando…"
 }

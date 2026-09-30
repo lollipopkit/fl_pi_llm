@@ -92,5 +92,6 @@
   "mcpInsecure": "Seule une adresse https peut recevoir des en-têtes ou une connexion.",
   "mcpAddHeader": "Ajouter un en-tête",
   "mcpNotSignedIn": "Non connecté",
-  "mcpSignInTip": "Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement."
+  "mcpSignInTip": "Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement.",
+  "mcpConnecting": "Connexion…"
 }

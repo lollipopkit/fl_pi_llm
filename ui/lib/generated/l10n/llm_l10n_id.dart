@@ -326,4 +326,7 @@ class LlmLocalizationsId extends LlmLocalizations {
   @override
   String get mcpSignInTip =>
       'Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis.';
+
+  @override
+  String get mcpConnecting => 'Menghubungkan…';
 }

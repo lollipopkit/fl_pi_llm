@@ -92,5 +92,6 @@
   "mcpInsecure": "Nur an eine https-Adresse können Header gesendet oder kann sich angemeldet werden.",
   "mcpAddHeader": "Header hinzufügen",
   "mcpNotSignedIn": "Nicht angemeldet",
-  "mcpSignInTip": "Für einen Server mit OAuth. Die Anmeldung erfolgt im Browser, das Token wird automatisch erneuert."
+  "mcpSignInTip": "Für einen Server mit OAuth. Die Anmeldung erfolgt im Browser, das Token wird automatisch erneuert.",
+  "mcpConnecting": "Verbinde…"
 }

@@ -326,4 +326,7 @@ class LlmLocalizationsTr extends LlmLocalizations {
   @override
   String get mcpSignInTip =>
       'OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir.';
+
+  @override
+  String get mcpConnecting => 'Bağlanıyor…';
 }

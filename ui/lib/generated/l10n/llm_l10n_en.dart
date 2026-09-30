@@ -345,4 +345,7 @@ class LlmLocalizationsEn extends LlmLocalizations {
   @override
   String get mcpSignInTip =>
       'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.';
+
+  @override
+  String get mcpConnecting => 'Connecting…';
 }

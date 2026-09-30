@@ -92,5 +92,6 @@
   "mcpInsecure": "Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir.",
   "mcpAddHeader": "Başlık ekle",
   "mcpNotSignedIn": "Oturum açılmadı",
-  "mcpSignInTip": "OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir."
+  "mcpSignInTip": "OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir.",
+  "mcpConnecting": "Bağlanıyor…"
 }

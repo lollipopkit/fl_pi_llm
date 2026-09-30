@@ -19,6 +19,10 @@ final class _McpServer {
   /// It answered that it wants a sign-in.
   bool needsSignIn = false;
 
+  /// The connection being made, while one is: a later [McpTools.connect]
+  /// replaces it, and only the latest says when it is done.
+  Object? connecting;
+
   /// Completed to stop waiting for the browser, while a sign-in is.
   Completer<void>? signingIn;
 
@@ -74,6 +78,8 @@ abstract final class McpTools {
     final id = nameFor(url);
     final s = _servers[id] ??= _McpServer(url);
     s.retry?.cancel();
+    final attempt = s.connecting = Object();
+    changes.notify();
     await _close(s);
     s.secret = McpAuth.canCarrySecrets(url) ? McpSecrets.read(id) : const McpSecret();
     // A fresh transport each time: a closed one cannot be started again.
@@ -120,6 +126,8 @@ abstract final class McpTools {
         ..needsSignIn = unauthorized
         ..error = unauthorized ? null : '$e';
       if (!unauthorized) _retryLater(s);
+    } finally {
+      if (identical(s.connecting, attempt)) s.connecting = null;
     }
     changes.notify();
   }
@@ -182,12 +190,11 @@ abstract final class McpTools {
     }
   }
 
-  /// Retries [id] now, from the start.
-  static Future<void> retryConnection(String id) async {
-    final s = _servers[id];
-    if (s == null) return;
-    s.attempts = 0;
-    await connect(s.url);
+  /// Connects [url] now, from the start: a server that dropped, or one never
+  /// tried this run, such as with tools off at launch.
+  static Future<void> retryConnection(String url) async {
+    _servers[nameFor(url)]?.attempts = 0;
+    await connect(url);
   }
 
   static Future<void> removeServer(String id) async {
@@ -326,6 +333,8 @@ abstract final class McpTools {
   static List<({String title, String? description})> toolsOf(String id) => [
     for (final t in _servers[id]?.tools ?? const <Tool>[]) (title: t.title ?? t.name, description: t.description),
   ];
+
+  static bool isConnecting(String id) => _servers[id]?.connecting != null;
 
   static bool needsSignIn(String id) => _servers[id]?.needsSignIn ?? false;
 

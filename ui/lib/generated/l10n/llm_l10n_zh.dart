@@ -316,6 +316,9 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get mcpSignInTip => '适用于使用 OAuth 的服务器。在浏览器中完成登录，token 会自动续期。';
+
+  @override
+  String get mcpConnecting => '连接中…';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -629,4 +632,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get mcpSignInTip => '適用於使用 OAuth 的伺服器。在瀏覽器中完成登入，token 會自動續期。';
+
+  @override
+  String get mcpConnecting => '連線中…';
 }

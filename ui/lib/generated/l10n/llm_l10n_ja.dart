@@ -318,4 +318,7 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get mcpSignInTip => 'OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。';
+
+  @override
+  String get mcpConnecting => '接続中…';
 }
