@@ -101,5 +101,8 @@
   "skillsPick": "選擇要安裝的 skill",
   "skillsInstalledFmt": "已安裝 {n} 個",
   "skillsUpToDate": "已是最新",
-  "skillsUpdatedFmt": "已更新 {n} 個"
+  "skillsUpdatedFmt": "已更新 {n} 個",
+  "skillsFromFolder": "從資料夾安裝",
+  "skillsFromZip": "從 .zip 安裝",
+  "skillsUpdateFailedFmt": "{n} 個來源檢查失敗"
 }

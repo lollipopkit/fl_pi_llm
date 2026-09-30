@@ -360,4 +360,15 @@ class LlmLocalizationsRu extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return 'Обновлено: $n';
   }
+
+  @override
+  String get skillsFromFolder => 'Установить из папки';
+
+  @override
+  String get skillsFromZip => 'Установить из .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'Не удалось проверить источники: $n';
+  }
 }

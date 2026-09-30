@@ -101,5 +101,8 @@
   "skillsPick": "インストールする skill",
   "skillsInstalledFmt": "{n} 件インストールしました",
   "skillsUpToDate": "最新です",
-  "skillsUpdatedFmt": "{n} 件更新しました"
+  "skillsUpdatedFmt": "{n} 件更新しました",
+  "skillsFromFolder": "フォルダからインストール",
+  "skillsFromZip": ".zip からインストール",
+  "skillsUpdateFailedFmt": "{n} 件の提供元を確認できませんでした"
 }

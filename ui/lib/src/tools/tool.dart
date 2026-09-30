@@ -19,6 +19,7 @@ import 'package:fl_pi_llm_ui/src/store/tool.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
+import 'package:logging/logging.dart' as logging;
 import 'package:mcp_dart/mcp_dart.dart';
 
 part 'type.dart';

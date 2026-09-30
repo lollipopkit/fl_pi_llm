@@ -211,5 +211,15 @@
         "type": "int"
       }
     }
+  },
+  "skillsFromFolder": "Install from a folder",
+  "skillsFromZip": "Install from a .zip",
+  "skillsUpdateFailedFmt": "{n} sources could not be checked",
+  "@skillsUpdateFailedFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

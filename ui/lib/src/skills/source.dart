@@ -1,8 +1,8 @@
 /// Where skills are installed from, as `npx skills add` takes it.
 ///
 /// The formats are the `skills` CLI's (vercel-labs/skills,
-/// `src/source-parser.ts`), minus the ones that need a local checkout or git
-/// itself: a local path, ssh, Azure Repos and GitHub Enterprise.
+/// `src/source-parser.ts`), minus the ones that need git itself: ssh, Azure
+/// Repos and GitHub Enterprise. A local path is a folder or a file.
 sealed class SkillSource {
   const SkillSource({this.skill});
 
@@ -22,6 +22,7 @@ sealed class SkillSource {
     'gitlab' => GitLabSource(Uri.parse(j['project'] as String), ref: j['ref'] as String?, path: j['path'] as String?),
     'download' => DownloadSource(Uri.parse(j['url'] as String)),
     'site' => SiteSource(Uri.parse(j['url'] as String)),
+    'local' => LocalSource(j['path'] as String),
     _ => null,
   };
 
@@ -56,6 +57,10 @@ sealed class SkillSource {
   SkillSource _withSkill(String skill);
 
   static SkillSource _parse(String input) {
+    // A folder or a file on this device: absolute, or `~/`.
+    if (input.startsWith('/') || input.startsWith('~/') || RegExp(r'^[A-Za-z]:[\\/]').hasMatch(input)) {
+      return LocalSource(input);
+    }
     // `#ref` or `#ref@skill`, on what looks like a repository.
     String? ref, fragSkill;
     var s = input;
@@ -236,6 +241,25 @@ final class SiteSource extends SkillSource {
 
   @override
   SkillSource _withSkill(String skill) => SiteSource(url, skill: skill);
+
+  @override
+  String toString() => id;
+}
+
+/// A folder of skills, or an archive or SKILL.md, on this device.
+final class LocalSource extends SkillSource {
+  const LocalSource(this.path, {super.skill});
+
+  final String path;
+
+  @override
+  String get id => path;
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'local', 'path': path};
+
+  @override
+  SkillSource _withSkill(String skill) => LocalSource(path, skill: skill);
 
   @override
   String toString() => id;

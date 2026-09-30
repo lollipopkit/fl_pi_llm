@@ -101,5 +101,8 @@
   "skillsPick": "Kurulacak skill’ler",
   "skillsInstalledFmt": "{n} kuruldu",
   "skillsUpToDate": "Güncel",
-  "skillsUpdatedFmt": "{n} güncellendi"
+  "skillsUpdatedFmt": "{n} güncellendi",
+  "skillsFromFolder": "Klasörden kur",
+  "skillsFromZip": ".zip’ten kur",
+  "skillsUpdateFailedFmt": "{n} kaynak denetlenemedi"
 }

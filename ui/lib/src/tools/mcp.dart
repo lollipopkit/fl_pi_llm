@@ -75,6 +75,7 @@ abstract final class McpTools {
   /// Connects [url], or reconnects it. Failures are kept for [errorOf] and
   /// retried a few times.
   static Future<void> connect(String url) async {
+    _routeSdkLogs();
     final id = nameFor(url);
     final s = _servers[id] ??= _McpServer(url);
     s.retry?.cancel();
@@ -118,9 +119,11 @@ abstract final class McpTools {
       Loggers.app.info('MCP ${s.label}: ${s.tools.length} tools');
     } catch (e, s_) {
       if (!identical(s.transport, transport)) return;
-      Loggers.app.warning('MCP connect $url', e, s_);
       // Asking again would get the same answer: it waits for a sign-in.
       final unauthorized = _isUnauthorized(e);
+      unauthorized
+          ? Loggers.app.info('MCP $url: sign-in required')
+          : Loggers.app.warning('MCP connect $url', e, s_);
       s
         ..connected = false
         ..needsSignIn = unauthorized
@@ -131,6 +134,29 @@ abstract final class McpTools {
     }
     changes.notify();
   }
+
+  static var _sdkLogsRouted = false;
+
+  /// The SDK's own lines, into the app's log and below its warnings: it calls
+  /// a server that wants a sign-in an `ERROR` on stderr, where every failure
+  /// that matters reaches this class as an exception and is logged here, with
+  /// the server it was about.
+  static void _routeSdkLogs() {
+    if (_sdkLogsRouted) return;
+    _sdkLogsRouted = true;
+    final log = logging.Logger('mcp_dart');
+    setMcpLogHandler(
+      (name, level, message) => log.log(switch (level) {
+        LogLevel.debug || LogLevel.info => logging.Level.FINE,
+        LogLevel.warn || LogLevel.error => logging.Level.INFO,
+      }, '[$name] $message'),
+    );
+  }
+
+  /// Whether [e] is an MCP server's answer rather than a defect here: a
+  /// server that wants a sign-in, or one that refused or failed a request
+  /// (the transport's code 0). For a crash reporter, which keeps defects.
+  static bool isRemoteFailure(Object e) => e is UnauthorizedError || (e is McpError && e.code == 0);
 
   /// A 401 or 403. The transport says so with [UnauthorizedError] where it had
   /// a token to offer, and only in the message otherwise.

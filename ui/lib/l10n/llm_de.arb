@@ -101,5 +101,8 @@
   "skillsPick": "Zu installierende Skills",
   "skillsInstalledFmt": "{n} installiert",
   "skillsUpToDate": "Aktuell",
-  "skillsUpdatedFmt": "{n} aktualisiert"
+  "skillsUpdatedFmt": "{n} aktualisiert",
+  "skillsFromFolder": "Aus einem Ordner installieren",
+  "skillsFromZip": "Aus einer .zip installieren",
+  "skillsUpdateFailedFmt": "{n} Quellen konnten nicht geprüft werden"
 }

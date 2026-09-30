@@ -101,5 +101,8 @@
   "skillsPick": "Te installeren skills",
   "skillsInstalledFmt": "{n} geïnstalleerd",
   "skillsUpToDate": "Actueel",
-  "skillsUpdatedFmt": "{n} bijgewerkt"
+  "skillsUpdatedFmt": "{n} bijgewerkt",
+  "skillsFromFolder": "Installeren uit een map",
+  "skillsFromZip": "Installeren uit een .zip",
+  "skillsUpdateFailedFmt": "{n} bronnen konden niet worden gecontroleerd"
 }

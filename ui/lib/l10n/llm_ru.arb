@@ -101,5 +101,8 @@
   "skillsPick": "Какие skills установить",
   "skillsInstalledFmt": "Установлено: {n}",
   "skillsUpToDate": "Всё актуально",
-  "skillsUpdatedFmt": "Обновлено: {n}"
+  "skillsUpdatedFmt": "Обновлено: {n}",
+  "skillsFromFolder": "Установить из папки",
+  "skillsFromZip": "Установить из .zip",
+  "skillsUpdateFailedFmt": "Не удалось проверить источники: {n}"
 }

@@ -68,6 +68,9 @@ void main() {
       expect(p('https://raw.githubusercontent.com/o/r/main/SKILL.md'), isA<DownloadSource>());
       expect(p('https://github.com/o/r/archive/refs/heads/main.zip'), isA<DownloadSource>());
       expect(p('https://example.com/docs'), isA<SiteSource>());
+      expect(p('/Users/me/skills'), isA<LocalSource>().having((s) => s.path, 'path', '/Users/me/skills'));
+      expect(p('~/Downloads/pdf.zip'), isA<LocalSource>());
+      expect(p(r'C:\skills'), isA<LocalSource>());
     });
 
     test('pasted as a whole command', () {
@@ -84,7 +87,7 @@ void main() {
     });
 
     test('kept in the lock, and read back', () {
-      for (final s in [p('o/r/skills#dev'), p('https://gitlab.com/g/r'), p('https://example.com/x')]) {
+      for (final s in [p('o/r/skills#dev'), p('https://gitlab.com/g/r'), p('https://example.com/x'), p('/tmp/s')]) {
         expect(SkillSource.fromJson(s.toJson())!.toJson(), s.toJson());
       }
     });
@@ -217,13 +220,13 @@ void main() {
       });
       await installAll('o/r');
       Skills.setEnabled('b', false);
-      expect(await Skills.update(), isEmpty);
+      expect((await Skills.update()).updated, isEmpty);
 
       served['/o/r/archive/HEAD.tar.gz'] = _targz({
         'skills/a/SKILL.md': _md('a'),
         'skills/b/SKILL.md': _md('b', 'Does a thing.', 'New steps.'),
       });
-      expect(await Skills.update(), ['b']);
+      expect((await Skills.update()).updated, ['b']);
       expect(Skills.read('b'), contains('New steps.'));
       expect(Skills.byDir('b')!.enabled, isFalse, reason: 'an update keeps the switch');
     });
@@ -266,6 +269,55 @@ void main() {
 
     test('never over plain http to another machine', () async {
       await expectLater(Skills.find(SkillSource.parse('http://example.com/SKILL.md')), throwsStateError);
+    });
+
+    test('from a folder, without what a repository keeps beside it', () async {
+      final dir = Directory.systemTemp.createTempSync('src');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      void write(String rel, String text) => (File('${dir.path}/$rel')..createSync(recursive: true)).writeAsStringSync(text);
+      write('skills/pdf/SKILL.md', _md('pdf'));
+      write('skills/pdf/forms.md', 'Forms.');
+      write('.git/skills/x/SKILL.md', _md('from-git'));
+      write('node_modules/y/SKILL.md', _md('from-deps'));
+      await installAll(dir.path);
+      expect(Skills.all.map((s) => s.name), ['pdf']);
+      expect(Skills.filesOf('pdf'), ['SKILL.md', 'forms.md']);
+
+      // Read again by an update, while it is there.
+      write('skills/pdf/SKILL.md', _md('pdf', 'Does a thing.', 'Changed.'));
+      expect((await Skills.update()).updated, ['pdf']);
+      dir.deleteSync(recursive: true);
+      dir.createSync();
+      final gone = await Skills.update();
+      expect(gone.updated, isEmpty);
+      expect(gone.failed, isEmpty, reason: 'a folder that is gone is left alone');
+    });
+
+    test('from a .zip on this device', () async {
+      final dir = Directory.systemTemp.createTempSync('zip');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final zip = File('${dir.path}/pdf.zip')
+        ..writeAsBytesSync(
+          ZipEncoder().encodeBytes(
+            Archive()
+              ..addFile(ArchiveFile.bytes('pdf/SKILL.md', utf8.encode(_md('pdf'))))
+              ..addFile(ArchiveFile.bytes('pdf/a.md', utf8.encode('A'))),
+          ),
+        );
+      await installAll(zip.path);
+      expect(Skills.filesOf('pdf'), ['SKILL.md', 'a.md']);
+    });
+
+    test('an update goes on past a source it cannot reach', () async {
+      served['/o/r/archive/HEAD.tar.gz'] = _targz({'SKILL.md': _md('a')});
+      served['/o/s/archive/HEAD.tar.gz'] = _targz({'SKILL.md': _md('b')});
+      await installAll('o/r');
+      await installAll('o/s');
+      served.remove('/o/r/archive/HEAD.tar.gz');
+      served['/o/s/archive/HEAD.tar.gz'] = _targz({'SKILL.md': _md('b', 'Does a thing.', 'New.')});
+      final res = await Skills.update();
+      expect(res.updated, ['b']);
+      expect(res.failed.keys, ['o/r']);
     });
 
     test('removed, files and all', () async {

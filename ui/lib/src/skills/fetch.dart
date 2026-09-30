@@ -48,6 +48,7 @@ abstract final class SkillFetch {
       ),
       DownloadSource(:final url) => await _download(url),
       SiteSource(:final url) => await _wellKnown(url) ?? await _download(url),
+      LocalSource(:final path) => await _local(path),
     };
     final wanted = source.skill?.toLowerCase();
     return (
@@ -76,14 +77,47 @@ abstract final class SkillFetch {
     return out.takeBytes();
   }
 
+  /// A folder, as it is; a file, as a download of it would be.
+  static Future<List<FoundSkill>> _local(String path) async {
+    if (path.startsWith('~/')) {
+      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+      if (home != null) path = '$home${path.substring(1)}';
+    }
+    if (await FileSystemEntity.isDirectory(path)) return SkillDiscovery.find(await readFolder(Directory(path)));
+    final file = File(path);
+    if (!await file.exists()) throw StateError('$path does not exist');
+    if (await file.length() > maxDownload) throw StateError('$path is larger than ${maxDownload ~/ 1024 ~/ 1024} MB');
+    return _found(await file.readAsBytes());
+  }
+
+  /// [dir]'s files, but not what a repository keeps beside its skills
+  /// (`.git`, `node_modules`...), nor links out of it.
+  static Future<SkillFiles> readFolder(Directory dir) async {
+    final files = <String, Uint8List>{};
+    var total = 0;
+    final root = dir.absolute.path;
+    await for (final e in dir.list(recursive: true, followLinks: false)) {
+      if (e is! File) continue;
+      final rel = e.absolute.path.substring(root.length + 1).replaceAll(r'\', '/');
+      if (rel.split('/').any(const {'.git', 'node_modules', '__pycache__'}.contains)) continue;
+      if (files.length >= maxEntries) throw StateError('$root has more than $maxEntries files');
+      final bytes = await e.readAsBytes();
+      total += bytes.length;
+      if (total > maxExtracted) throw StateError('$root is larger than ${maxExtracted ~/ 1024 ~/ 1024} MB');
+      files[rel] = bytes;
+    }
+    return files;
+  }
+
   static bool _secure(Uri u) =>
       u.isScheme('https') || (u.isScheme('http') && (u.host == 'localhost' || (InternetAddress.tryParse(u.host)?.isLoopback ?? false)));
 
   static Future<SkillFiles> _archive(Uri url) async => extract(await _get(url));
 
   /// A lone SKILL.md, or an archive of skills.
-  static Future<List<FoundSkill>> _download(Uri url) async {
-    final bytes = await _get(url);
+  static Future<List<FoundSkill>> _download(Uri url) async => _found(await _get(url));
+
+  static List<FoundSkill> _found(Uint8List bytes) {
     final text = _asText(bytes);
     if (text != null && SkillDiscovery.parse(text) != null) {
       return SkillDiscovery.find({'SKILL.md': bytes});

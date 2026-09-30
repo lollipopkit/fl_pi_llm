@@ -347,6 +347,17 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return '已更新 $n 个';
   }
+
+  @override
+  String get skillsFromFolder => '从文件夹安装';
+
+  @override
+  String get skillsFromZip => '从 .zip 安装';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n 个来源检查失败';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -690,5 +701,16 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   @override
   String skillsUpdatedFmt(int n) {
     return '已更新 $n 個';
+  }
+
+  @override
+  String get skillsFromFolder => '從資料夾安裝';
+
+  @override
+  String get skillsFromZip => '從 .zip 安裝';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n 個來源檢查失敗';
   }
 }

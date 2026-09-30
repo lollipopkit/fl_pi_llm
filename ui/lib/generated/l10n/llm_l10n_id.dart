@@ -359,4 +359,15 @@ class LlmLocalizationsId extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return '$n diperbarui';
   }
+
+  @override
+  String get skillsFromFolder => 'Pasang dari folder';
+
+  @override
+  String get skillsFromZip => 'Pasang dari .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n sumber tidak dapat diperiksa';
+  }
 }

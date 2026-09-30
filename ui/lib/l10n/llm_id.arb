@@ -101,5 +101,8 @@
   "skillsPick": "Skill yang akan dipasang",
   "skillsInstalledFmt": "{n} dipasang",
   "skillsUpToDate": "Sudah terbaru",
-  "skillsUpdatedFmt": "{n} diperbarui"
+  "skillsUpdatedFmt": "{n} diperbarui",
+  "skillsFromFolder": "Pasang dari folder",
+  "skillsFromZip": "Pasang dari .zip",
+  "skillsUpdateFailedFmt": "{n} sumber tidak dapat diperiksa"
 }

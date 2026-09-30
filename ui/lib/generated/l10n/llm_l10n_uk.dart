@@ -359,4 +359,15 @@ class LlmLocalizationsUk extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return 'Оновлено: $n';
   }
+
+  @override
+  String get skillsFromFolder => 'Встановити з теки';
+
+  @override
+  String get skillsFromZip => 'Встановити з .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'Не вдалося перевірити джерела: $n';
+  }
 }

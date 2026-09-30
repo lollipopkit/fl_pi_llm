@@ -217,17 +217,27 @@ abstract final class Skills {
     _saveLock();
   }
 
-  /// Fetches every source again and installs what changed; the names of
-  /// those that did.
-  static Future<List<String>> update() async {
+  /// Fetches every source again and installs what changed: the names of
+  /// those that did, and why a source could not be fetched. A folder or file
+  /// that is gone — a copy the picker made, since cleared — is left alone.
+  static Future<({List<String> updated, Map<String, String> failed})> update() async {
     final bySource = <String, List<InstalledSkill>>{};
     for (final s in all) {
       if (s.source case final src?) (bySource[jsonEncode(src.toJson())] ??= []).add(s);
     }
     final updated = <String>[];
+    final failed = <String, String>{};
     for (final group in bySource.values) {
       final source = group.first.source!;
-      final found = (await SkillFetch.fetch(source)).skills;
+      if (source is LocalSource && FileSystemEntity.typeSync(source.path) == FileSystemEntityType.notFound) continue;
+      final List<FoundSkill> found;
+      try {
+        found = (await SkillFetch.fetch(source)).skills;
+      } catch (e, s) {
+        Loggers.app.warning('Update skills from ${source.id}', e, s);
+        failed[source.id] = '$e';
+        continue;
+      }
       for (final s in group) {
         final next = found.firstWhereOrNull((f) => f.skillPath == s.skillPath) ??
             found.firstWhereOrNull((f) => f.name == s.name);
@@ -236,7 +246,7 @@ abstract final class Skills {
         updated.add(s.name);
       }
     }
-    return updated;
+    return (updated: updated, failed: failed);
   }
 
   /// SHA-256 over the files in path order, each its path then its bytes:

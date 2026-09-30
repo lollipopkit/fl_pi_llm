@@ -730,6 +730,24 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Updated {n}'**
   String skillsUpdatedFmt(int n);
+
+  /// No description provided for @skillsFromFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Install from a folder'**
+  String get skillsFromFolder;
+
+  /// No description provided for @skillsFromZip.
+  ///
+  /// In en, this message translates to:
+  /// **'Install from a .zip'**
+  String get skillsFromZip;
+
+  /// No description provided for @skillsUpdateFailedFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} sources could not be checked'**
+  String skillsUpdateFailedFmt(int n);
 }
 
 class _LlmLocalizationsDelegate

@@ -101,5 +101,8 @@
   "skillsPick": "Skills para instalar",
   "skillsInstalledFmt": "{n} instalados",
   "skillsUpToDate": "Al día",
-  "skillsUpdatedFmt": "{n} actualizados"
+  "skillsUpdatedFmt": "{n} actualizados",
+  "skillsFromFolder": "Instalar desde una carpeta",
+  "skillsFromZip": "Instalar desde un .zip",
+  "skillsUpdateFailedFmt": "No se pudieron comprobar {n} fuentes"
 }

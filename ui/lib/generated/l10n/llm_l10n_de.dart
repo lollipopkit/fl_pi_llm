@@ -373,4 +373,15 @@ class LlmLocalizationsDe extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return '$n aktualisiert';
   }
+
+  @override
+  String get skillsFromFolder => 'Aus einem Ordner installieren';
+
+  @override
+  String get skillsFromZip => 'Aus einer .zip installieren';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n Quellen konnten nicht geprüft werden';
+  }
 }

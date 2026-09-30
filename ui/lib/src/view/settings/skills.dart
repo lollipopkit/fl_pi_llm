@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
@@ -38,14 +39,31 @@ class _SkillsPageState extends State<SkillsPage> {
       Toast.warn(llmL10n.skillSourceInvalid);
       return;
     }
+    if (await _installFrom(source)) _source.clear();
+  }
+
+  Future<void> _fromFolder() async {
+    final dir = await FilePicker.getDirectoryPath();
+    if (dir != null) await _installFrom(LocalSource(dir));
+  }
+
+  Future<void> _fromZip() async {
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: const ['zip']);
+    if (file?.path case final path?) await _installFrom(LocalSource(path));
+  }
+
+  /// Finds the skills in [source], asks which when there are several, and
+  /// installs them. Whether it did.
+  Future<bool> _installFrom(SkillSource source) async {
+    if (!mounted) return false;
     final (found, err) = await context.showLoadingDialog(fn: () => Skills.find(source), timeout: _timeout);
-    if (found == null || err != null || !mounted) return;
+    if (found == null || err != null || !mounted) return false;
     if (found.skills.isEmpty) {
       Toast.warn(llmL10n.skillsNotFound);
-      return;
+      return false;
     }
     final chosen = found.skills.length == 1 ? found.skills : await _pick(found.skills);
-    if (chosen == null || chosen.isEmpty || !mounted) return;
+    if (chosen == null || chosen.isEmpty || !mounted) return false;
     final (_, err2) = await context.showLoadingDialog(
       fn: () async {
         for (final s in chosen) {
@@ -54,10 +72,10 @@ class _SkillsPageState extends State<SkillsPage> {
       },
       timeout: _timeout,
     );
-    if (err2 != null) return;
-    _source.clear();
+    if (err2 != null) return false;
     Toast.success(llmL10n.skillsInstalledFmt(chosen.length));
     Chats.reconfigureSoon();
+    return true;
   }
 
   /// Which of several to install; none ticked to begin with, as the CLI asks.
@@ -103,10 +121,21 @@ class _SkillsPageState extends State<SkillsPage> {
   }
 
   Future<void> _update() async {
-    final (updated, err) = await context.showLoadingDialog(fn: Skills.update, timeout: const Duration(minutes: 5));
-    if (updated == null || err != null) return;
-    updated.isEmpty ? Toast.info(llmL10n.skillsUpToDate) : Toast.success(llmL10n.skillsUpdatedFmt(updated.length));
-    if (updated.isNotEmpty) Chats.reconfigureSoon();
+    final (res, err) = await context.showLoadingDialog(fn: Skills.update, timeout: const Duration(minutes: 5));
+    if (res == null || err != null) return;
+    final (:updated, :failed) = res;
+    if (failed.isNotEmpty) {
+      Toast.warn(
+        llmL10n.skillsUpdateFailedFmt(failed.length),
+        body: [for (final MapEntry(:key, :value) in failed.entries) '$key: $value'].join('\n'),
+      );
+    }
+    if (updated.isNotEmpty) {
+      Toast.success(llmL10n.skillsUpdatedFmt(updated.length));
+      Chats.reconfigureSoon();
+    } else if (failed.isEmpty) {
+      Toast.info(llmL10n.skillsUpToDate);
+    }
   }
 
   @override
@@ -135,6 +164,10 @@ class _SkillsPageState extends State<SkillsPage> {
                   ),
                 ],
               ),
+              rows: [
+                SettingsRow(icon: Icons.folder_open_outlined, title: llmL10n.skillsFromFolder, onTap: _fromFolder),
+                SettingsRow(icon: Icons.folder_zip_outlined, title: llmL10n.skillsFromZip, onTap: _fromZip),
+              ],
             ),
             SettingsGroup(
               title: '${llmL10n.skills} · ${all.length}',

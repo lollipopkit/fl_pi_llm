@@ -7,6 +7,8 @@
 library;
 
 export 'package:fl_pi_llm/fl_pi_llm.dart';
+// What [McpTools.isRemoteFailure] tells apart, for an app to name in tests.
+export 'package:mcp_dart/mcp_dart.dart' show McpError, UnauthorizedError;
 
 export 'generated/l10n/llm_l10n.dart';
 export 'src/config.dart';

@@ -359,4 +359,15 @@ class LlmLocalizationsTr extends LlmLocalizations {
   String skillsUpdatedFmt(int n) {
     return '$n güncellendi';
   }
+
+  @override
+  String get skillsFromFolder => 'Klasörden kur';
+
+  @override
+  String get skillsFromZip => '.zip’ten kur';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n kaynak denetlenemedi';
+  }
 }
