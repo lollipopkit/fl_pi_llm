@@ -163,6 +163,25 @@ void main() {
     expect(zip.keys, ['SKILL.md']);
   });
 
+  group('an archive past the limit', () {
+    setUp(() => SkillFetch.maxExtracted = 1024 * 1024);
+    tearDown(() => SkillFetch.maxExtracted = 200 * 1024 * 1024);
+
+    test('is refused as it inflates, not after', () {
+      // A few KB that inflate to twice the limit: stopped a chunk past it.
+      final bomb = GZipEncoder().encodeBytes(Uint8List(2 * 1024 * 1024));
+      expect(bomb.length, lessThan(64 * 1024));
+      expect(() => SkillFetch.extract(bomb), throwsStateError);
+    });
+
+    test("a zip entry is refused by the size it declares", () {
+      final zip = ZipEncoder().encodeBytes(
+        Archive()..addFile(ArchiveFile.bytes('big.bin', Uint8List(2 * 1024 * 1024))),
+      );
+      expect(() => SkillFetch.extract(zip), throwsStateError);
+    });
+  });
+
   group('installed', () {
     late HttpServer server;
     late Map<String, Uint8List> served;

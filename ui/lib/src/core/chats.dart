@@ -256,10 +256,12 @@ abstract final class Chats {
 
   /// Shows [request] in chat [id] and waits for the user to fill it in or
   /// not. One at a time: a second while one is on screen is refused.
-  static Future<UserInputAnswer> ask(String id, UserInputRequest request) async {
+  /// [cancelled] takes this form away, and only this one.
+  static Future<UserInputAnswer> ask(String id, UserInputRequest request, {Future<void>? cancelled}) async {
     final chat = _open[id] ?? (throw const LlmException('The chat is not open'));
     if (chat.pendingInput.value != null) throw const LlmException('A form is already waiting on the user');
     final pending = PendingInput(id, request);
+    unawaited(cancelled?.then((_) => pending.complete(const UserInputCancelled())));
     chat.pendingInput.value = pending;
     try {
       return await pending.answer;
@@ -554,15 +556,21 @@ abstract final class Chats {
   static Future<void> notify(String id, String text) async {
     if (LlmStores.chat.fetch(id) == null) return;
     final chat = await open(id);
-    while (chat.running.value) {
-      final idle = Completer<void>();
+    bool closed() => !identical(_open[id], chat);
+    while (chat.running.value && !closed()) {
+      // Idle, or closed while it ran: a closed chat never runs again.
+      final settled = Completer<void>();
       void done() {
-        if (!chat.running.value && !idle.isCompleted) idle.complete();
+        if ((!chat.running.value || closed()) && !settled.isCompleted) settled.complete();
       }
       chat.running.addListener(done);
-      await idle.future;
+      openChanges.addListener(done);
+      await settled.future;
       chat.running.removeListener(done);
+      openChanges.removeListener(done);
     }
+    // Closed meanwhile — trashed, say: nothing to tell.
+    if (closed()) return;
     _claim(chat);
     _touch(id);
     await _run(chat, () => chat.session.prompt('<$_noticeTag>\n$text\n</$_noticeTag>'));

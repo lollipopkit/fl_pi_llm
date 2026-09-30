@@ -19,7 +19,9 @@ typedef FetchedSkills = ({List<FoundSkill> skills, SkillSource source});
 /// check out. A site is asked for its `/.well-known` index first.
 abstract final class SkillFetch {
   static const maxDownload = 50 * 1024 * 1024;
-  static const maxExtracted = 200 * 1024 * 1024;
+  /// Settable for tests, which cannot inflate this much in reasonable time.
+  @visibleForTesting
+  static int maxExtracted = 200 * 1024 * 1024;
   static const maxEntries = 20000;
 
   /// Where GitHub and GitLab are, for tests.
@@ -78,12 +80,16 @@ abstract final class SkillFetch {
     return out.takeBytes();
   }
 
+  /// [path] with a leading `~/` as the user's home; as it is otherwise.
+  static String expandLocal(String path) {
+    if (!path.startsWith('~/')) return path;
+    final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    return home == null ? path : '$home${path.substring(1)}';
+  }
+
   /// A folder, as it is; a file, as a download of it would be.
   static Future<List<FoundSkill>> _local(String path) async {
-    if (path.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-      if (home != null) path = '$home${path.substring(1)}';
-    }
+    path = expandLocal(path);
     if (await FileSystemEntity.isDirectory(path)) return SkillDiscovery.find(await readFolder(Directory(path)));
     final file = File(path);
     if (!await file.exists()) throw StateError('$path does not exist');
@@ -134,6 +140,27 @@ abstract final class SkillFetch {
     }
   }
 
+  static StateError _tooLarge() => StateError('The archive is larger than ${maxExtracted ~/ 1024 ~/ 1024} MB');
+
+  /// [bytes] inflated a chunk at a time, stopped once past [maxExtracted]: a
+  /// small archive can inflate to far more than memory holds, and decoding it
+  /// whole before looking would already have run out.
+  static Uint8List _gunzip(Uint8List bytes) {
+    final out = BytesBuilder(copy: false);
+    final input = gzip.decoder.startChunkedConversion(
+      _CappedSink((chunk) {
+        if (out.length + chunk.length > maxExtracted) throw _tooLarge();
+        out.add(chunk);
+      }),
+    );
+    const step = 64 * 1024;
+    for (var i = 0; i < bytes.length; i += step) {
+      input.add(Uint8List.sublistView(bytes, i, i + step > bytes.length ? bytes.length : i + step));
+    }
+    input.close();
+    return out.takeBytes();
+  }
+
   /// The files in a zip, tar or gzipped tar, from the one directory they are
   /// all in when they are. Absolute paths, `..` and links are left out.
   static SkillFiles extract(Uint8List bytes) {
@@ -141,8 +168,8 @@ abstract final class SkillFetch {
     if (bytes.length > 3 && bytes[0] == 0x50 && bytes[1] == 0x4B) {
       archive = ZipDecoder().decodeBytes(bytes);
     } else {
-      final tar = bytes.length > 2 && bytes[0] == 0x1F && bytes[1] == 0x8B ? GZipDecoder().decodeBytes(bytes) : bytes;
-      if (tar.length > maxExtracted) throw StateError('The archive is larger than ${maxExtracted ~/ 1024 ~/ 1024} MB');
+      final tar = bytes.length > 2 && bytes[0] == 0x1F && bytes[1] == 0x8B ? _gunzip(bytes) : bytes;
+      if (tar.length > maxExtracted) throw _tooLarge();
       archive = TarDecoder().decodeBytes(tar);
     }
     if (archive.length > maxEntries) throw StateError('The archive has more than $maxEntries entries');
@@ -156,9 +183,12 @@ abstract final class SkillFetch {
         continue;
       }
       if (parts.first == '__MACOSX' || parts.last == 'pax_global_header') continue;
+      // What an entry says it holds, before it is inflated: a zip's content
+      // is only decompressed when read.
+      if (total + f.size > maxExtracted) throw _tooLarge();
       final content = f.content;
       total += content.length;
-      if (total > maxExtracted) throw StateError('The archive is larger than ${maxExtracted ~/ 1024 ~/ 1024} MB');
+      if (total > maxExtracted) throw _tooLarge();
       files[parts.join('/')] = content;
     }
     // GitHub's and GitLab's archives put everything under `<repo>-<ref>/`.
@@ -225,4 +255,18 @@ abstract final class SkillFetch {
     }
     return null;
   }
+}
+
+/// A sink that hands each chunk to [onChunk] as it comes, rather than all of
+/// them at the end.
+final class _CappedSink implements Sink<List<int>> {
+  _CappedSink(this.onChunk);
+
+  final void Function(List<int> chunk) onChunk;
+
+  @override
+  void add(List<int> data) => onChunk(data);
+
+  @override
+  void close() {}
 }

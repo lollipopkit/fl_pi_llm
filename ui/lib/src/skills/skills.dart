@@ -314,7 +314,10 @@ abstract final class Skills {
     final failed = <String, String>{};
     for (final group in bySource.values) {
       final source = group.first.source!;
-      if (source is LocalSource && FileSystemEntity.typeSync(source.path) == FileSystemEntityType.notFound) continue;
+      if (source is LocalSource &&
+          FileSystemEntity.typeSync(SkillFetch.expandLocal(source.path)) == FileSystemEntityType.notFound) {
+        continue;
+      }
       final List<FoundSkill> skills;
       try {
         skills = (await SkillFetch.fetch(source)).skills;

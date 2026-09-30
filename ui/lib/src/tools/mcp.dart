@@ -263,6 +263,9 @@ abstract final class McpTools {
     try {
       final secret = McpSecrets.read(id);
       final tokens = await McpAuth.signIn(s.url, headers: secret.headers, open: open, cancel: cancel.future);
+      // Removed while the browser was open: its secrets went with it, and
+      // are not to come back.
+      if (!identical(_servers[id], s)) return;
       McpSecrets.write(id, secret.withOAuth(tokens));
     } on McpSignInCancelled {
       return;

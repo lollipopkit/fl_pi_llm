@@ -394,6 +394,9 @@ final class FlPiLlm {
     final HttpClientRequest req;
     try {
       req = await _http.openUrl(p['method'] as String, uri);
+      // Not followed here: the policy above judged this address, not wherever
+      // it sends the request on to, headers and key and all.
+      req.followRedirects = false;
     } catch (e) {
       _answerError(callId, 'fetch failed: $e');
       return;

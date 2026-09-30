@@ -113,10 +113,9 @@ final class TfAskUser extends ToolFunc {
     } on FormatException catch (e) {
       throw ArgumentError(e.message);
     }
-    final answer = Chats.ask(ctx.chatId, request);
-    // Stopping the reply takes the form away.
-    unawaited(ctx.cancel.whenCancelled.then((_) => Chats.cancelInput(ctx.chatId)));
-    return switch (await answer) {
+    // Stopping the reply takes this form away — this one, not a later one the
+    // same chat shows by the time the stop arrives.
+    return switch (await Chats.ask(ctx.chatId, request, cancelled: ctx.cancel.whenCancelled)) {
       UserInputSubmitted(:final answers, :final values) => LlmToolResult.text(jsonEncode({
         'status': 'submitted',
         if (answers.isNotEmpty) 'answers': answers,

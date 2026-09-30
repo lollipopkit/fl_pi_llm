@@ -361,6 +361,9 @@ abstract final class McpAuth {
 
   /// Renews [t] with its refresh token. Throws when the server says no.
   static Future<McpOAuthTokens> refresh(McpOAuthTokens t) async {
+    // Checked when the sign-in found it, and again where the refresh token
+    // is about to go: never over plain http to another machine.
+    if (!canCarrySecrets(t.tokenEndpoint!)) throw StateError('Not refreshing over plain http: ${t.tokenEndpoint}');
     final res = await _dio.post<Map<String, Object?>>(
       t.tokenEndpoint!,
       data: {
