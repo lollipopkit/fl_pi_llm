@@ -153,10 +153,11 @@ class _McpServerPageState extends State<McpServerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final body = ListenableBuilder(
+    return ListenableBuilder(
       listenable: McpTools.changes,
-      builder: (context, _) => SectionList(
-        header: ProviderHeader(
+      builder: (context, _) => DetailPage(
+        embedded: false,
+        header: () => ProviderHeader(
           title: _id == null ? llmL10n.addServer : McpTools.labelOf(_id!) ?? _saved!,
           subtitle: _id == null ? llmL10n.mcpServers : _status(_id!),
           onBack: context.pop,
@@ -198,7 +199,6 @@ class _McpServerPageState extends State<McpServerPage> {
         ],
       ),
     );
-    return Scaffold(body: SafeArea(child: body));
   }
 
   static String _status(String id) {

@@ -202,10 +202,10 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final body = SectionList(
-      header: ListenableBuilder(
-        listenable: Listenable.merge([_name, _url, _listed]),
-        builder: (_, _) => ProviderHeader(
+    return DetailPage(
+      embedded: widget.onBack != null,
+      listenable: Listenable.merge([_name, _url, _listed]),
+      header: () => ProviderHeader(
           title: _name.text.trim().isEmpty ? llmL10n.customProvider : _name.text.trim(),
           subtitle: [
             if (_baseUrl.isNotEmpty) _baseUrl,
@@ -215,7 +215,6 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
           onBack: _back,
           onRefresh: _api.listsModels ? _list : null,
         ),
-      ),
       children: [
         SettingsGroup(
           title: llmL10n.endpoint,
@@ -316,7 +315,5 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
         ),
       ],
     );
-    if (widget.onBack != null) return body;
-    return Scaffold(body: SafeArea(child: body));
   }
 }
