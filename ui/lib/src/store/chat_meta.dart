@@ -1,4 +1,5 @@
 import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm_ui/src/config.dart';
 
 /// What the chat list knows about a chat. The conversation itself is the pi
 /// session of the same [id].
@@ -10,6 +11,7 @@ final class ChatMeta {
     this.useTools = true,
     this.model,
     this.trashedAt,
+    this.scope,
   });
 
   factory ChatMeta.fromJson(Map<String, Object?> j) => ChatMeta(
@@ -25,6 +27,7 @@ final class ChatMeta {
       final int t => DateTime.fromMillisecondsSinceEpoch(t),
       _ => null,
     },
+    scope: j['scope'] as String?,
   );
 
   final String id;
@@ -42,6 +45,13 @@ final class ChatMeta {
 
   bool get trashed => trashedAt != null;
 
+  /// What the chat belongs to in the app, or null for the app's own list.
+  ///
+  /// An app with more than one place to chat — a terminal's side panel beside
+  /// the app-wide one, say — keeps each place's chats apart by this, and reads
+  /// it back in its [LlmUi] hooks to decide what the chat offers.
+  final String? scope;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'title': ?title,
@@ -49,6 +59,7 @@ final class ChatMeta {
     'useTools': useTools,
     'model': ?model?.toJson(),
     'trashedAt': ?trashedAt?.millisecondsSinceEpoch,
+    'scope': ?scope,
   };
 
   ChatMeta copyWith({
@@ -66,5 +77,6 @@ final class ChatMeta {
     useTools: useTools ?? this.useTools,
     model: clearModel ? null : model ?? this.model,
     trashedAt: restore ? null : trashedAt ?? this.trashedAt,
+    scope: scope,
   );
 }

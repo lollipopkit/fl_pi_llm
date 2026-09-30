@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/core/credentials.dart';
+import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
+import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
@@ -19,21 +21,44 @@ abstract final class Llm {
   /// Every provider and its models, as last read.
   static final providers = <LlmProviderInfo>[].vn;
 
-  /// Providers with a credential in the keychain.
+  /// Providers with a key: one in the keychain, or one in the environment.
   static final configured = <String>{}.vn;
 
+  /// Providers whose key comes from the environment, and the variable it is
+  /// in (`OPENAI_API_KEY`): a desktop app started from a shell has what that
+  /// shell exported, with nothing entered in the app.
+  static final envAuth = <String, String>{}.vn;
+
   static LlmCredentials _credentials = KeychainCredentials.instance;
+
+  static Map<String, String> Function() _environment = SystemProvider.platform;
+
+  /// What the runtime asks: the stored ones, and the system provider's.
+  static late LlmCredentials _all;
+
+  /// The provider the environment describes (`OPENAI_BASE_URL`), if it does.
+  static LlmCustomProvider? get system => SystemProvider.of(_environment());
 
   /// After the stores: sessions live in the same encrypted database.
   ///
   /// [credentials] and [externalLibrary] are for tests, which have neither a
   /// keychain nor an app bundle.
-  static Future<void> init({LlmCredentials? credentials, ExternalLibrary? externalLibrary}) async {
+  ///
+  /// [environment] replaces the process's, where [FlPiLlm] reads a provider's
+  /// key when none is stored.
+  static Future<void> init({
+    LlmCredentials? credentials,
+    ExternalLibrary? externalLibrary,
+    Map<String, String> Function()? environment,
+  }) async {
     if (credentials != null) _credentials = credentials;
+    if (environment != null) _environment = environment;
+    _all = SystemCredentials(_credentials, () => _environment());
     _rt ??= await FlPiLlm.start(
       store: SqlitePiSessionStore.instance,
-      credentials: _credentials,
+      credentials: _all,
       externalLibrary: externalLibrary,
+      environment: () => SystemProvider.forBuiltins(_environment()),
       logger: (level, msg) => switch (level) {
         'error' => Loggers.app.warning('[llm] $msg'),
         'warn' => Loggers.app.info('[llm] $msg'),
@@ -41,6 +66,9 @@ abstract final class Llm {
       },
     );
     await applyCustomProviders();
+    // Once a day at most, in the background: marks the skills whose source
+    // changed, and installs nothing.
+    unawaited(Skills.check().then<void>((_) {}, onError: (Object e, StackTrace s) => Loggers.app.warning('Check skills', e, s)));
     // The network part runs behind: the cached lists are already usable.
     unawaited(refresh().catchError((Object e, StackTrace s) {
       Loggers.app.warning('Refresh models', e, s);
@@ -52,17 +80,32 @@ abstract final class Llm {
   static Future<void> applyCustomProviders() async {
     if (_rt == null) return;
     try {
-      await rt.setCustomProviders(LlmStores.llm.customProviders.get() ?? const []);
+      await rt.setCustomProviders([...?LlmStores.llm.customProviders.get(), ?system]);
     } catch (e, s) {
       Loggers.app.warning('Apply custom providers', e, s);
     }
     await reload();
   }
 
-  /// Rereads the catalog and which providers have a credential.
+  /// Rereads the catalog and which providers have a key.
   static Future<void> reload() async {
     providers.value = await rt.providers();
-    configured.value = (await _credentials.list()).toSet();
+    await _reloadAuth();
+  }
+
+  static Future<void> _reloadAuth() async {
+    final stored = (await _all.list()).toSet();
+    var sources = const <String, String>{};
+    try {
+      sources = await rt.authSources();
+    } catch (e, s) {
+      Loggers.app.warning('Provider auth', e, s);
+    }
+    envAuth.value = {
+      for (final MapEntry(:key, :value) in sources.entries)
+        if (!stored.contains(key) && RegExp(r'^[A-Z][A-Z0-9_]*$').hasMatch(value)) key: value,
+    };
+    configured.value = {...stored, ...envAuth.value.keys};
   }
 
   /// Why the last listing of a provider's models failed, by provider id.
@@ -85,7 +128,7 @@ abstract final class Llm {
 
   /// Ids of chats whose session mentions [needle].
   static Future<Set<String>> sessionsContaining(String needle) async {
-    final chats = [for (final m in LlmStores.chat.all()) m.id];
+    final chats = [for (final m in LlmStores.chat.all(anyScope: true)) m.id];
     return {
       for (final path in await SqlitePiSessionStore.instance.search(needle))
         ?SqlitePiSessionStore.chatIdOf(path, chats),
@@ -132,6 +175,6 @@ abstract final class Llm {
     } else {
       await _credentials.write(providerId, credential);
     }
-    configured.value = (await _credentials.list()).toSet();
+    await _reloadAuth();
   }
 }

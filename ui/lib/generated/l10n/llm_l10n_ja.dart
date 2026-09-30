@@ -265,4 +265,139 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get useToolsTip => '下で許可したもの以外、呼び出しごとに確認します';
+
+  @override
+  String get allowInsecure => '平文の HTTP を許可';
+
+  @override
+  String get allowInsecureTip =>
+      'このアドレスはこの端末以外の http:// です。API キーは暗号化されずに送信され、ネットワーク経路上の誰でも読み取れます。信頼できるネットワークでのみ許可してください。';
+
+  @override
+  String get configure => '設定';
+
+  @override
+  String get supportsThinking => '思考対応';
+
+  @override
+  String get thinkingEffort => '思考レベル';
+
+  @override
+  String get mcpHeaders => 'ヘッダー';
+
+  @override
+  String get mcpHeadersTip =>
+      '任意。例: 名前 Authorization、値 Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。';
+
+  @override
+  String get mcpHeadersInvalid => 'ヘッダーには英数字とハイフンからなる名前と、値が必要です。';
+
+  @override
+  String get mcpNeedsSignIn => 'サインインが必要です';
+
+  @override
+  String get mcpSigningIn => 'ブラウザでサインインを完了してください';
+
+  @override
+  String get mcpSignedIn => 'サインインしました。このページは閉じてかまいません。';
+
+  @override
+  String get mcpSignedInShort => 'サインイン済み';
+
+  @override
+  String get mcpSignInFailed => 'サインインに失敗しました。このページを閉じてやり直してください。';
+
+  @override
+  String get mcpInsecure => 'ヘッダーの送信やサインインは https のアドレスでのみ使えます。';
+
+  @override
+  String get mcpAddHeader => 'ヘッダーを追加';
+
+  @override
+  String get mcpNotSignedIn => '未サインイン';
+
+  @override
+  String get mcpSignInTip => 'OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。';
+
+  @override
+  String get mcpConnecting => '接続中…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      '特定の作業のための手順書で、作業が合うとモデルが読み込みます。信頼できる提供元からのみインストールしてください。モデルは skill の内容に従います。';
+
+  @override
+  String get skillSourceInvalid => 'リポジトリ、リンク、`npx skills add` コマンドのいずれでもありません';
+
+  @override
+  String get skillsNotFound => 'skill が見つかりません';
+
+  @override
+  String get skillsPick => 'インストールする skill';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n 件インストールしました';
+  }
+
+  @override
+  String get skillsUpToDate => '最新です';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n 件更新しました';
+  }
+
+  @override
+  String get skillsFromFolder => 'フォルダからインストール';
+
+  @override
+  String get skillsFromZip => '.zip からインストール';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n 件の提供元を確認できませんでした';
+  }
+
+  @override
+  String get skillBuiltin => '内蔵';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return '$name のキー';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return '環境変数 $name のキーを使用しています。ここに入力したキーが優先されます。';
+  }
+
+  @override
+  String get skillUpdateAvailable => '更新あり';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'すべて更新（$n）';
+  }
+
+  @override
+  String get askUser => 'あなたに質問';
+
+  @override
+  String get fieldRequired => '必須';
+
+  @override
+  String get fieldInvalid => '形式が正しくありません';
+
+  @override
+  String get waitingForYou => 'あなたの操作待ち';
+
+  @override
+  String get otherAnswer => 'その他';
+
+  @override
+  String get otherAnswerHint => '自分の回答';
 }

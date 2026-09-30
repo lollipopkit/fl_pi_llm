@@ -269,4 +269,144 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get useToolsTip => 'Aşağıda izin verilmedikçe her çağrı önce sorar';
+
+  @override
+  String get allowInsecure => 'Şifresiz HTTP\'ye izin ver';
+
+  @override
+  String get allowInsecureTip =>
+      'Bu adres bu cihaz dışında http://: API anahtarı şifrelenmeden gönderilir ve ağ yolundaki herkes okuyabilir. Yalnızca güvendiğiniz bir ağda izin verin.';
+
+  @override
+  String get configure => 'Yapılandır';
+
+  @override
+  String get supportsThinking => 'Düşünme desteği';
+
+  @override
+  String get thinkingEffort => 'Düşünme düzeyi';
+
+  @override
+  String get mcpHeaders => 'Başlıklar';
+
+  @override
+  String get mcpHeadersTip =>
+      'İsteğe bağlı, örneğin Bearer <token> değeriyle Authorization. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Bir başlığın harf, rakam ve tirelerden oluşan bir adı ve bir değeri olmalı.';
+
+  @override
+  String get mcpNeedsSignIn => 'Oturum açılması gerekiyor';
+
+  @override
+  String get mcpSigningIn => 'Oturum açmayı tarayıcıda tamamlayın';
+
+  @override
+  String get mcpSignedIn => 'Oturum açıldı. Bu sayfayı kapatabilirsiniz.';
+
+  @override
+  String get mcpSignedInShort => 'Oturum açık';
+
+  @override
+  String get mcpSignInFailed =>
+      'Oturum açılamadı. Bu sayfayı kapatıp yeniden deneyin.';
+
+  @override
+  String get mcpInsecure =>
+      'Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir.';
+
+  @override
+  String get mcpAddHeader => 'Başlık ekle';
+
+  @override
+  String get mcpNotSignedIn => 'Oturum açılmadı';
+
+  @override
+  String get mcpSignInTip =>
+      'OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir.';
+
+  @override
+  String get mcpConnecting => 'Bağlanıyor…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Belirli görevler için talimatlar; görev uyduğunda model bunları okur. Yalnızca güvendiğiniz kaynaklardan kurun: model skill içeriğine uyar.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Bir depo, bağlantı ya da `npx skills add` komutu değil';
+
+  @override
+  String get skillsNotFound => 'Orada skill bulunamadı';
+
+  @override
+  String get skillsPick => 'Kurulacak skill’ler';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n kuruldu';
+  }
+
+  @override
+  String get skillsUpToDate => 'Güncel';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n güncellendi';
+  }
+
+  @override
+  String get skillsFromFolder => 'Klasörden kur';
+
+  @override
+  String get skillsFromZip => '.zip’ten kur';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n kaynak denetlenemedi';
+  }
+
+  @override
+  String get skillBuiltin => 'Yerleşik';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Anahtar $name değişkeninden';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Şu an $name ortam değişkenindeki anahtar kullanılıyor. Buraya girilen anahtar önceliklidir.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Güncelleme var';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Tümünü güncelle ($n)';
+  }
+
+  @override
+  String get askUser => 'Sana sor';
+
+  @override
+  String get fieldRequired => 'Zorunlu';
+
+  @override
+  String get fieldInvalid => 'Geçersiz';
+
+  @override
+  String get waitingForYou => 'Seni bekliyor';
+
+  @override
+  String get otherAnswer => 'Diğer';
+
+  @override
+  String get otherAnswerHint => 'Kendi cevabın';
 }

@@ -288,4 +288,144 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get useToolsTip => 'Each call asks first unless it is allowed below';
+
+  @override
+  String get allowInsecure => 'Allow plain HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      'This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.';
+
+  @override
+  String get configure => 'Configure';
+
+  @override
+  String get supportsThinking => 'Thinking';
+
+  @override
+  String get thinkingEffort => 'Thinking effort';
+
+  @override
+  String get mcpHeaders => 'Headers';
+
+  @override
+  String get mcpHeadersTip =>
+      'Optional, such as Authorization with Bearer <token>. Kept on this device only, never backed up, and sent only to this server.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'A header needs a name of letters, digits and dashes, and a value.';
+
+  @override
+  String get mcpNeedsSignIn => 'Sign-in required';
+
+  @override
+  String get mcpSigningIn => 'Finish signing in in the browser';
+
+  @override
+  String get mcpSignedIn => 'Signed in. You can close this page.';
+
+  @override
+  String get mcpSignedInShort => 'Signed in';
+
+  @override
+  String get mcpSignInFailed =>
+      'Sign-in failed. You can close this page and try again.';
+
+  @override
+  String get mcpInsecure =>
+      'Only an https address can be sent headers or signed in to.';
+
+  @override
+  String get mcpAddHeader => 'Add header';
+
+  @override
+  String get mcpNotSignedIn => 'Not signed in';
+
+  @override
+  String get mcpSignInTip =>
+      'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.';
+
+  @override
+  String get mcpConnecting => 'Connecting…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Instructions for particular tasks, which the model reads when a task matches one. Install only from sources you trust: the model follows what a skill says.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Not a repository, link or `npx skills add` command';
+
+  @override
+  String get skillsNotFound => 'No skills found there';
+
+  @override
+  String get skillsPick => 'Skills to install';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return 'Installed $n';
+  }
+
+  @override
+  String get skillsUpToDate => 'Up to date';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return 'Updated $n';
+  }
+
+  @override
+  String get skillsFromFolder => 'Install from a folder';
+
+  @override
+  String get skillsFromZip => 'Install from a .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n sources could not be checked';
+  }
+
+  @override
+  String get skillBuiltin => 'Built in';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Key from $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'The key now in use is the environment variable $name. A key entered here takes its place.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Update available';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Update all ($n)';
+  }
+
+  @override
+  String get askUser => 'Ask you';
+
+  @override
+  String get fieldRequired => 'Required';
+
+  @override
+  String get fieldInvalid => 'Not valid';
+
+  @override
+  String get waitingForYou => 'Waiting for you';
+
+  @override
+  String get otherAnswer => 'Other';
+
+  @override
+  String get otherAnswerHint => 'Your own answer';
 }

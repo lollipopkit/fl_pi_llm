@@ -283,4 +283,144 @@ class LlmLocalizationsNl extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Elke aanroep vraagt eerst, tenzij hieronder toegestaan';
+
+  @override
+  String get allowInsecure => 'Onversleuteld HTTP toestaan';
+
+  @override
+  String get allowInsecureTip =>
+      'Dit adres is http:// buiten dit apparaat: de API-sleutel wordt onversleuteld verzonden en is leesbaar voor iedereen op het netwerkpad. Sta dit alleen toe op een vertrouwd netwerk.';
+
+  @override
+  String get configure => 'Instellen';
+
+  @override
+  String get supportsThinking => 'Ondersteunt denken';
+
+  @override
+  String get thinkingEffort => 'Denkinspanning';
+
+  @override
+  String get mcpHeaders => 'Headers';
+
+  @override
+  String get mcpHeadersTip =>
+      'Optioneel, zoals Authorization met Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Een header heeft een naam van letters, cijfers en streepjes nodig, en een waarde.';
+
+  @override
+  String get mcpNeedsSignIn => 'Aanmelden vereist';
+
+  @override
+  String get mcpSigningIn => 'Rond het aanmelden af in de browser';
+
+  @override
+  String get mcpSignedIn => 'Aangemeld. Je kunt deze pagina sluiten.';
+
+  @override
+  String get mcpSignedInShort => 'Aangemeld';
+
+  @override
+  String get mcpSignInFailed =>
+      'Aanmelden mislukt. Sluit deze pagina en probeer het opnieuw.';
+
+  @override
+  String get mcpInsecure =>
+      'Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld.';
+
+  @override
+  String get mcpAddHeader => 'Header toevoegen';
+
+  @override
+  String get mcpNotSignedIn => 'Niet aangemeld';
+
+  @override
+  String get mcpSignInTip =>
+      'Voor een server die OAuth gebruikt. Je meldt je aan in de browser en het token wordt vanzelf vernieuwd.';
+
+  @override
+  String get mcpConnecting => 'Verbinden…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Instructies voor bepaalde taken, die het model leest als een taak erbij past. Installeer alleen uit bronnen die je vertrouwt: het model volgt wat een skill zegt.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Geen repository, link of `npx skills add`-opdracht';
+
+  @override
+  String get skillsNotFound => 'Daar zijn geen skills gevonden';
+
+  @override
+  String get skillsPick => 'Te installeren skills';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n geïnstalleerd';
+  }
+
+  @override
+  String get skillsUpToDate => 'Actueel';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n bijgewerkt';
+  }
+
+  @override
+  String get skillsFromFolder => 'Installeren uit een map';
+
+  @override
+  String get skillsFromZip => 'Installeren uit een .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n bronnen konden niet worden gecontroleerd';
+  }
+
+  @override
+  String get skillBuiltin => 'Ingebouwd';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Sleutel uit $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'De sleutel komt uit de omgevingsvariabele $name. Een hier ingevoerde sleutel gaat voor.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Update beschikbaar';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Alles bijwerken ($n)';
+  }
+
+  @override
+  String get askUser => 'Jou vragen';
+
+  @override
+  String get fieldRequired => 'Verplicht';
+
+  @override
+  String get fieldInvalid => 'Ongeldig';
+
+  @override
+  String get waitingForYou => 'Wacht op jou';
+
+  @override
+  String get otherAnswer => 'Anders';
+
+  @override
+  String get otherAnswerHint => 'Je eigen antwoord';
 }

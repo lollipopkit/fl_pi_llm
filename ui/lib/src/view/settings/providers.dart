@@ -3,6 +3,7 @@ import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
+import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/view/model_picker.dart';
@@ -87,13 +88,19 @@ class _ProvidersPageState extends State<ProvidersPage> {
         bool matches(LlmProviderInfo p) => q.isEmpty || p.name.toLowerCase().contains(q) || p.id.contains(q);
         bool pinned(LlmProviderInfo p) => p.custom || Llm.configured.value.contains(p.id);
         final all = Llm.providers.value;
+        // What the environment set up, apart from what was entered here.
+        final system = [
+          for (final p in all) if (p.id == SystemProvider.id) p,
+          for (final p in all) if (!p.custom && Llm.envAuth.value.containsKey(p.id)) p,
+        ];
         final top = [
-          for (final p in all) if (p.custom) p,
-          for (final p in all) if (!p.custom && pinned(p)) p,
+          for (final p in all) if (p.custom && !system.contains(p)) p,
+          for (final p in all) if (!p.custom && pinned(p) && !system.contains(p)) p,
         ];
         return SectionList(
           children: [
             _models(),
+            if (system.isNotEmpty) SettingsGroup(title: libL10n.system, rows: [for (final p in system) _tile(p)]),
             SettingsGroup(
               title: libL10n.configured,
               rows: top.isEmpty
@@ -184,7 +191,7 @@ class _ProvidersPageState extends State<ProvidersPage> {
     final v = await context.showRoundDialog<String>(
       title: llmL10n.systemPrompt,
       child: SizedBox(width: 520, child: Input(controller: ctrl, maxLines: 12, minLines: 4, autoFocus: true)),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+      actions: [Btn.ok(onTap: () => context.popDialog(ctrl.text))],
     );
     ctrl.dispose();
     if (v == null) return;
@@ -194,12 +201,17 @@ class _ProvidersPageState extends State<ProvidersPage> {
   }
 
   Widget _tile(LlmProviderInfo p) {
+    if (p.id == SystemProvider.id) return _systemTileOf(p);
     final has = Llm.configured.value.contains(p.id);
     return SettingsRow(
       icon: has ? Icons.key : Icons.key_off_outlined,
       iconColor: has ? context.theme.colorScheme.primary : null,
       title: p.name,
-      subtitle: [if (p.custom) p.baseUrl ?? '' else p.id, llmL10n.modelsCountFmt(p.models.length)].join(' · '),
+      subtitle: [
+        if (p.custom) p.baseUrl ?? '' else p.id,
+        llmL10n.modelsCountFmt(p.models.length),
+        if (Llm.envAuth.value[p.id] case final name?) llmL10n.keyFromEnvFmt(name),
+      ].join(' · '),
       error: Llm.modelErrors.value[p.id],
       trailing: p.custom
           ? Btn.icon(
@@ -221,8 +233,17 @@ String modelSubtitle(LlmModelInfo m) {
       : w >= 1000
       ? '${(w / 1000).round()}K'
       : '$w';
-  return [m.id, ctx, if (m.reasoning) libL10n.thinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
+  return [m.id, ctx, if (m.reasoning) llmL10n.supportsThinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
 }
+
+/// The provider `OPENAI_BASE_URL` describes: nothing to edit here, it is the
+/// environment's.
+Widget _systemTileOf(LlmProviderInfo p) => SettingsRow(
+  icon: Icons.terminal,
+  title: p.name,
+  subtitle: [p.baseUrl ?? '', llmL10n.modelsCountFmt(p.models.length), SystemProvider.baseUrlVar].join(' · '),
+  error: Llm.modelErrors.value[p.id],
+);
 
 /// A favorite star at the end of a model's row.
 class FavoriteStar extends StatelessWidget {

@@ -23,6 +23,15 @@ class MockServer {
 
   void _serve() {
     _server.listen((req) async {
+      // An endpoint that sends its caller elsewhere.
+      if (req.uri.path.startsWith('/moved/')) {
+        authHeaders.add(req.headers.value('authorization'));
+        req.response
+          ..statusCode = HttpStatus.found
+          ..headers.set(HttpHeaders.locationHeader, '$baseUrl/models');
+        await req.response.close();
+        return;
+      }
       if (req.method == 'GET' && req.uri.path.endsWith('/models')) {
         authHeaders.add(req.headers.value('authorization'));
         req.response
@@ -203,6 +212,26 @@ void main() {
 
     await llm.deleteSession('kept');
     expect((await llm.sessions()).map((i) => i.id), isNot(contains('kept')));
+  });
+
+  test("a built-in provider's key can come from the environment", () async {
+    final rt = await FlPiLlm.start(
+      store: MemorySessionStore(),
+      credentials: MemoryCredentials({'anthropic': LlmCredential.apiKey('sk-stored')}),
+      environment: () => {'OPENAI_API_KEY': 'sk-env', 'ANTHROPIC_API_KEY': 'sk-env-too', 'GEMINI_API_KEY': ''},
+    );
+    addTearDown(rt.dispose);
+    final sources = await rt.authSources();
+    expect(sources['openai'], 'OPENAI_API_KEY');
+    expect(sources['anthropic'], 'stored credential', reason: 'a stored key comes first');
+    expect(sources, isNot(contains('google')), reason: 'an empty variable is no key');
+    expect(await rt.availableModels(providerId: 'openai'), isNotEmpty);
+  });
+
+  test('with no environment, only stored keys count', () async {
+    final rt = await FlPiLlm.start(store: MemorySessionStore(), credentials: MemoryCredentials({}), environment: () => {});
+    addTearDown(rt.dispose);
+    expect(await rt.authSources(), isEmpty);
   });
 
   test('a session outlives the runtime', () async {
@@ -398,5 +427,19 @@ void main() {
       llm.listModels(LlmCustomProvider(id: 'a', name: 'A', api: LlmApi.anthropicMessages, baseUrl: server.baseUrl)),
       throwsA(isA<LlmException>()),
     );
+  });
+
+  // The address the fetch policy judged is the only one a request goes to:
+  // a redirect is not followed on to somewhere it never saw.
+  test('a redirect is not followed', () async {
+    final moved = LlmCustomProvider(
+      id: 'moved',
+      name: 'Moved',
+      api: LlmApi.openaiCompletions,
+      baseUrl: server.baseUrl.replaceFirst('/v1', '/moved'),
+    );
+    final before = server.authHeaders.length;
+    await expectLater(llm.listModels(moved, credential: LlmCredential.apiKey('sk-moved')), throwsA(isA<LlmException>()));
+    expect(server.authHeaders.sublist(before), ['Bearer sk-moved'], reason: 'asked once, at the address given');
   });
 }

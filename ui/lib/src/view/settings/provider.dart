@@ -96,8 +96,9 @@ class _ProviderPageState extends State<ProviderPage> {
       final p = Llm.provider(_id);
       final models = p?.models ?? const <LlmModelInfo>[];
       final shown = _allModels ? models : models.take(_shownModels).toList();
-      return SectionList(
-        header: ProviderHeader(
+      return DetailPage(
+        embedded: widget.onBack != null,
+        header: () => ProviderHeader(
           title: p?.name ?? _id,
           subtitle: [_id, ?(models.firstOrNull?.json['api'] as String?), llmL10n.modelsCountFmt(models.length)].join(' · '),
           onBack: _back,
@@ -112,7 +113,13 @@ class _ProviderPageState extends State<ProviderPage> {
                 Input(controller: _key, label: libL10n.apiKey, obscureText: true),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(13, 0, 13, 6),
-                  child: Text(llmL10n.keyInKeychain, style: UIs.text12Grey),
+                  child: Text(
+                    switch (Llm.envAuth.value[_id]) {
+                      final name? => '${llmL10n.keyFromEnvTipFmt(name)} ${llmL10n.keyInKeychain}',
+                      null => llmL10n.keyInKeychain,
+                    },
+                    style: UIs.text12Grey,
+                  ),
                 ),
                 Input(controller: _env, label: llmL10n.extraVars, hint: llmL10n.extraVarsTip, maxLines: 3, minLines: 1),
               ],
@@ -147,8 +154,50 @@ class _ProviderPageState extends State<ProviderPage> {
         ],
       );
     });
-    if (widget.onBack != null) return body;
-    return Scaffold(body: SafeArea(child: body));
+    return body;
+  }
+}
+
+/// A provider's or an MCP server's page, under [header].
+///
+/// [embedded] — in the list's place, where the app puts it — the header is a
+/// row above the content, as wide as it. Pushed, it is the app bar, across
+/// the window like every other page's, with the route's own back button.
+class DetailPage extends StatelessWidget {
+  const DetailPage({super.key, required this.header, required this.children, required this.embedded, this.listenable});
+
+  /// Built again when [listenable] notifies.
+  final ProviderHeader Function() header;
+  final Listenable? listenable;
+  final List<Widget> children;
+  final bool embedded;
+
+  Widget _header(Widget Function(ProviderHeader) build) => listenable == null
+      ? build(header())
+      : ListenableBuilder(listenable: listenable!, builder: (_, _) => build(header()));
+
+  @override
+  Widget build(BuildContext context) {
+    if (embedded) return SectionList(header: _header((h) => h), children: children);
+    final refresh = header().onRefresh;
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: _header(
+          (h) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(h.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(h.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: UIs.text12Grey),
+            ],
+          ),
+        ),
+        actions: [
+          if (refresh != null) IconButton(icon: const Icon(Icons.refresh), tooltip: llmL10n.refreshModels, onPressed: refresh),
+        ],
+      ),
+      body: SafeArea(top: false, child: SectionList(children: children)),
+    );
   }
 }
 

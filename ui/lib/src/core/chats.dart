@@ -6,6 +6,8 @@ import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
+import 'package:fl_pi_llm_ui/src/skills/skills.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -14,6 +16,9 @@ import 'package:shortid/shortid.dart';
 /// The reply being written: what the stream has said so far.
 final class StreamingReply {
   const StreamingReply({this.text = '', this.thinking = '', this.tools = const []});
+
+  /// Nothing written yet: no text, no thinking, no tool called.
+  bool get isEmpty => text.isEmpty && thinking.isEmpty && tools.isEmpty;
 
   final String text;
   final String thinking;
@@ -59,6 +64,9 @@ final class UnsupportedAttachment implements Exception {
 final class OpenChat {
   OpenChat._(this.id, LlmSession session) {
     _attach(session);
+    running.addListener(Chats.runningChanges.notify);
+    approvals.addListener(Chats.runningChanges.notify);
+    pendingInput.addListener(Chats.runningChanges.notify);
   }
 
   final String id;
@@ -105,12 +113,20 @@ final class OpenChat {
   /// The first is the one on screen.
   final approvals = <PendingApproval>[].vn;
 
-  /// Answers every pending call: a run is never left waiting.
+  /// A form the model asked the user to fill in (`ask_user`), while it waits.
+  final pendingInput = nvn<PendingInput>();
+
+  /// Waiting on the user: a call to approve, or a form to fill in.
+  bool get waiting => approvals.value.isNotEmpty || pendingInput.value != null;
+
+  /// Answers every pending call and form: a run is never left waiting.
   void _denyPending(String why) {
     for (final p in approvals.value) {
       p._complete(LlmApproval.deny(why));
     }
     approvals.value = const [];
+    pendingInput.value?.complete(const UserInputCancelled());
+    pendingInput.value = null;
   }
 
   Future<void> reload() async {
@@ -228,6 +244,41 @@ abstract final class Chats {
   /// Notified when a chat is opened or closed: what shows its state follows.
   static final openChanges = RNode();
 
+  /// Notified when any chat starts or stops running: for a list of chats that
+  /// marks the ones writing a reply, without a listener on each.
+  static final runningChanges = RNode();
+
+  /// Whether chat [id] is writing a reply or running a tool.
+  static bool isRunning(String id) => _open[id]?.running.value ?? false;
+
+  /// Whether chat [id] is waiting on the user: a call to approve, or a form.
+  static bool isWaiting(String id) => _open[id]?.waiting ?? false;
+
+  /// Shows [request] in chat [id] and waits for the user to fill it in or
+  /// not. One at a time: a second while one is on screen is refused.
+  /// [cancelled] takes this form away, and only this one.
+  static Future<UserInputAnswer> ask(String id, UserInputRequest request, {Future<void>? cancelled}) async {
+    final chat = _open[id] ?? (throw const LlmException('The chat is not open'));
+    if (chat.pendingInput.value != null) throw const LlmException('A form is already waiting on the user');
+    final pending = PendingInput(id, request);
+    unawaited(cancelled?.then((_) => pending.complete(const UserInputCancelled())));
+    chat.pendingInput.value = pending;
+    try {
+      return await pending.answer;
+    } finally {
+      if (chat.pendingInput.value == pending) chat.pendingInput.value = null;
+    }
+  }
+
+  /// Answers chat [id]'s form — see [PendingInput.submit].
+  static void submitInput(String id, {Map<String, Object?> answers = const {}, Map<String, Object?> values = const {}}) =>
+      _open[id]?.pendingInput.value?.submit(answers: answers, values: values);
+
+  /// Leaves chat [id]'s form unfilled — with [message], what the user sent
+  /// instead, for the model to go on from.
+  static void cancelInput(String id, {String? message}) =>
+      _open[id]?.pendingInput.value?.complete(UserInputCancelled(message: message));
+
   /// Temporary users of each chat ([borrow]), which close it when done.
   static final _borrows = <String, int>{};
 
@@ -310,6 +361,7 @@ abstract final class Chats {
   static Future<void> close(String id) async {
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
+    LlmSecrets.forget(id);
     await c?._dispose();
   }
 
@@ -358,10 +410,11 @@ abstract final class Chats {
     return sb.toString();
   }
 
-  /// Makes a new chat and returns its id. Its session is created on open.
-  static String create() {
+  /// Makes a new chat in [scope] and returns its id. Its session is created
+  /// on open.
+  static String create({String? scope}) {
     final id = shortid.generate();
-    LlmStores.chat.put(ChatMeta(id: id, updatedAt: DateTime.now(), model: Llm.defaultModel));
+    LlmStores.chat.put(ChatMeta(id: id, updatedAt: DateTime.now(), model: Llm.defaultModel, scope: scope));
     return id;
   }
 
@@ -437,13 +490,27 @@ abstract final class Chats {
     chat.approvals.value = chat.approvals.value.skip(1).toList();
     switch (answer) {
       case ApprovalAnswer.always:
-        LlmStores.tool.permittedTools.set({...LlmStores.tool.permittedTools.get(), pending.call.name}.toList());
+        // Remembered only for a tool that offers it — see [ToolFunc.allowAlways].
+        if (Tools.internal(pending.call.name)?.allowAlways ?? true) {
+          LlmStores.tool.permittedTools.set({...LlmStores.tool.permittedTools.get(), pending.call.name}.toList());
+        }
         pending._complete(const LlmApproval.allow());
       case ApprovalAnswer.once:
         pending._complete(const LlmApproval.allow());
       case ApprovalAnswer.deny:
         pending._complete(const LlmApproval.deny('The user denied it'));
     }
+  }
+
+  /// Answers the tool call chat [id] is waiting on with [approval] itself —
+  /// a deny whose reason says what the user did instead, say. For the choices
+  /// a [ToolFunc.preview] adds to the approval card.
+  static void decide(String id, LlmApproval approval) {
+    final chat = _open[id];
+    final pending = chat?.approvals.value.firstOrNull;
+    if (chat == null || pending == null) return;
+    chat.approvals.value = chat.approvals.value.skip(1).toList();
+    pending._complete(approval);
   }
 
   /// Marks [chat] as running, or refuses: one run at a time. Synchronous
@@ -475,6 +542,53 @@ abstract final class Chats {
       }
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Notices
+
+  static const _noticeTag = 'app_notice';
+
+  /// Tells the model in chat [id] that [text] happened — something it started
+  /// finished, say — and lets it answer. Written as a user turn, the only
+  /// kind a model is prompted with, but marked: the view draws it as the
+  /// app's notice rather than as the user's words, and the system prompt
+  /// says what the mark means. Waits for a reply being written to end.
+  static Future<void> notify(String id, String text) async {
+    if (LlmStores.chat.fetch(id) == null) return;
+    final chat = await open(id);
+    bool closed() => !identical(_open[id], chat);
+    while (chat.running.value && !closed()) {
+      // Idle, or closed while it ran: a closed chat never runs again.
+      final settled = Completer<void>();
+      void done() {
+        if ((!chat.running.value || closed()) && !settled.isCompleted) settled.complete();
+      }
+      chat.running.addListener(done);
+      openChanges.addListener(done);
+      await settled.future;
+      chat.running.removeListener(done);
+      openChanges.removeListener(done);
+    }
+    // Closed meanwhile — trashed, say: nothing to tell.
+    if (closed()) return;
+    _claim(chat);
+    _touch(id);
+    await _run(chat, () => chat.session.prompt('<$_noticeTag>\n$text\n</$_noticeTag>'));
+  }
+
+  /// [m]'s text, when it is one of [notify]'s rather than the user's.
+  static String? noticeOf(LlmMessage m) {
+    if (m.role != 'user') return null;
+    final t = m.text.trim();
+    const open = '<$_noticeTag>', close = '</$_noticeTag>';
+    if (!t.startsWith(open) || !t.endsWith(close)) return null;
+    return t.substring(open.length, t.length - close.length).trim();
+  }
+
+  static String get _noticePrompt =>
+      'A user message wrapped in <$_noticeTag> comes from the app, not from the user: it reports something that '
+      'happened, such as a task you started having finished. Act on it as the task calls for; the user may not be '
+      'watching.';
 
   static void _touch(String id) {
     final meta = LlmStores.chat.fetch(id);
@@ -533,16 +647,17 @@ abstract final class Chats {
   static Future<void> purgeTrash() async {
     final keep = Duration(days: LlmUi.trashDays());
     final now = DateTime.now();
-    for (final m in LlmStores.chat.all(trashed: true)) {
+    for (final m in LlmStores.chat.all(trashed: true, anyScope: true)) {
       if (now.difference(m.trashedAt!) > keep) await deleteForever(m.id);
     }
   }
 
-  /// Chats whose title or conversation contains [query], newest first.
-  static Future<List<ChatMeta>> search(String query) async {
+  /// Chats in [scope] whose title or conversation contains [query], newest
+  /// first.
+  static Future<List<ChatMeta>> search(String query, {String? scope}) async {
     final q = query.toLowerCase();
     final hits = await Llm.sessionsContaining(query);
-    final all = LlmStores.chat.all();
+    final all = LlmStores.chat.all(scope: scope);
     return [
       for (final m in all)
         if ((m.title?.toLowerCase().contains(q) ?? false) || hits.contains(m.id)) m,
@@ -552,17 +667,22 @@ abstract final class Chats {
   // ---------------------------------------------------------------------------
   // Settings applied to open sessions
 
-  /// The system prompt of [meta]'s chat: the user's, and the memory.
+  /// The system prompt of [meta]'s chat: the user's, the app's, the memory,
+  /// and the skills.
   ///
   /// Read when a chat opens or is reconfigured, not on every memory write:
   /// what the model saves mid-chat it already knows, and a prompt that stays
   /// put keeps the provider's prompt cache.
   static String systemPromptFor(ChatMeta? meta) {
-    final tools = _toolsFor(meta).isNotEmpty;
+    // The tools the switch is about, not the loader of skills nor the form.
+    final tools = _toolsFor(meta).any((t) => t.name != TfSkill.instance.name && t.name != TfAskUser.instance.name);
     return [
       LlmStores.llm.systemPrompt.get(),
+      ?LlmUi.appPrompt(meta),
+      _noticePrompt,
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
+      if (Tools.skillsOffered(meta)) ?Skills.prompt(TfSkill.instance.name),
     ].where((e) => e.isNotEmpty).join('\n\n');
   }
 
@@ -591,8 +711,14 @@ abstract final class Chats {
   }
 
   static List<LlmTool> _toolsFor(ChatMeta? meta) {
-    if (meta?.useTools == false) return const [];
-    return Tools.enabled;
+    // Off for this chat: the tools, not the skills nor asking the user.
+    if (meta?.useTools == false) {
+      return [
+        if (Tools.skillsOffered(meta)) TfSkill.instance.llmTool,
+        if (LlmUi.offers(meta, TfAskUser.groupName)) TfAskUser.instance.llmTool,
+      ];
+    }
+    return Tools.enabledFor(meta);
   }
 
   static ThinkingLevel _thinkingFor(LlmModelRef model) {
@@ -610,8 +736,17 @@ abstract final class Chats {
   }
 
   static Future<LlmApproval> _approve(LlmToolCall call) async {
-    if (Tools.internal(call.name)?.trusted ?? false) return const LlmApproval.allow();
-    if (LlmStores.tool.permittedTools.get().contains(call.name)) return const LlmApproval.allow();
+    final tool = Tools.internal(call.name);
+    if (tool?.trusted ?? false) return const LlmApproval.allow();
+    try {
+      if (await tool?.preApprove(call.args, call.sessionId) case final decided?) return decided;
+    } catch (e, s) {
+      // Not decided, then: the user is asked, which is never the unsafe way.
+      Loggers.app.warning('Pre-approve ${call.name}', e, s);
+    }
+    if ((tool?.allowAlways ?? true) && LlmStores.tool.permittedTools.get().contains(call.name)) {
+      return const LlmApproval.allow();
+    }
     // A chat's id is its session's: the question goes where the run is.
     final chat = _open[call.sessionId];
     if (chat == null) return const LlmApproval.deny('The chat is not open');

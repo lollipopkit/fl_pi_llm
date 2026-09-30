@@ -574,6 +574,246 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Each call asks first unless it is allowed below'**
   String get useToolsTip;
+
+  /// Switch on a custom provider whose address is plain http off the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow plain HTTP'**
+  String get allowInsecure;
+
+  /// Why plain http is refused unless allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.'**
+  String get allowInsecureTip;
+
+  /// No description provided for @configure.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get configure;
+
+  /// No description provided for @supportsThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get supportsThinking;
+
+  /// No description provided for @thinkingEffort.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking effort'**
+  String get thinkingEffort;
+
+  /// No description provided for @mcpHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get mcpHeaders;
+
+  /// No description provided for @mcpHeadersTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, such as Authorization with Bearer <token>. Kept on this device only, never backed up, and sent only to this server.'**
+  String get mcpHeadersTip;
+
+  /// No description provided for @mcpHeadersInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A header needs a name of letters, digits and dashes, and a value.'**
+  String get mcpHeadersInvalid;
+
+  /// No description provided for @mcpNeedsSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in required'**
+  String get mcpNeedsSignIn;
+
+  /// No description provided for @mcpSigningIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in in the browser'**
+  String get mcpSigningIn;
+
+  /// No description provided for @mcpSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in. You can close this page.'**
+  String get mcpSignedIn;
+
+  /// No description provided for @mcpSignedInShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get mcpSignedInShort;
+
+  /// No description provided for @mcpSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. You can close this page and try again.'**
+  String get mcpSignInFailed;
+
+  /// No description provided for @mcpInsecure.
+  ///
+  /// In en, this message translates to:
+  /// **'Only an https address can be sent headers or signed in to.'**
+  String get mcpInsecure;
+
+  /// No description provided for @mcpAddHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get mcpAddHeader;
+
+  /// No description provided for @mcpNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get mcpNotSignedIn;
+
+  /// No description provided for @mcpSignInTip.
+  ///
+  /// In en, this message translates to:
+  /// **'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.'**
+  String get mcpSignInTip;
+
+  /// No description provided for @mcpConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get mcpConnecting;
+
+  /// No description provided for @skills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills'**
+  String get skills;
+
+  /// No description provided for @skillsTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for particular tasks, which the model reads when a task matches one. Install only from sources you trust: the model follows what a skill says.'**
+  String get skillsTip;
+
+  /// No description provided for @skillSourceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a repository, link or `npx skills add` command'**
+  String get skillSourceInvalid;
+
+  /// No description provided for @skillsNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No skills found there'**
+  String get skillsNotFound;
+
+  /// No description provided for @skillsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills to install'**
+  String get skillsPick;
+
+  /// No description provided for @skillsInstalledFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed {n}'**
+  String skillsInstalledFmt(int n);
+
+  /// No description provided for @skillsUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get skillsUpToDate;
+
+  /// No description provided for @skillsUpdatedFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {n}'**
+  String skillsUpdatedFmt(int n);
+
+  /// No description provided for @skillsFromFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Install from a folder'**
+  String get skillsFromFolder;
+
+  /// No description provided for @skillsFromZip.
+  ///
+  /// In en, this message translates to:
+  /// **'Install from a .zip'**
+  String get skillsFromZip;
+
+  /// No description provided for @skillsUpdateFailedFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} sources could not be checked'**
+  String skillsUpdateFailedFmt(int n);
+
+  /// No description provided for @skillBuiltin.
+  ///
+  /// In en, this message translates to:
+  /// **'Built in'**
+  String get skillBuiltin;
+
+  /// No description provided for @keyFromEnvFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Key from {name}'**
+  String keyFromEnvFmt(String name);
+
+  /// No description provided for @keyFromEnvTipFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'The key now in use is the environment variable {name}. A key entered here takes its place.'**
+  String keyFromEnvTipFmt(String name);
+
+  /// No description provided for @skillUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get skillUpdateAvailable;
+
+  /// No description provided for @skillsUpdateAllFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Update all ({n})'**
+  String skillsUpdateAllFmt(int n);
+
+  /// No description provided for @askUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask you'**
+  String get askUser;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequired;
+
+  /// No description provided for @fieldInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not valid'**
+  String get fieldInvalid;
+
+  /// No description provided for @waitingForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get waitingForYou;
+
+  /// No description provided for @otherAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherAnswer;
+
+  /// No description provided for @otherAnswerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own answer'**
+  String get otherAnswerHint;
 }
 
 class _LlmLocalizationsDelegate

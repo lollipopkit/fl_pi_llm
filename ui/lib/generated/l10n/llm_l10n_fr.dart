@@ -284,4 +284,144 @@ class LlmLocalizationsFr extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Chaque appel demande d\'abord, sauf s\'il est autorisé ci-dessous';
+
+  @override
+  String get allowInsecure => 'Autoriser HTTP non chiffré';
+
+  @override
+  String get allowInsecureTip =>
+      'Cette adresse est en http:// hors de cet appareil : la clé d\'API est envoyée en clair, lisible par quiconque sur le chemin réseau. À n\'autoriser que sur un réseau de confiance.';
+
+  @override
+  String get configure => 'Configurer';
+
+  @override
+  String get supportsThinking => 'Raisonnement';
+
+  @override
+  String get thinkingEffort => 'Effort de réflexion';
+
+  @override
+  String get mcpHeaders => 'En-têtes';
+
+  @override
+  String get mcpHeadersTip =>
+      'Facultatif, par exemple Authorization avec Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Un en-tête doit avoir un nom (lettres, chiffres et tirets) et une valeur.';
+
+  @override
+  String get mcpNeedsSignIn => 'Connexion requise';
+
+  @override
+  String get mcpSigningIn => 'Terminez la connexion dans le navigateur';
+
+  @override
+  String get mcpSignedIn => 'Connecté. Vous pouvez fermer cette page.';
+
+  @override
+  String get mcpSignedInShort => 'Connecté';
+
+  @override
+  String get mcpSignInFailed =>
+      'Échec de la connexion. Fermez cette page et réessayez.';
+
+  @override
+  String get mcpInsecure =>
+      'Seule une adresse https peut recevoir des en-têtes ou une connexion.';
+
+  @override
+  String get mcpAddHeader => 'Ajouter un en-tête';
+
+  @override
+  String get mcpNotSignedIn => 'Non connecté';
+
+  @override
+  String get mcpSignInTip =>
+      'Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement.';
+
+  @override
+  String get mcpConnecting => 'Connexion…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Des instructions pour des tâches précises, que le modèle lit quand une tâche correspond. N’installez que depuis des sources de confiance : le modèle suit ce que dit un skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Ni un dépôt, ni un lien, ni une commande `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Aucun skill trouvé à cet endroit';
+
+  @override
+  String get skillsPick => 'Skills à installer';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n installés';
+  }
+
+  @override
+  String get skillsUpToDate => 'À jour';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n mis à jour';
+  }
+
+  @override
+  String get skillsFromFolder => 'Installer depuis un dossier';
+
+  @override
+  String get skillsFromZip => 'Installer depuis un .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n sources n’ont pas pu être vérifiées';
+  }
+
+  @override
+  String get skillBuiltin => 'Intégré';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Clé depuis $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'La clé utilisée est celle de la variable d’environnement $name. Une clé saisie ici la remplace.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Mise à jour disponible';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Tout mettre à jour ($n)';
+  }
+
+  @override
+  String get askUser => 'Vous demander';
+
+  @override
+  String get fieldRequired => 'Obligatoire';
+
+  @override
+  String get fieldInvalid => 'Non valide';
+
+  @override
+  String get waitingForYou => 'Vous attend';
+
+  @override
+  String get otherAnswer => 'Autre';
+
+  @override
+  String get otherAnswerHint => 'Votre propre réponse';
 }

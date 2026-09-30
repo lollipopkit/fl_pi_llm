@@ -165,5 +165,93 @@
     }
   },
   "useTools": "Use tools",
-  "useToolsTip": "Each call asks first unless it is allowed below"
+  "useToolsTip": "Each call asks first unless it is allowed below",
+  "allowInsecure": "Allow plain HTTP",
+  "@allowInsecure": {
+    "description": "Switch on a custom provider whose address is plain http off the device."
+  },
+  "allowInsecureTip": "This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.",
+  "@allowInsecureTip": {
+    "description": "Why plain http is refused unless allowed."
+  },
+  "configure": "Configure",
+  "supportsThinking": "Thinking",
+  "thinkingEffort": "Thinking effort",
+  "mcpHeaders": "Headers",
+  "mcpHeadersTip": "Optional, such as Authorization with Bearer <token>. Kept on this device only, never backed up, and sent only to this server.",
+  "mcpHeadersInvalid": "A header needs a name of letters, digits and dashes, and a value.",
+  "mcpNeedsSignIn": "Sign-in required",
+  "mcpSigningIn": "Finish signing in in the browser",
+  "mcpSignedIn": "Signed in. You can close this page.",
+  "mcpSignedInShort": "Signed in",
+  "mcpSignInFailed": "Sign-in failed. You can close this page and try again.",
+  "mcpInsecure": "Only an https address can be sent headers or signed in to.",
+  "mcpAddHeader": "Add header",
+  "mcpNotSignedIn": "Not signed in",
+  "mcpSignInTip": "For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.",
+  "mcpConnecting": "Connecting…",
+  "skills": "Skills",
+  "skillsTip": "Instructions for particular tasks, which the model reads when a task matches one. Install only from sources you trust: the model follows what a skill says.",
+  "skillSourceInvalid": "Not a repository, link or `npx skills add` command",
+  "skillsNotFound": "No skills found there",
+  "skillsPick": "Skills to install",
+  "skillsInstalledFmt": "Installed {n}",
+  "@skillsInstalledFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsUpToDate": "Up to date",
+  "skillsUpdatedFmt": "Updated {n}",
+  "@skillsUpdatedFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsFromFolder": "Install from a folder",
+  "skillsFromZip": "Install from a .zip",
+  "skillsUpdateFailedFmt": "{n} sources could not be checked",
+  "@skillsUpdateFailedFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "skillBuiltin": "Built in",
+  "keyFromEnvFmt": "Key from {name}",
+  "@keyFromEnvFmt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "keyFromEnvTipFmt": "The key now in use is the environment variable {name}. A key entered here takes its place.",
+  "@keyFromEnvTipFmt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillUpdateAvailable": "Update available",
+  "skillsUpdateAllFmt": "Update all ({n})",
+  "@skillsUpdateAllFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "askUser": "Ask you",
+  "fieldRequired": "Required",
+  "fieldInvalid": "Not valid",
+  "waitingForYou": "Waiting for you",
+  "otherAnswer": "Other",
+  "otherAnswerHint": "Your own answer"
 }

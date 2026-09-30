@@ -270,4 +270,143 @@ class LlmLocalizationsUk extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Кожен виклик спершу питає, якщо його не дозволено нижче';
+
+  @override
+  String get allowInsecure => 'Дозволити незашифрований HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      'Ця адреса — http:// поза цим пристроєм: ключ API надсилається без шифрування і доступний будь-кому на мережевому шляху. Дозволяйте лише в довіреній мережі.';
+
+  @override
+  String get configure => 'Налаштувати';
+
+  @override
+  String get supportsThinking => 'Підтримує міркування';
+
+  @override
+  String get thinkingEffort => 'Глибина міркувань';
+
+  @override
+  String get mcpHeaders => 'Заголовки';
+
+  @override
+  String get mcpHeadersTip =>
+      'Необов’язково, наприклад Authorization зі значенням Bearer <token>. Зберігаються лише на цьому пристрої, не потрапляють у резервні копії й надсилаються лише цьому серверу.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Заголовку потрібні назва з літер, цифр і дефісів та значення.';
+
+  @override
+  String get mcpNeedsSignIn => 'Потрібен вхід';
+
+  @override
+  String get mcpSigningIn => 'Завершіть вхід у браузері';
+
+  @override
+  String get mcpSignedIn => 'Вхід виконано. Цю сторінку можна закрити.';
+
+  @override
+  String get mcpSignedInShort => 'Вхід виконано';
+
+  @override
+  String get mcpSignInFailed =>
+      'Не вдалося увійти. Закрийте сторінку й спробуйте ще раз.';
+
+  @override
+  String get mcpInsecure => 'Заголовки та вхід доступні лише для адреси https.';
+
+  @override
+  String get mcpAddHeader => 'Додати заголовок';
+
+  @override
+  String get mcpNotSignedIn => 'Вхід не виконано';
+
+  @override
+  String get mcpSignInTip =>
+      'Для сервера з OAuth. Вхід виконується в браузері, токен оновлюється автоматично.';
+
+  @override
+  String get mcpConnecting => 'Підключення…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Інструкції для певних завдань: модель читає їх, коли завдання підходить. Встановлюйте лише з надійних джерел: модель дотримується того, що написано в skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Це не репозиторій, посилання чи команда `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Там не знайдено skills';
+
+  @override
+  String get skillsPick => 'Які skills встановити';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return 'Встановлено: $n';
+  }
+
+  @override
+  String get skillsUpToDate => 'Усе актуально';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return 'Оновлено: $n';
+  }
+
+  @override
+  String get skillsFromFolder => 'Встановити з теки';
+
+  @override
+  String get skillsFromZip => 'Встановити з .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'Не вдалося перевірити джерела: $n';
+  }
+
+  @override
+  String get skillBuiltin => 'Вбудований';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Ключ із $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Зараз використовується ключ зі змінної середовища $name. Ключ, введений тут, має пріоритет.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Є оновлення';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Оновити все ($n)';
+  }
+
+  @override
+  String get askUser => 'Запитати вас';
+
+  @override
+  String get fieldRequired => 'Обовʼязково';
+
+  @override
+  String get fieldInvalid => 'Неправильний формат';
+
+  @override
+  String get waitingForYou => 'Чекає на вас';
+
+  @override
+  String get otherAnswer => 'Інше';
+
+  @override
+  String get otherAnswerHint => 'Власна відповідь';
 }

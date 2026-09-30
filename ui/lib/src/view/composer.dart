@@ -6,6 +6,7 @@ import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -16,7 +17,13 @@ import 'package:image_picker/image_picker.dart';
 /// Where a message is written: text, attachments, the model, thinking, tools
 /// and send. Makes the chat when there is none yet.
 class Composer extends StatefulWidget {
-  const Composer({super.key, required this.chatId, required this.onChatCreated, this.compact = false});
+  const Composer({
+    super.key,
+    required this.chatId,
+    required this.onChatCreated,
+    this.compact = false,
+    this.scope,
+  });
 
   /// The chat it sends to; null until the first message makes one.
   final String? chatId;
@@ -25,8 +32,15 @@ class Composer extends StatefulWidget {
   /// On a phone: the thinking level is an icon.
   final bool compact;
 
+  /// Where a chat this starts belongs — see [ChatMeta.scope].
+  final String? scope;
+
   /// Text put in by a deep link, for the new-chat composer.
   static final draft = nvn<String>();
+
+  /// The scope [draft] is for — see [scope]. Set before [draft]: only the
+  /// new-chat composer of that scope takes it. Null is the app's own list.
+  static String? draftScope;
 
   /// Set when a message makes the chat: the composer that takes over keeps
   /// the keyboard.
@@ -65,10 +79,12 @@ class _ComposerState extends State<Composer> {
 
   void _takeDraft() {
     final d = Composer.draft.value;
-    // A chat's composer leaves it to the new chat's, which is on its way.
-    if (d == null || widget.chatId != null) return;
+    // A chat's composer leaves it to the new chat's, which is on its way —
+    // and another place's new-chat composer to that place's.
+    if (d == null || widget.chatId != null || Composer.draftScope != widget.scope) return;
     _ctrl.text = d;
     Composer.draft.value = null;
+    Composer.draftScope = null;
   }
 
   LlmModelRef? get _model {
@@ -84,7 +100,22 @@ class _ComposerState extends State<Composer> {
     return id != null && (Chats.openOf(id)?.running.value ?? false);
   }
 
+  /// The form chat [widget.chatId] waits on, if one.
+  PendingInput? get _pendingInput {
+    final id = widget.chatId;
+    return id == null ? null : Chats.openOf(id)?.pendingInput.value;
+  }
+
   Future<void> _send() async {
+    // With a form waiting, a message is the answer instead of it: the form is
+    // cancelled, and what was written goes to the model with that.
+    if (_pendingInput != null) {
+      final text = _ctrl.text.trim();
+      if (text.isEmpty) return;
+      _ctrl.clear();
+      Chats.cancelInput(widget.chatId!, message: text);
+      return;
+    }
     if (_running) return;
     final raw = _ctrl.text;
     final text = raw.trim();
@@ -96,7 +127,7 @@ class _ComposerState extends State<Composer> {
     }
     var id = widget.chatId;
     if (id == null) {
-      id = Chats.create();
+      id = Chats.create(scope: widget.scope);
       Composer._keepFocus = _focus.hasFocus;
       widget.onChatCreated(id);
     }
@@ -204,10 +235,9 @@ class _ComposerState extends State<Composer> {
                 style: const TextStyle(fontSize: 14, height: 20 / 14),
                 textInputAction: isDesktop ? TextInputAction.newline : TextInputAction.send,
                 onSubmitted: isDesktop ? null : (_) => _send(),
-                decoration: InputDecoration(
+                decoration: bareInputDecoration(
                   hintText: llmL10n.message,
                   hintStyle: UIs.textGrey.copyWith(fontSize: 14, height: 20 / 14),
-                  border: InputBorder.none,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
                 ),
@@ -235,7 +265,12 @@ class _ComposerState extends State<Composer> {
                   listenable: Chats.openChanges,
                   builder: (context, _) {
                     final id = widget.chatId;
-                    return ((id == null ? null : Chats.openOf(id))?.running ?? _idle).listenVal((r) {
+                    final chat = id == null ? null : Chats.openOf(id);
+                    return ListenableBuilder(
+                      listenable: Listenable.merge([chat?.running ?? _idle, ?chat?.pendingInput]),
+                      builder: (context, _) {
+                  // A form waiting is answered by sending, not stopped.
+                  final r = (chat?.running.value ?? false) && chat?.pendingInput.value == null;
                   return r
                       ? _CircleBtn(
                           icon: Icons.stop_rounded,
@@ -251,7 +286,8 @@ class _ComposerState extends State<Composer> {
                           onColor: scheme.onPrimary,
                           onTap: _send,
                         );
-                    });
+                      },
+                    );
                   },
                 ),
               ],
@@ -363,7 +399,7 @@ class _ThinkingChipState extends State<_ThinkingChip> {
       builder: (toggle) => widget.compact
           ? Btn.icon(
               icon: const Icon(Icons.psychology_outlined, size: _iconSize),
-              text: '${libL10n.thinking}: $cur',
+              text: '${llmL10n.thinkingEffort}: $cur',
               onTap: toggle,
               padding: _btnPadding,
             )

@@ -1,6 +1,7 @@
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/store/chat.dart';
 import 'package:fl_pi_llm_ui/src/store/llm.dart';
+import 'package:fl_pi_llm_ui/src/store/mcp_secret.dart';
 import 'package:fl_pi_llm_ui/src/store/memory.dart';
 import 'package:fl_pi_llm_ui/src/store/tool.dart';
 
@@ -13,4 +14,8 @@ abstract final class LlmStores {
   static final memory = MemoryStore.instance;
 
   static final List<SqliteStore> all = [chat, llm, tool, memory];
+
+  /// MCP headers and tokens. Not in [all], which apps back up: see
+  /// [McpSecretStore].
+  static final mcpSecret = McpSecretStore.instance;
 }

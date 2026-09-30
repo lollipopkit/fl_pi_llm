@@ -114,6 +114,7 @@ final class LlmCustomProvider {
     required this.baseUrl,
     this.headers,
     this.models,
+    this.allowInsecure = false,
   });
 
   factory LlmCustomProvider.fromJson(Map<String, Object?> j) => LlmCustomProvider(
@@ -123,6 +124,7 @@ final class LlmCustomProvider {
     baseUrl: j['baseUrl'] as String,
     headers: (j['headers'] as Map?)?.cast<String, String>(),
     models: (j['models'] as List?)?.cast<String>(),
+    allowInsecure: j['allowInsecure'] as bool? ?? false,
   );
 
   final String id;
@@ -137,6 +139,11 @@ final class LlmCustomProvider {
   /// these; for the other APIs they are the only models.
   final List<String>? models;
 
+  /// Whether [baseUrl] may be plain `http` off this device. Without it such a
+  /// request is refused: it would carry the API key readable to anyone on the
+  /// path — see [FlPiLlm.fetchAllowed].
+  final bool allowInsecure;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'name': name,
@@ -147,7 +154,11 @@ final class LlmCustomProvider {
   };
 
   /// For storage: [models] as plain ids.
-  Map<String, Object?> toStoreJson() => {...toJson(), 'models': ?models};
+  Map<String, Object?> toStoreJson() => {
+    ...toJson(),
+    'models': ?models,
+    if (allowInsecure) 'allowInsecure': true,
+  };
 }
 
 /// How much a reasoning model thinks.

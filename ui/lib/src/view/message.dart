@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:flutter/material.dart' as legacy show Theme;
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_markdown_plus_latex/flutter_markdown_plus_latex.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
@@ -132,7 +133,7 @@ class ThreadBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (block) {
-      UserBlock(:final entry) => _UserMessage(chat: chat, entry: entry, forCapture: forCapture),
+      UserBlock(:final entry) => _UserMessage(key: ValueKey(entry.id), chat: chat, entry: entry, forCapture: forCapture),
       ReplyBlock(:final entries, :final to) => _Reply(
         entries: entries,
         to: to,
@@ -156,19 +157,68 @@ class StreamingView extends StatelessWidget {
   Widget build(BuildContext context) => _Reply(entries: const [], streaming: reply);
 }
 
-class _UserMessage extends StatelessWidget {
-  const _UserMessage({required this.chat, required this.entry, required this.forCapture});
+/// A message the user sent, edited in place: the bubble becomes the field.
+class _UserMessage extends StatefulWidget {
+  const _UserMessage({super.key, required this.chat, required this.entry, required this.forCapture});
 
   final OpenChat? chat;
   final LlmEntry entry;
   final bool forCapture;
 
   @override
+  State<_UserMessage> createState() => _UserMessageState();
+}
+
+class _UserMessageState extends State<_UserMessage> {
+  /// The text being edited, while it is.
+  TextEditingController? _editing;
+
+  LlmEntry get entry => widget.entry;
+
+  @override
+  void dispose() {
+    _editing?.dispose();
+    super.dispose();
+  }
+
+  void _startEdit() => setState(() => _editing = TextEditingController(text: entry.message!.text));
+
+  void _stopEdit() {
+    final c = _editing;
+    if (c == null) return;
+    setState(() => _editing = null);
+    // After the frame: the field is still in this one.
+    WidgetsBinding.instance.addPostFrameCallback((_) => c.dispose());
+  }
+
+  Future<void> _submit(OpenChat chat) async {
+    final text = _editing?.text ?? '';
+    if (text.trim().isEmpty || chat.running.value) return;
+    _stopEdit();
+    await Chats.edit(chat.id, entry, text);
+  }
+
+  static const _textStyle = TextStyle(fontSize: 14, height: 1.5);
+
+  @override
   Widget build(BuildContext context) {
+    final forCapture = widget.forCapture;
     final m = entry.message!;
+    // The app's, not the user's: a line across, not a bubble to edit.
+    if (Chats.noticeOf(m) case final notice?) {
+      return Row(
+        children: [
+          Icon(Icons.notifications_none, size: 15, color: context.theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 7),
+          Expanded(child: Text(notice, style: UIs.text13Grey)),
+        ],
+      );
+    }
     final images = _imagesOf(m);
-    final chat = this.chat;
+    final chat = widget.chat;
     final scheme = context.theme.colorScheme;
+    final editing = _editing;
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : Durations.medium1;
     return LayoutBuilder(
       builder: (context, cons) {
         final maxWidth = cons.maxWidth * 0.86 < 560 ? cons.maxWidth * 0.86 : 560.0;
@@ -185,19 +235,34 @@ class _UserMessage extends StatelessWidget {
                   children: [for (final i in images) _ImageThumb(data: i.$1)],
                 ),
               ),
-            if (m.text.isNotEmpty)
-              Container(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withValues(alpha: 0.6),
-                  borderRadius: CardX.borderRadius,
+            if (editing != null && chat != null || m.text.isNotEmpty)
+              // The bubble grows into the field and back: the two cross-fade
+              // while the size follows.
+              AnimatedSize(
+                duration: duration,
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topRight,
+                child: AnimatedSwitcher(
+                  duration: duration,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.topRight,
+                    children: [...previous, ?current],
+                  ),
+                  child: editing != null && chat != null
+                      ? KeyedSubtree(key: const ValueKey('edit'), child: _editor(context, chat, editing, maxWidth))
+                      : Container(
+                          key: const ValueKey('text'),
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: scheme.primaryContainer.withValues(alpha: 0.6),
+                            borderRadius: CardX.borderRadius,
+                          ),
+                          child: forCapture ? Text(m.text, style: _textStyle) : SelectableText(m.text, style: _textStyle),
+                        ),
                 ),
-                child: forCapture
-                    ? Text(m.text, style: const TextStyle(fontSize: 14, height: 1.5))
-                    : SelectableText(m.text, style: const TextStyle(fontSize: 14, height: 1.5)),
               ),
-            if (!forCapture && chat != null) ...[
+            if (!forCapture && chat != null && editing == null) ...[
               const SizedBox(height: 2),
               _actions(context, chat, m),
             ],
@@ -231,22 +296,54 @@ class _UserMessage extends StatelessWidget {
             Pfs.copy(m.text);
             Toast.show(llmL10n.copied);
           }),
-          if (!running) _SmallBtn(Icons.edit_outlined, libL10n.edit, () => _edit(context, chat)),
+          if (!running) _SmallBtn(Icons.edit_outlined, libL10n.edit, _startEdit),
         ],
       );
     });
   }
 
-  Future<void> _edit(BuildContext context, OpenChat chat) async {
-    final ctrl = TextEditingController(text: entry.message!.text);
-    final text = await context.showRoundDialog<String>(
-      title: libL10n.edit,
-      child: SizedBox(width: 500, child: Input(controller: ctrl, maxLines: 10, minLines: 3, autoFocus: true)),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+  /// The bubble as a field, as wide as a bubble gets: Esc leaves it, and
+  /// Ctrl/Cmd+Enter sends it, as a new version of the message.
+  Widget _editor(BuildContext context, OpenChat chat, TextEditingController ctrl, double maxWidth) {
+    final scheme = context.theme.colorScheme;
+    return Container(
+      width: maxWidth,
+      padding: const EdgeInsets.fromLTRB(13, 9, 7, 5),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: CardX.borderRadius,
+      ),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): _stopEdit,
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): () => _submit(chat),
+          const SingleActivator(LogicalKeyboardKey.enter, meta: true): () => _submit(chat),
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 12,
+              keyboardType: TextInputType.multiline,
+              style: _textStyle,
+              decoration: const InputDecoration.collapsed(hintText: ''),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Btn.text(text: libL10n.cancel, onTap: _stopEdit),
+                chat.running.listenVal(
+                  (running) => Btn.text(text: llmL10n.send, onTap: running ? null : () => _submit(chat)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
-    ctrl.dispose();
-    if (text == null || text.trim().isEmpty) return;
-    await Chats.edit(chat.id, entry, text);
   }
 }
 
@@ -403,6 +500,7 @@ class _ToolCardState extends State<_ToolCard> {
   var _open = false;
 
   static IconData iconOf(String name) => switch (Tools.internal(name)) {
+    ToolFunc(:final icon?) => icon,
     TfHttpReq() => Icons.language,
     TfHistory() => Icons.history,
     TfMemory() => Icons.psychology_alt_outlined,
@@ -443,7 +541,10 @@ class _ToolCardState extends State<_ToolCard> {
               children: [
                 Row(
                   children: [
-                    Icon(iconOf(widget.name), size: 19, color: scheme.onSurfaceVariant),
+                    if (McpTools.serverOfTool(widget.name) case final server?)
+                      McpIconView(server: server, tool: widget.name, size: 19, color: scheme.onSurfaceVariant)
+                    else
+                      Icon(iconOf(widget.name), size: 19, color: scheme.onSurfaceVariant),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,6 +645,7 @@ class ApprovalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.theme.colorScheme;
     final call = pending.call;
+    final tool = Tools.internal(call.name);
     final detail = call.args.isEmpty ? call.name : Tools.summaryOf(call.name, call.args);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 560),
@@ -565,16 +667,18 @@ class ApprovalCard extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-              decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(9)),
-              child: SelectableText(detail, style: _mono12.copyWith(height: 1.5)),
-            ),
+            tool?.preview(context, call.args, chatId) ??
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                  decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(9)),
+                  child: SelectableText(detail, style: _mono12.copyWith(height: 1.5)),
+                ),
             Row(
               children: [
                 Expanded(child: Text(llmL10n.replyWaits, style: UIs.text12Grey)),
                 Btn.text(text: llmL10n.deny, onTap: () => Chats.answer(chatId, ApprovalAnswer.deny)),
-                Btn.text(text: llmL10n.allowAlways, onTap: () => Chats.answer(chatId, ApprovalAnswer.always)),
+                if (tool?.allowAlways ?? true)
+                  Btn.text(text: llmL10n.allowAlways, onTap: () => Chats.answer(chatId, ApprovalAnswer.always)),
                 Btn.text(text: llmL10n.allow, onTap: () => Chats.answer(chatId, ApprovalAnswer.once)),
               ].joinWith(const SizedBox(width: 3)),
             ),
@@ -664,3 +768,71 @@ List<(String, String)> _imagesOf(LlmMessage m) {
   ];
 }
 
+/// An MCP server's icon, or its tool's: the first of [McpTools.iconsOf] that
+/// loads, the extension glyph until one does and when none does.
+class McpIconView extends StatefulWidget {
+  const McpIconView({super.key, required this.server, this.tool, required this.size, this.color});
+
+  final String server;
+  final String? tool;
+  final double size;
+  final Color? color;
+
+  @override
+  State<McpIconView> createState() => _McpIconViewState();
+}
+
+class _McpIconViewState extends State<McpIconView> {
+  /// Those that did not load, this run: a favicon a site does not have is
+  /// asked for once, not by every card.
+  static final _failed = <Uri>{};
+
+  void _fail(Uri u) {
+    if (!_failed.add(u)) return;
+    // Not in the build that found out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Icon(Icons.extension_outlined, size: widget.size, color: widget.color);
+    final dark = context.theme.brightness == Brightness.dark;
+    final source = McpTools.iconsOf(widget.server, name: widget.tool, dark: dark).firstWhereOrNull((c) => !_failed.contains(c.uri));
+    if (source == null) return fallback;
+    final u = source.uri;
+    final size = widget.size;
+    Widget onError(BuildContext _, Object _, StackTrace? _) {
+      _fail(u);
+      return fallback;
+    }
+
+    final Widget image;
+    if (u.data case final data?) {
+      final bytes = data.contentAsBytes();
+      image = source.svg || data.mimeType == 'image/svg+xml'
+          ? SvgPicture.memory(bytes, width: size, height: size, errorBuilder: onError)
+          : Image.memory(bytes, width: size, height: size, errorBuilder: onError);
+    } else if (source.svg) {
+      image = SvgPicture.network(
+        '$u',
+        width: size,
+        height: size,
+        placeholderBuilder: (_) => fallback,
+        errorBuilder: onError,
+      );
+    } else {
+      image = Image.network(
+        '$u',
+        width: size,
+        height: size,
+        filterQuality: FilterQuality.medium,
+        // The glyph while it loads, so a card does not jump when it arrives.
+        frameBuilder: (_, child, frame, sync) => sync || frame != null ? child : fallback,
+        errorBuilder: onError,
+      );
+    }
+    return ClipRRect(borderRadius: BorderRadius.circular(4), child: image);
+  }
+}

@@ -78,8 +78,15 @@ const modelsStore = {
   },
 };
 
-/** Nothing from the environment: a credential carries its own `env`. */
-const authContext = { env: async () => undefined, fileExists: async () => false };
+/**
+ * The environment is the host's: a provider without a stored key finds it
+ * there, under the variable pi-ai names for it (`OPENAI_API_KEY`...). No
+ * files: the ones pi-ai reads under Node are not this app's.
+ */
+const authContext = {
+  env: async (name) => (await call('env.get', { name })) ?? undefined,
+  fileExists: async () => false,
+};
 
 export const models = builtinModels({ credentials, modelsStore, authContext });
 for (const p of [...models.getProviders()]) {

@@ -70,8 +70,8 @@ class MemoryPage extends StatelessWidget {
     final ctrl = TextEditingController(text: initial);
     final res = await context.showRoundDialog<String>(
       title: title,
-      child: Input(controller: ctrl, autoFocus: true, hint: 'user.md', onSubmitted: context.pop),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+      child: Input(controller: ctrl, autoFocus: true, hint: 'user.md', onSubmitted: context.popDialog),
+      actions: [Btn.ok(onTap: () => context.popDialog(ctrl.text))],
     );
     ctrl.dispose();
     if (res == null || res.trim().isEmpty) return null;
@@ -157,9 +157,9 @@ class _MemoryFilePageState extends State<MemoryFilePage> {
       title: libL10n.attention,
       child: Text(llmL10n.unsavedChanges),
       actions: [
-        Btn.text(text: libL10n.cancel, onTap: () => context.pop()),
-        Btn.text(text: llmL10n.discard, textStyle: const TextStyle(color: Colors.red), onTap: () => context.pop(false)),
-        Btn.ok(onTap: () => context.pop(true)),
+        Btn.text(text: libL10n.cancel, onTap: context.popDialog),
+        Btn.text(text: llmL10n.discard, textStyle: const TextStyle(color: Colors.red), onTap: () => context.popDialog(false)),
+        Btn.ok(onTap: () => context.popDialog(true)),
       ],
     );
     if (save == null || !mounted) return;
@@ -193,7 +193,7 @@ class _MemoryFilePageState extends State<MemoryFilePage> {
                 maxLines: null,
                 textAlignVertical: TextAlignVertical.top,
                 style: Mono.style(fontSize: 13, height: 1.5),
-                decoration: const InputDecoration(border: InputBorder.none, isCollapsed: true),
+                decoration: bareInputDecoration(isCollapsed: true),
               ),
             ),
           ),

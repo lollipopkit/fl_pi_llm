@@ -13,8 +13,30 @@ final class _McpServer {
   Timer? retry;
   int attempts = 0;
 
+  /// Its headers and tokens, read from the keychain when connecting.
+  McpSecret secret = const McpSecret();
+
+  /// It answered that it wants a sign-in.
+  bool needsSignIn = false;
+
+  /// The connection being made, while one is: a later [McpTools.connect]
+  /// replaces it, and only the latest says when it is done.
+  Object? connecting;
+
+  /// Completed to stop waiting for the browser, while a sign-in is.
+  Completer<void>? signingIn;
+
   /// What the server calls itself; its host until it has said.
   String get label => client?.getServerVersion()?.name ?? Uri.tryParse(url)?.host ?? url;
+}
+
+/// An image an MCP server or tool may be shown with.
+@immutable
+final class McpIconSource {
+  const McpIconSource(this.uri, {this.svg = false});
+
+  final Uri uri;
+  final bool svg;
 }
 
 /// The MCP servers (Streamable HTTP) and their tools.
@@ -53,12 +75,25 @@ abstract final class McpTools {
   /// Connects [url], or reconnects it. Failures are kept for [errorOf] and
   /// retried a few times.
   static Future<void> connect(String url) async {
+    _routeSdkLogs();
     final id = nameFor(url);
     final s = _servers[id] ??= _McpServer(url);
     s.retry?.cancel();
+    final attempt = s.connecting = Object();
+    changes.notify();
     await _close(s);
+    s.secret = McpAuth.canCarrySecrets(url) ? McpSecrets.read(id) : const McpSecret();
     // A fresh transport each time: a closed one cannot be started again.
-    final transport = StreamableHttpClientTransport(Uri.parse(url));
+    final transport = StreamableHttpClientTransport(
+      Uri.parse(url),
+      opts: StreamableHttpClientTransportOptions(
+        // Only with a token to give: a provider with none makes the transport
+        // give up before asking, and a header could have been enough.
+        authProvider: s.secret.oauth == null ? null : _McpTokens(s),
+        oauthUriValidator: McpAuth.acceptEndpoint,
+        requestInit: {'headers': s.secret.headers},
+      ),
+    );
     final client = McpClient(Implementation(name: LlmUi.appName, version: LlmUi.appVersion));
     s
       ..transport = transport
@@ -77,20 +112,56 @@ abstract final class McpTools {
       );
       s
         ..connected = true
+        ..needsSignIn = false
         ..error = null
         ..attempts = 0;
       await _listTools(s);
       Loggers.app.info('MCP ${s.label}: ${s.tools.length} tools');
     } catch (e, s_) {
       if (!identical(s.transport, transport)) return;
-      Loggers.app.warning('MCP connect $url', e, s_);
+      // Asking again would get the same answer: it waits for a sign-in.
+      final unauthorized = _isUnauthorized(e);
+      unauthorized
+          ? Loggers.app.info('MCP $url: sign-in required')
+          : Loggers.app.warning('MCP connect $url', e, s_);
       s
         ..connected = false
-        ..error = '$e';
-      _retryLater(s);
+        ..needsSignIn = unauthorized
+        ..error = unauthorized ? null : '$e';
+      if (!unauthorized) _retryLater(s);
+    } finally {
+      if (identical(s.connecting, attempt)) s.connecting = null;
     }
     changes.notify();
   }
+
+  static var _sdkLogsRouted = false;
+
+  /// The SDK's own lines, into the app's log and below its warnings: it calls
+  /// a server that wants a sign-in an `ERROR` on stderr, where every failure
+  /// that matters reaches this class as an exception and is logged here, with
+  /// the server it was about.
+  static void _routeSdkLogs() {
+    if (_sdkLogsRouted) return;
+    _sdkLogsRouted = true;
+    final log = logging.Logger('mcp_dart');
+    setMcpLogHandler(
+      (name, level, message) => log.log(switch (level) {
+        LogLevel.debug || LogLevel.info => logging.Level.FINE,
+        LogLevel.warn || LogLevel.error => logging.Level.INFO,
+      }, '[$name] $message'),
+    );
+  }
+
+  /// Whether [e] is an MCP server's answer rather than a defect here: a
+  /// server that wants a sign-in, or one that refused or failed a request
+  /// (the transport's code 0). For a crash reporter, which keeps defects.
+  static bool isRemoteFailure(Object e) => e is UnauthorizedError || (e is McpError && e.code == 0);
+
+  /// A 401 or 403. The transport says so with [UnauthorizedError] where it had
+  /// a token to offer, and only in the message otherwise.
+  static bool _isUnauthorized(Object e) =>
+      e is UnauthorizedError || (e is McpError && RegExp(r'\(HTTP 40[13]\)').hasMatch(e.message));
 
   /// [transport] errored or closed. Only the current one counts: an old one
   /// closing after a reconnect says nothing about the server.
@@ -145,21 +216,160 @@ abstract final class McpTools {
     }
   }
 
-  /// Retries [id] now, from the start.
-  static Future<void> retryConnection(String id) async {
-    final s = _servers[id];
-    if (s == null) return;
-    s.attempts = 0;
-    await connect(s.url);
+  /// Connects [url] now, from the start: a server that dropped, or one never
+  /// tried this run, such as with tools off at launch.
+  static Future<void> retryConnection(String url) async {
+    _servers[nameFor(url)]?.attempts = 0;
+    await connect(url);
   }
 
   static Future<void> removeServer(String id) async {
     final s = _servers.remove(id);
+    McpSecrets.delete(id);
     if (s == null) return;
     s.retry?.cancel();
+    s.signingIn?.complete();
     await _close(s);
     changes.notify();
   }
+
+  /// Stores [url] with [headers] in place of [old] (null for a new server),
+  /// and connects it. A sign-in stays with the address: moving to another
+  /// forgets it, being for another server.
+  static Future<void> saveServer({String? old, required String url, required Map<String, String> headers}) async {
+    if (headers.isNotEmpty && !McpAuth.canCarrySecrets(url)) throw StateError('Not sending headers to $url over plain http');
+    final list = LlmStores.tool.mcpServers.get();
+    if (url != old && list.contains(url)) throw StateError('$url is added already');
+    if (old != null && old != url) await removeServer(nameFor(old));
+    final id = nameFor(url);
+    McpSecrets.write(id, McpSecrets.read(id).withHeaders(headers));
+    // In the list before connecting: a server that is down now is still one
+    // the user added, and it shows as disconnected with a retry.
+    LlmStores.tool.mcpServers.set([
+      for (final e in list) e == old ? url : e,
+      if (old == null || !list.contains(old)) url,
+    ]);
+    await connect(url);
+  }
+
+  /// Signs in to [id] in the browser, then connects with what it got.
+  /// Returns quietly when the user stopped waiting.
+  static Future<void> signIn(String id, {required Future<void> Function(Uri) open}) async {
+    final s = _servers[id];
+    if (s == null || s.signingIn != null) return;
+    final cancel = s.signingIn = Completer<void>();
+    s.error = null;
+    changes.notify();
+    try {
+      final secret = McpSecrets.read(id);
+      final tokens = await McpAuth.signIn(s.url, headers: secret.headers, open: open, cancel: cancel.future);
+      // Removed while the browser was open: its secrets went with it, and
+      // are not to come back.
+      if (!identical(_servers[id], s)) return;
+      McpSecrets.write(id, secret.withOAuth(tokens));
+    } on McpSignInCancelled {
+      return;
+    } catch (e, st) {
+      Loggers.app.warning('MCP ${s.label}: sign in', e, st);
+      s.error = '$e';
+      return;
+    } finally {
+      s.signingIn = null;
+      changes.notify();
+    }
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// Stops waiting for the browser.
+  static void cancelSignIn(String id) {
+    final c = _servers[id]?.signingIn;
+    if (c != null && !c.isCompleted) c.complete();
+  }
+
+  /// Forgets [id]'s tokens, and connects without them.
+  static Future<void> signOut(String id) async {
+    final s = _servers[id];
+    if (s == null) return;
+    McpSecrets.write(id, McpSecrets.read(id).withOAuth(null));
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// Replaces [id]'s headers, and connects with them.
+  static Future<void> setHeaders(String id, Map<String, String> headers) async {
+    final s = _servers[id];
+    if (s == null) return;
+    if (headers.isNotEmpty && !McpAuth.canCarrySecrets(s.url)) throw StateError('Not sending headers to ${s.url} over plain http');
+    McpSecrets.write(id, McpSecrets.read(id).withHeaders(headers));
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// The headers [id] is sent, to edit them.
+  static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
+
+  /// The server whose tool [name] is, of [toolName]'s making.
+  static String? serverOfTool(String name) => _servers.keys.firstWhereOrNull((id) => name.startsWith('${id}__'));
+
+  /// Where the icon of [id], or of its tool [name], may be, best first.
+  ///
+  /// What the tool and the server declare (MCP's `icons`), in the theme's
+  /// shade first, then the favicons of the server's website and of its own
+  /// host and that host's parent domain — an `mcp.example.com` whose site is
+  /// `example.com`. A declared icon is taken only as data or from those
+  /// hosts: an arbitrary URL would have the app call wherever a server says.
+  static List<McpIconSource> iconsOf(String id, {String? name, required bool dark}) {
+    final s = _servers[id];
+    if (s == null) return const [];
+    final info = s.client?.getServerVersion();
+    final url = Uri.parse(s.url);
+    final site = Uri.tryParse(info?.websiteUrl ?? '');
+    final siteHost = site != null && site.isScheme('https') && site.host.isNotEmpty ? site.host : null;
+    final trusted = {
+      for (final h in [url.host, ?siteHost]) ...[h, ?_parentDomain(h)],
+    };
+    bool allowed(Uri u) =>
+        u.isScheme('data') || (u.isScheme('https') && trusted.any((t) => u.host == t || u.host.endsWith('.$t')));
+    // The theme's shade, then either, then the other.
+    int rank(McpIcon i) => i.theme == null ? 1 : ((i.theme!.name == 'dark') == dark ? 0 : 2);
+    final tool = name == null ? null : s.tools.firstWhereOrNull((t) => toolName(id, t.name) == name);
+    final declared = [...?tool?.icons, ...?info?.icons]..sort((a, b) => rank(a).compareTo(rank(b)));
+    final seen = <Uri>{};
+    return [
+      for (final i in declared)
+        if (Uri.tryParse(i.src) case final u? when allowed(u) && seen.add(u))
+          McpIconSource(u, svg: i.mimeType == 'image/svg+xml' || u.path.endsWith('.svg')),
+      for (final origin in [
+        if (siteHost != null) Uri.https(siteHost),
+        url,
+        if (_parentDomain(url.host) case final h?) Uri.https(h),
+      ])
+        if (origin.resolve('/favicon.ico') case final u when seen.add(u)) McpIconSource(u),
+    ];
+  }
+
+  /// `example.com` of `mcp.example.com`; null for an address or a name with
+  /// no dot left to drop. `co.uk` of `a.co.uk` is a miss, not a harm: its
+  /// favicon does not exist, and the next candidate is tried.
+  static String? _parentDomain(String host) {
+    if (InternetAddress.tryParse(host) != null) return null;
+    final parts = host.split('.');
+    return parts.length > 2 ? parts.sublist(1).join('.') : null;
+  }
+
+  /// [id]'s tools, as the user reads them.
+  static List<({String title, String? description})> toolsOf(String id) => [
+    for (final t in _servers[id]?.tools ?? const <Tool>[]) (title: t.title ?? t.name, description: t.description),
+  ];
+
+  static bool isConnecting(String id) => _servers[id]?.connecting != null;
+
+  static bool needsSignIn(String id) => _servers[id]?.needsSignIn ?? false;
+
+  static bool isSigningIn(String id) => _servers[id]?.signingIn != null;
+
+  static bool isSignedIn(String id) => _servers[id]?.secret.oauth != null;
 
   static bool isServerConnected(String id) => _servers[id]?.connected ?? false;
 

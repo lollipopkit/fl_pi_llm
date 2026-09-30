@@ -1,19 +1,26 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart' hide RequestOptions;
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart' show Icons;
+import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/store/memory.dart';
 import 'package:fl_pi_llm_ui/src/store/tool.dart';
+import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
+import 'package:logging/logging.dart' as logging;
 import 'package:mcp_dart/mcp_dart.dart';
 
 part 'type.dart';
@@ -22,10 +29,13 @@ part 'func/http.dart';
 part 'func/html_text.dart';
 part 'func/memory.dart';
 part 'func/history.dart';
+part 'func/skill.dart';
+part 'func/ask_user.dart';
 part 'mcp.dart';
+part 'mcp_auth.dart';
 
-/// The tools a chat offers the model: the built-in ones, and every tool of
-/// every connected MCP server.
+/// The tools a chat offers the model: the built-in ones, the app's own
+/// ([LlmUi.appTools]), and every tool of every connected MCP server.
 abstract final class Tools {
   static const internalTools = <ToolFunc>[
     ...TfMemory.all,
@@ -33,21 +43,41 @@ abstract final class Tools {
     TfHttpReq.instance,
   ];
 
-  /// One tool of each group: what the settings list, one switch each.
-  static List<ToolFunc> get groups => [
-    for (final (i, t) in internalTools.indexed)
-      if (internalTools.indexWhere((e) => e.group == t.group) == i) t,
-  ];
+  /// The group every MCP tool is under, for [LlmUi.offers].
+  static const mcpGroup = 'mcp';
 
-  /// What the model gets, when tools are on at all.
-  static List<LlmTool> get enabled {
-    if (!LlmStores.tool.enabled.get()) return const [];
+  /// Every tool the app has: built into this package or into the app.
+  static List<ToolFunc> get all => [...internalTools, ...LlmUi.appTools()];
+
+  /// One tool of each group: what the settings list, one switch each.
+  static List<ToolFunc> get groups {
+    final all = Tools.all;
     return [
-      for (final t in internalTools)
-        if (isOn(t)) t.llmTool,
-      ...McpTools.llmTools,
+      for (final (i, t) in all.indexed)
+        if (all.indexWhere((e) => e.group == t.group) == i) t,
     ];
   }
+
+  /// What the model gets in a chat of the app's own list — see [enabledFor].
+  static List<LlmTool> get enabled => enabledFor(null);
+
+  /// What the model gets in [meta]'s chat: the tools when they are on at
+  /// all, and the loader of skills when one is on, which is not a tool the
+  /// switch is about.
+  static List<LlmTool> enabledFor(ChatMeta? meta) {
+    final tools = LlmStores.tool.enabled.get();
+    return [
+      if (tools)
+        for (final t in all)
+          if (isOn(t) && LlmUi.offers(meta, t.group)) t.llmTool,
+      if (tools && LlmUi.offers(meta, mcpGroup)) ...McpTools.llmTools,
+      if (skillsOffered(meta)) TfSkill.instance.llmTool,
+      if (LlmUi.offers(meta, TfAskUser.groupName)) TfAskUser.instance.llmTool,
+    ];
+  }
+
+  /// Whether [meta]'s chat is told of the skills and can load them.
+  static bool skillsOffered(ChatMeta? meta) => Skills.enabled.isNotEmpty && LlmUi.offers(meta, TfSkill.groupName);
 
   /// Whether [t]'s switch is on.
   static bool isOn(ToolFunc t) => t.defaultEnabled
@@ -66,7 +96,12 @@ abstract final class Tools {
   /// prompt only then.
   static bool get memoryOn => isOn(TfMemory.all.first);
 
-  static ToolFunc? internal(String name) => internalTools.firstWhereOrNull((e) => e.name == name);
+  /// The tool named [name], built into this package or into the app.
+  static ToolFunc? internal(String name) => switch (name) {
+    _ when name == TfSkill.instance.name => TfSkill.instance,
+    _ when name == TfAskUser.instance.name => TfAskUser.instance,
+    _ => all.firstWhereOrNull((e) => e.name == name),
+  };
 
   /// Runs [run] and keeps how long it took in the result's `details`, which
   /// the session stores with it for the UI (`ms`).

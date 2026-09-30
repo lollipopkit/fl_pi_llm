@@ -5,6 +5,12 @@ edition = "2024"
 description = "pi-agent-core and pi-ai on QuickJS, bridged to Dart"
 license = "AGPL-3.0-only"
 
+
+# Its own workspace root. An app that carries this package inside a Cargo
+# workspace of its own — Server Box does — would otherwise have cargo take the
+# crate for an unlisted member of that one and refuse to build it.
+[workspace]
+
 [lib]
 name = "fl_pi_llm"
 crate-type = ["cdylib", "staticlib", "rlib"]

@@ -40,6 +40,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
   final _key = TextEditingController();
   late final _extra = TextEditingController(text: widget.args?.models?.join(', ') ?? '');
   late var _api = widget.args?.api ?? LlmApi.openaiCompletions;
+  late final _allowInsecure = (widget.args?.allowInsecure ?? false).vn;
 
   /// The stored credential's `env`, kept as it is.
   Map<String, String>? _env;
@@ -57,6 +58,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     for (final c in [_url, _key]) {
       c.addListener(_listSoon);
     }
+    _allowInsecure.addListener(_list);
     if (_existing) {
       Llm.readCredential(_id).then((c) {
         if (!mounted || c == null) return;
@@ -76,6 +78,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     }
     _listed.dispose();
     _listing.dispose();
+    _allowInsecure.dispose();
     _listError.dispose();
     super.dispose();
   }
@@ -86,6 +89,10 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     final u = Uri.tryParse(_baseUrl);
     return u != null && u.host.isNotEmpty && (u.isScheme('https') || u.isScheme('http'));
   }
+
+  /// Whether [_baseUrl] is plain `http` off this device, which the runtime
+  /// refuses unless it is allowed here.
+  bool get _insecure => _urlValid && !FlPiLlm.fetchAllowed(Uri.parse(_baseUrl), const {});
 
   List<String> get _extraIds => [
     for (final m in _extra.text.split(RegExp(r'[,\n]'))) if (m.trim().isNotEmpty) m.trim(),
@@ -109,7 +116,13 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     try {
       final key = _key.text.trim();
       final models = await Llm.rt.listModels(
-        LlmCustomProvider(id: _id, name: _id, api: _api, baseUrl: _baseUrl),
+        LlmCustomProvider(
+          id: _id,
+          name: _id,
+          api: _api,
+          baseUrl: _baseUrl,
+          allowInsecure: _insecure && _allowInsecure.value,
+        ),
         credential: key.isEmpty ? null : LlmCredential.apiKey(key),
       );
       if (probe != _probe) return;
@@ -142,6 +155,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
       baseUrl: _baseUrl,
       headers: widget.args?.headers,
       models: extra.isEmpty ? null : extra,
+      allowInsecure: _insecure && _allowInsecure.value,
     );
     final list = [...LlmStores.llm.customProviders.get() ?? const <LlmCustomProvider>[]];
     final i = list.indexWhere((e) => e.id == _id);
@@ -188,10 +202,10 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final body = SectionList(
-      header: ListenableBuilder(
-        listenable: Listenable.merge([_name, _url, _listed]),
-        builder: (_, _) => ProviderHeader(
+    return DetailPage(
+      embedded: widget.onBack != null,
+      listenable: Listenable.merge([_name, _url, _listed]),
+      header: () => ProviderHeader(
           title: _name.text.trim().isEmpty ? llmL10n.customProvider : _name.text.trim(),
           subtitle: [
             if (_baseUrl.isNotEmpty) _baseUrl,
@@ -201,7 +215,6 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
           onBack: _back,
           onRefresh: _api.listsModels ? _list : null,
         ),
-      ),
       children: [
         SettingsGroup(
           title: llmL10n.endpoint,
@@ -220,6 +233,22 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
                   _list();
                 },
               ).paddingSymmetric(horizontal: 13),
+              // Only for an address that needs it: https, and this device,
+              // are let through anyway.
+              ListenableBuilder(
+                listenable: Listenable.merge([_url, _allowInsecure]),
+                builder: (_, _) => !_insecure
+                    ? const SizedBox.shrink()
+                    : SettingsRow(
+                        icon: Icons.no_encryption_gmailerrorred_outlined,
+                        title: llmL10n.allowInsecure,
+                        subtitle: llmL10n.allowInsecureTip,
+                        trailing: Switch(
+                          value: _allowInsecure.value,
+                          onChanged: (v) => _allowInsecure.value = v,
+                        ),
+                      ),
+              ),
             ],
           ),
         ),
@@ -286,7 +315,5 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
         ),
       ],
     );
-    if (widget.onBack != null) return body;
-    return Scaffold(body: SafeArea(child: body));
   }
 }

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
+import 'package:fl_pi_llm_ui/src/view/settings/mcp_server.dart';
 import 'package:fl_pi_llm_ui/src/view/settings/memory.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -14,6 +17,8 @@ class ToolsPage extends StatelessWidget {
   static final _store = LlmStores.tool;
 
   static IconData _iconOf(ToolFunc t) => switch (t) {
+    ToolFunc(:final groupIcon?) => groupIcon,
+    ToolFunc(:final icon?) => icon,
     TfHistory() => Icons.history,
     TfHttpReq() => Icons.language,
     TfMemory() => Icons.psychology_alt_outlined,
@@ -31,7 +36,14 @@ class ToolsPage extends StatelessWidget {
               icon: Icons.build_outlined,
               title: llmL10n.useTools,
               subtitle: llmL10n.useToolsTip,
-              trailing: StoreSwitch(prop: _store.enabled, callback: (_) => Chats.reconfigureSoon()),
+              trailing: StoreSwitch(
+                prop: _store.enabled,
+                callback: (on) {
+                  // Not connected at launch while off.
+                  if (on) unawaited(McpTools.connectStored());
+                  Chats.reconfigureSoon();
+                },
+              ),
             ),
           ],
         ),
@@ -74,7 +86,7 @@ class ToolsPage extends StatelessWidget {
               title: llmL10n.mcpServers,
               rows: [
                 for (final url in urls) _server(context, url),
-                SettingsRow(icon: Icons.add, title: llmL10n.addServer, onTap: () => _addServer(context)),
+                SettingsRow(icon: Icons.add, title: llmL10n.addServer, onTap: () => McpServerPage.route.go(context)),
               ],
             );
           },
@@ -96,68 +108,44 @@ class ToolsPage extends StatelessWidget {
     final name = McpTools.nameFor(url);
     final on = McpTools.isServerConnected(name);
     final err = McpTools.errorOf(name);
-    void menu([Offset? at]) => showContextMenu(
-      context,
-      [
-        ContextMenuAction(text: libL10n.delete, icon: Icons.delete_outline, destructive: true, onTap: () => _removeServer(context, url)),
-      ],
-      title: url,
-      at: at,
-      sheet: at == null && isMobile,
-    );
+    final String subtitle;
+    final Widget? trailing;
+    if (McpTools.isConnecting(name)) {
+      subtitle = llmL10n.mcpConnecting;
+      trailing = null;
+    } else if (McpTools.isSigningIn(name)) {
+      subtitle = llmL10n.mcpSigningIn;
+      trailing = Btn.text(text: libL10n.cancel, onTap: () => McpTools.cancelSignIn(name));
+    } else if (on) {
+      subtitle = [
+        ?McpTools.labelOf(name),
+        llmL10n.connectedFmt(McpTools.toolCounts[name] ?? 0),
+        if (McpTools.isSignedIn(name)) llmL10n.mcpSignedInShort,
+      ].join(' · ');
+      trailing = null;
+    } else if (McpTools.needsSignIn(name) && McpAuth.canCarrySecrets(url)) {
+      subtitle = llmL10n.mcpNeedsSignIn;
+      trailing = Btn.text(text: libL10n.login, onTap: () => McpServerPage.signIn(name));
+    } else {
+      subtitle = [llmL10n.disconnected, ?err].join(' · ');
+      trailing = Btn.text(
+        text: libL10n.retry,
+        onTap: () async {
+          await McpTools.retryConnection(url);
+          Chats.reconfigureSoon();
+        },
+      );
+    }
     return SettingsRow(
       leading: RowDot(on ? StateColors.running : StateColors.failed),
       title: url.replaceFirst(RegExp(r'^https?://'), ''),
       mono: true,
-      subtitle: on
-          ? [?McpTools.labelOf(name), llmL10n.connectedFmt(McpTools.toolCounts[name] ?? 0)].join(' · ')
-          : [llmL10n.disconnected, ?err].join(' · '),
-      trailing: on
-          ? null
-          : Btn.text(
-              text: libL10n.retry,
-              onTap: () async {
-                await McpTools.retryConnection(name);
-                Chats.reconfigureSoon();
-              },
-            ),
-      onLongPress: menu,
-    ).onSecondary(menu);
+      subtitle: subtitle,
+      trailing: trailing,
+      onTap: () => McpServerPage.route.go(context, args: url),
+    );
   }
 
-  Future<void> _addServer(BuildContext context) async {
-    final ctrl = TextEditingController();
-    final url = await context.showRoundDialog<String>(
-      title: llmL10n.addServer,
-      child: Input(controller: ctrl, autoFocus: true, hint: 'https://mcp.example.net/sse', onSubmitted: context.pop),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
-    );
-    ctrl.dispose();
-    final u = url?.trim();
-    if (u == null || u.isEmpty || !context.mounted) return;
-    if (_store.mcpServers.get().contains(u)) return;
-    // Stored first: a server that is down now is still one the user added,
-    // and it shows as disconnected with a retry.
-    _store.mcpServers.set([..._store.mcpServers.get(), u]);
-    await context.showLoadingDialog(fn: () => McpTools.connect(u));
-    Chats.reconfigureSoon();
-  }
-
-  Future<void> _removeServer(BuildContext context, String url) async {
-    final ok = await context.showRoundDialog<bool>(
-      title: libL10n.delete,
-      child: Text(libL10n.askContinue('${libL10n.delete} $url')),
-      actions: Btnx.cancelRedOk,
-    );
-    if (ok != true) return;
-    _store.mcpServers.set([..._store.mcpServers.get().where((e) => e != url)]);
-    try {
-      await McpTools.removeServer(McpTools.nameFor(url));
-    } catch (e, s) {
-      Loggers.app.warning('Remove MCP server', e, s);
-    }
-    Chats.reconfigureSoon();
-  }
 
   Future<void> _editPermitted(BuildContext context, List<String> list) async {
     await context.showRoundDialog(

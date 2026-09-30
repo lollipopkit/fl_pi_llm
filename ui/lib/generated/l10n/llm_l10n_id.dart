@@ -270,4 +270,143 @@ class LlmLocalizationsId extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Setiap panggilan bertanya dulu kecuali diizinkan di bawah';
+
+  @override
+  String get allowInsecure => 'Izinkan HTTP tanpa enkripsi';
+
+  @override
+  String get allowInsecureTip =>
+      'Alamat ini http:// di luar perangkat ini: kunci API dikirim tanpa enkripsi dan dapat dibaca siapa pun di jalur jaringan. Izinkan hanya di jaringan tepercaya.';
+
+  @override
+  String get configure => 'Atur';
+
+  @override
+  String get supportsThinking => 'Mendukung penalaran';
+
+  @override
+  String get thinkingEffort => 'Upaya penalaran';
+
+  @override
+  String get mcpHeaders => 'Header';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opsional, misalnya Authorization dengan Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Header memerlukan nama berupa huruf, angka, dan tanda hubung, serta sebuah nilai.';
+
+  @override
+  String get mcpNeedsSignIn => 'Perlu masuk';
+
+  @override
+  String get mcpSigningIn => 'Selesaikan proses masuk di browser';
+
+  @override
+  String get mcpSignedIn => 'Sudah masuk. Halaman ini boleh ditutup.';
+
+  @override
+  String get mcpSignedInShort => 'Sudah masuk';
+
+  @override
+  String get mcpSignInFailed => 'Gagal masuk. Tutup halaman ini dan coba lagi.';
+
+  @override
+  String get mcpInsecure =>
+      'Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk.';
+
+  @override
+  String get mcpAddHeader => 'Tambah header';
+
+  @override
+  String get mcpNotSignedIn => 'Belum masuk';
+
+  @override
+  String get mcpSignInTip =>
+      'Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis.';
+
+  @override
+  String get mcpConnecting => 'Menghubungkan…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Petunjuk untuk tugas tertentu yang dibaca model saat tugasnya cocok. Pasang hanya dari sumber tepercaya: model mengikuti isi skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Bukan repositori, tautan, atau perintah `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Tidak ada skill di sana';
+
+  @override
+  String get skillsPick => 'Skill yang akan dipasang';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n dipasang';
+  }
+
+  @override
+  String get skillsUpToDate => 'Sudah terbaru';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n diperbarui';
+  }
+
+  @override
+  String get skillsFromFolder => 'Pasang dari folder';
+
+  @override
+  String get skillsFromZip => 'Pasang dari .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return '$n sumber tidak dapat diperiksa';
+  }
+
+  @override
+  String get skillBuiltin => 'Bawaan';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Kunci dari $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Kunci yang dipakai berasal dari variabel lingkungan $name. Kunci yang diisi di sini akan diutamakan.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Ada pembaruan';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Perbarui semua ($n)';
+  }
+
+  @override
+  String get askUser => 'Bertanya padamu';
+
+  @override
+  String get fieldRequired => 'Wajib';
+
+  @override
+  String get fieldInvalid => 'Tidak valid';
+
+  @override
+  String get waitingForYou => 'Menunggumu';
+
+  @override
+  String get otherAnswer => 'Lainnya';
+
+  @override
+  String get otherAnswerHint => 'Jawabanmu sendiri';
 }

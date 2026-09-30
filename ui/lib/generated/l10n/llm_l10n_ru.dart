@@ -270,4 +270,144 @@ class LlmLocalizationsRu extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Каждый вызов сначала спрашивает, если он не разрешён ниже';
+
+  @override
+  String get allowInsecure => 'Разрешить незашифрованный HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      'Этот адрес — http:// вне этого устройства: ключ API передаётся без шифрования и доступен любому на сетевом пути. Разрешайте только в доверенной сети.';
+
+  @override
+  String get configure => 'Настроить';
+
+  @override
+  String get supportsThinking => 'Поддерживает рассуждения';
+
+  @override
+  String get thinkingEffort => 'Глубина рассуждений';
+
+  @override
+  String get mcpHeaders => 'Заголовки';
+
+  @override
+  String get mcpHeadersTip =>
+      'Необязательно, например Authorization со значением Bearer <token>. Хранятся только на этом устройстве, не попадают в резервные копии и отправляются только этому серверу.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Заголовку нужны имя из букв, цифр и дефисов и значение.';
+
+  @override
+  String get mcpNeedsSignIn => 'Требуется вход';
+
+  @override
+  String get mcpSigningIn => 'Завершите вход в браузере';
+
+  @override
+  String get mcpSignedIn => 'Вход выполнен. Эту страницу можно закрыть.';
+
+  @override
+  String get mcpSignedInShort => 'Вход выполнен';
+
+  @override
+  String get mcpSignInFailed =>
+      'Не удалось войти. Закройте страницу и попробуйте снова.';
+
+  @override
+  String get mcpInsecure =>
+      'Заголовки и вход доступны только для адреса https.';
+
+  @override
+  String get mcpAddHeader => 'Добавить заголовок';
+
+  @override
+  String get mcpNotSignedIn => 'Вход не выполнен';
+
+  @override
+  String get mcpSignInTip =>
+      'Для сервера с OAuth. Вход выполняется в браузере, токен обновляется автоматически.';
+
+  @override
+  String get mcpConnecting => 'Подключение…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Инструкции для определённых задач: модель читает их, когда задача подходит. Устанавливайте только из надёжных источников: модель следует тому, что написано в skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Это не репозиторий, ссылка или команда `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Там не найдено skills';
+
+  @override
+  String get skillsPick => 'Какие skills установить';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return 'Установлено: $n';
+  }
+
+  @override
+  String get skillsUpToDate => 'Всё актуально';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return 'Обновлено: $n';
+  }
+
+  @override
+  String get skillsFromFolder => 'Установить из папки';
+
+  @override
+  String get skillsFromZip => 'Установить из .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'Не удалось проверить источники: $n';
+  }
+
+  @override
+  String get skillBuiltin => 'Встроенный';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Ключ из $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Сейчас используется ключ из переменной окружения $name. Ключ, введённый здесь, имеет приоритет.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Есть обновление';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Обновить все ($n)';
+  }
+
+  @override
+  String get askUser => 'Спросить вас';
+
+  @override
+  String get fieldRequired => 'Обязательно';
+
+  @override
+  String get fieldInvalid => 'Неверный формат';
+
+  @override
+  String get waitingForYou => 'Ждёт вас';
+
+  @override
+  String get otherAnswer => 'Другое';
+
+  @override
+  String get otherAnswerHint => 'Свой ответ';
 }

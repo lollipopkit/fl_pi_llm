@@ -25,7 +25,7 @@ typedef LlmLogger = void Function(String level, String message);
 /// [HttpClient], so the platform's proxy and certificate settings apply.
 /// Sessions are kept in the [PiSessionStore] the runtime is started with.
 final class FlPiLlm {
-  FlPiLlm._(this._http, this._log, this._store, this._credentials);
+  FlPiLlm._(this._http, this._log, this._store, this._credentials, this._environment);
 
   static Future<void>? _libInit;
 
@@ -43,9 +43,16 @@ final class FlPiLlm {
     HttpClient? httpClient,
     LlmLogger? logger,
     ExternalLibrary? externalLibrary,
+    Map<String, String> Function()? environment,
   }) async {
     await (_libInit ??= RustLib.init(externalLibrary: externalLibrary));
-    final rt = FlPiLlm._(httpClient ?? HttpClient(), logger, store, credentials);
+    final rt = FlPiLlm._(
+      httpClient ?? HttpClient(),
+      logger,
+      store,
+      credentials,
+      environment ?? () => Platform.environment,
+    );
     rt._ownsHttp = httpClient == null;
     rt._start();
     return rt;
@@ -55,6 +62,11 @@ final class FlPiLlm {
   final LlmLogger? _log;
   final PiSessionStore _store;
   final LlmCredentials _credentials;
+
+  /// Where a provider without a stored credential finds its key, as pi-ai
+  /// does under Node: `OPENAI_API_KEY` and the like. The app's own
+  /// environment by default, which on a desktop is what it was started with.
+  final Map<String, String> Function() _environment;
   bool _ownsHttp = false;
 
   late final LlmEngine _engine;
@@ -93,17 +105,66 @@ final class FlPiLlm {
   /// The models [provider]'s endpoint lists, fetched with [credential]
   /// without registering it — while the user is still setting it up. Only
   /// for an API that [LlmApi.listsModels].
-  Future<List<LlmModelInfo>> listModels(LlmCustomProvider provider, {LlmCredential? credential}) async => [
-    for (final m in await _request('providers.probe', {
-      'provider': provider.toJson(),
-      'credential': ?credential?.json,
-    }) as List)
-      LlmModelInfo((m as Map).cast<String, Object?>()),
-  ];
+  Future<List<LlmModelInfo>> listModels(LlmCustomProvider provider, {LlmCredential? credential}) async {
+    // The probe goes to an endpoint that is not registered yet, on the terms
+    // it is being set up with.
+    final origin = provider.allowInsecure ? _originOf(provider.baseUrl) : null;
+    final added = origin != null && _probeOrigins.add(origin);
+    try {
+      return [
+        for (final m in await _request('providers.probe', {
+          'provider': provider.toJson(),
+          'credential': ?credential?.json,
+        }) as List)
+          LlmModelInfo((m as Map).cast<String, Object?>()),
+      ];
+    } finally {
+      if (added) _probeOrigins.remove(origin);
+    }
+  }
 
   /// Replaces the user's custom providers.
-  Future<void> setCustomProviders(List<LlmCustomProvider> providers) =>
-      _request('providers.setCustom', {'providers': [for (final p in providers) p.toJson()]});
+  Future<void> setCustomProviders(List<LlmCustomProvider> providers) {
+    _insecureOrigins
+      ..clear()
+      ..addAll([
+        for (final p in providers)
+          if (p.allowInsecure) ?_originOf(p.baseUrl),
+      ]);
+    return _request('providers.setCustom', {'providers': [for (final p in providers) p.toJson()]});
+  }
+
+  /// The origins of custom providers allowed plain `http` off this device,
+  /// and of one being probed with that allowance.
+  final _insecureOrigins = <String>{};
+  final _probeOrigins = <String>{};
+
+  static String? _originOf(String url) {
+    final u = Uri.tryParse(url);
+    return u == null || u.host.isEmpty ? null : u.origin;
+  }
+
+  /// Whether a request to [uri] may go out: `https` anywhere, `http` only to
+  /// this device or to an origin in [insecureOrigins], and nothing else.
+  ///
+  /// Every request pi makes carries or may carry an API key, and plain `http`
+  /// off the device hands it to anyone on the path. A provider on the local
+  /// network that speaks nothing else has to be let through by name —
+  /// [LlmCustomProvider.allowInsecure]. Public for a settings page to know
+  /// before saving whether an address needs that.
+  static bool fetchAllowed(Uri uri, Set<String> insecureOrigins) {
+    if (uri.isScheme('https')) return true;
+    if (!uri.isScheme('http')) return false;
+    final host = uri.host.toLowerCase();
+    if (host == 'localhost' || host == '::1' || host == '[::1]') return true;
+    if (InternetAddress.tryParse(host)?.isLoopback ?? false) return true;
+    return insecureOrigins.contains(uri.origin);
+  }
+
+  /// Where each provider with usable auth gets it, by provider id: `stored
+  /// credential`, or the environment variable its key came from.
+  Future<Map<String, String>> authSources() async =>
+      ((await _request('providers.auth', const {})) as Map).cast<String, String>();
 
   /// Lists the models of dynamic providers again, over the network. Returns
   /// the error of each provider that failed.
@@ -303,6 +364,9 @@ final class FlPiLlm {
           _answer(callId, await _fs(fs, p));
         case final auth when auth.startsWith('auth.'):
           _answer(callId, await _auth(auth, p));
+        case 'env.get':
+          final v = _environment()[p['name'] as String? ?? ''];
+          _answer(callId, v == null || v.isEmpty ? null : v);
         default:
           _answerError(callId, 'Unknown host call: $name');
       }
@@ -323,9 +387,16 @@ final class FlPiLlm {
 
   Future<void> _fetch(int callId, Map<String, Object?> p, Uint8List? body) async {
     final uri = Uri.parse(p['url'] as String);
+    if (!fetchAllowed(uri, {..._insecureOrigins, ..._probeOrigins})) {
+      _answerError(callId, 'fetch refused: $uri is plain http off this device; allow it on its provider');
+      return;
+    }
     final HttpClientRequest req;
     try {
       req = await _http.openUrl(p['method'] as String, uri);
+      // Not followed here: the policy above judged this address, not wherever
+      // it sends the request on to, headers and key and all.
+      req.followRedirects = false;
     } catch (e) {
       _answerError(callId, 'fetch failed: $e');
       return;

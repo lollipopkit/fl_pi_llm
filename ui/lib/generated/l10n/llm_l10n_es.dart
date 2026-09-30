@@ -282,4 +282,144 @@ class LlmLocalizationsEs extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Cada llamada pregunta primero salvo que esté permitida abajo';
+
+  @override
+  String get allowInsecure => 'Permitir HTTP sin cifrar';
+
+  @override
+  String get allowInsecureTip =>
+      'Esta dirección es http:// fuera de este dispositivo: la clave de API se envía sin cifrar y cualquiera en la ruta de red puede leerla. Permítelo solo en una red de confianza.';
+
+  @override
+  String get configure => 'Configurar';
+
+  @override
+  String get supportsThinking => 'Admite razonamiento';
+
+  @override
+  String get thinkingEffort => 'Esfuerzo de razonamiento';
+
+  @override
+  String get mcpHeaders => 'Encabezados';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opcional, como Authorization con Bearer <token>. Se guarda solo en este dispositivo, nunca en copias de seguridad, y solo se envía a este servidor.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Un encabezado necesita un nombre de letras, dígitos y guiones, y un valor.';
+
+  @override
+  String get mcpNeedsSignIn => 'Requiere iniciar sesión';
+
+  @override
+  String get mcpSigningIn => 'Termina de iniciar sesión en el navegador';
+
+  @override
+  String get mcpSignedIn => 'Sesión iniciada. Puedes cerrar esta página.';
+
+  @override
+  String get mcpSignedInShort => 'Sesión iniciada';
+
+  @override
+  String get mcpSignInFailed =>
+      'No se pudo iniciar sesión. Cierra esta página e inténtalo de nuevo.';
+
+  @override
+  String get mcpInsecure =>
+      'Solo una dirección https puede recibir encabezados o iniciar sesión.';
+
+  @override
+  String get mcpAddHeader => 'Añadir encabezado';
+
+  @override
+  String get mcpNotSignedIn => 'Sin iniciar sesión';
+
+  @override
+  String get mcpSignInTip =>
+      'Para un servidor que usa OAuth. Inicias sesión en el navegador y el token se renueva solo.';
+
+  @override
+  String get mcpConnecting => 'Conectando…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Instrucciones para tareas concretas que el modelo lee cuando una tarea encaja. Instala solo desde fuentes de confianza: el modelo sigue lo que dice un skill.';
+
+  @override
+  String get skillSourceInvalid =>
+      'No es un repositorio, enlace ni comando `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'No se encontraron skills ahí';
+
+  @override
+  String get skillsPick => 'Skills para instalar';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n instalados';
+  }
+
+  @override
+  String get skillsUpToDate => 'Al día';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n actualizados';
+  }
+
+  @override
+  String get skillsFromFolder => 'Instalar desde una carpeta';
+
+  @override
+  String get skillsFromZip => 'Instalar desde un .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'No se pudieron comprobar $n fuentes';
+  }
+
+  @override
+  String get skillBuiltin => 'Integrado';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Clave de $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Se usa la clave de la variable de entorno $name. Una clave introducida aquí tiene prioridad.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Actualización disponible';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Actualizar todo ($n)';
+  }
+
+  @override
+  String get askUser => 'Preguntarte';
+
+  @override
+  String get fieldRequired => 'Obligatorio';
+
+  @override
+  String get fieldInvalid => 'No válido';
+
+  @override
+  String get waitingForYou => 'Te espera';
+
+  @override
+  String get otherAnswer => 'Otra';
+
+  @override
+  String get otherAnswerHint => 'Tu propia respuesta';
 }

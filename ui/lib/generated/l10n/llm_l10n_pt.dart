@@ -283,4 +283,144 @@ class LlmLocalizationsPt extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Cada chamada pergunta antes, a menos que esteja permitida abaixo';
+
+  @override
+  String get allowInsecure => 'Permitir HTTP sem criptografia';
+
+  @override
+  String get allowInsecureTip =>
+      'Este endereço é http:// fora deste dispositivo: a chave de API é enviada sem criptografia e qualquer pessoa no caminho da rede pode lê-la. Permita apenas em uma rede confiável.';
+
+  @override
+  String get configure => 'Configurar';
+
+  @override
+  String get supportsThinking => 'Suporta raciocínio';
+
+  @override
+  String get thinkingEffort => 'Esforço de raciocínio';
+
+  @override
+  String get mcpHeaders => 'Cabeçalhos';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opcional, como Authorization com Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Um cabeçalho precisa de um nome com letras, dígitos e hífens, e de um valor.';
+
+  @override
+  String get mcpNeedsSignIn => 'Requer login';
+
+  @override
+  String get mcpSigningIn => 'Conclua o login no navegador';
+
+  @override
+  String get mcpSignedIn => 'Login feito. Pode fechar esta página.';
+
+  @override
+  String get mcpSignedInShort => 'Login feito';
+
+  @override
+  String get mcpSignInFailed =>
+      'Falha no login. Feche esta página e tente de novo.';
+
+  @override
+  String get mcpInsecure =>
+      'Só um endereço https pode receber cabeçalhos ou login.';
+
+  @override
+  String get mcpAddHeader => 'Adicionar cabeçalho';
+
+  @override
+  String get mcpNotSignedIn => 'Sem login';
+
+  @override
+  String get mcpSignInTip =>
+      'Para um servidor que usa OAuth. O login é feito no navegador e o token é renovado sozinho.';
+
+  @override
+  String get mcpConnecting => 'Conectando…';
+
+  @override
+  String get skills => 'Skills';
+
+  @override
+  String get skillsTip =>
+      'Instruções para tarefas específicas, que o modelo lê quando uma tarefa corresponde. Instale só de fontes confiáveis: o modelo segue o que um skill diz.';
+
+  @override
+  String get skillSourceInvalid =>
+      'Não é um repositório, link ou comando `npx skills add`';
+
+  @override
+  String get skillsNotFound => 'Nenhum skill encontrado ali';
+
+  @override
+  String get skillsPick => 'Skills para instalar';
+
+  @override
+  String skillsInstalledFmt(int n) {
+    return '$n instalados';
+  }
+
+  @override
+  String get skillsUpToDate => 'Atualizado';
+
+  @override
+  String skillsUpdatedFmt(int n) {
+    return '$n atualizados';
+  }
+
+  @override
+  String get skillsFromFolder => 'Instalar de uma pasta';
+
+  @override
+  String get skillsFromZip => 'Instalar de um .zip';
+
+  @override
+  String skillsUpdateFailedFmt(int n) {
+    return 'Não foi possível verificar $n fontes';
+  }
+
+  @override
+  String get skillBuiltin => 'Integrado';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Chave de $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'A chave em uso vem da variável de ambiente $name. Uma chave inserida aqui tem prioridade.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Atualização disponível';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Atualizar tudo ($n)';
+  }
+
+  @override
+  String get askUser => 'Perguntar a você';
+
+  @override
+  String get fieldRequired => 'Obrigatório';
+
+  @override
+  String get fieldInvalid => 'Inválido';
+
+  @override
+  String get waitingForYou => 'Aguardando você';
+
+  @override
+  String get otherAnswer => 'Outra';
+
+  @override
+  String get otherAnswerHint => 'Sua própria resposta';
 }
