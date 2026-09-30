@@ -82,12 +82,15 @@
   "supportsThinking": "Düşünme desteği",
   "thinkingEffort": "Düşünme düzeyi",
   "mcpHeaders": "Başlıklar",
-  "mcpHeadersTip": "İsteğe bağlı. Her satıra bir \"Ad: değer\", örneğin Authorization: Bearer <token>. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.",
-  "mcpHeadersInvalid": "Her satırda bir ad, iki nokta ve bir değer olmalı.",
+  "mcpHeadersTip": "İsteğe bağlı, örneğin Bearer <token> değeriyle Authorization. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.",
+  "mcpHeadersInvalid": "Bir başlığın harf, rakam ve tirelerden oluşan bir adı ve bir değeri olmalı.",
   "mcpNeedsSignIn": "Oturum açılması gerekiyor",
   "mcpSigningIn": "Oturum açmayı tarayıcıda tamamlayın",
   "mcpSignedIn": "Oturum açıldı. Bu sayfayı kapatabilirsiniz.",
   "mcpSignedInShort": "Oturum açık",
   "mcpSignInFailed": "Oturum açılamadı. Bu sayfayı kapatıp yeniden deneyin.",
-  "mcpInsecure": "Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir."
+  "mcpInsecure": "Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir.",
+  "mcpAddHeader": "Başlık ekle",
+  "mcpNotSignedIn": "Oturum açılmadı",
+  "mcpSignInTip": "OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir."
 }

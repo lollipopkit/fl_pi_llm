@@ -306,11 +306,11 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Facultatif. Un « Nom: valeur » par ligne, par exemple Authorization: Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.';
+      'Facultatif, par exemple Authorization avec Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Chaque ligne doit contenir un nom, deux-points et une valeur.';
+      'Un en-tête doit avoir un nom (lettres, chiffres et tirets) et une valeur.';
 
   @override
   String get mcpNeedsSignIn => 'Connexion requise';
@@ -331,4 +331,14 @@ class LlmLocalizationsFr extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Seule une adresse https peut recevoir des en-têtes ou une connexion.';
+
+  @override
+  String get mcpAddHeader => 'Ajouter un en-tête';
+
+  @override
+  String get mcpNotSignedIn => 'Non connecté';
+
+  @override
+  String get mcpSignInTip =>
+      'Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement.';
 }

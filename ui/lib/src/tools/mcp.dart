@@ -191,6 +191,25 @@ abstract final class McpTools {
     changes.notify();
   }
 
+  /// Stores [url] with [headers] in place of [old] (null for a new server),
+  /// and connects it. A sign-in stays with the address: moving to another
+  /// forgets it, being for another server.
+  static Future<void> saveServer({String? old, required String url, required Map<String, String> headers}) async {
+    if (headers.isNotEmpty && !McpAuth.canCarrySecrets(url)) throw StateError('Not sending headers to $url over plain http');
+    final list = LlmStores.tool.mcpServers.get();
+    if (url != old && list.contains(url)) throw StateError('$url is added already');
+    if (old != null && old != url) await removeServer(nameFor(old));
+    final id = nameFor(url);
+    McpSecrets.write(id, McpSecrets.read(id).withHeaders(headers));
+    // In the list before connecting: a server that is down now is still one
+    // the user added, and it shows as disconnected with a retry.
+    LlmStores.tool.mcpServers.set([
+      for (final e in list) e == old ? url : e,
+      if (old == null || !list.contains(old)) url,
+    ]);
+    await connect(url);
+  }
+
   /// Signs in to [id] in the browser, then connects with what it got.
   /// Returns quietly when the user stopped waiting.
   static Future<void> signIn(String id, {required Future<void> Function(Uri) open}) async {
@@ -244,6 +263,11 @@ abstract final class McpTools {
 
   /// The headers [id] is sent, to edit them.
   static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
+
+  /// [id]'s tools, as the user reads them.
+  static List<({String title, String? description})> toolsOf(String id) => [
+    for (final t in _servers[id]?.tools ?? const <Tool>[]) (title: t.title ?? t.name, description: t.description),
+  ];
 
   static bool needsSignIn(String id) => _servers[id]?.needsSignIn ?? false;
 

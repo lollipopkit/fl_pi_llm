@@ -194,15 +194,12 @@ void main() {
       expect(_stored(mock.url)!['headers'], {'X-Api-Key': 'k-1'});
     });
 
-    test('are parsed a line each, and refused when a line is not one', () {
-      expect(McpSecret.parseHeaders('Authorization: Bearer a:b\n\n X-Key : v '), {
-        'Authorization': 'Bearer a:b',
-        'X-Key': 'v',
-      });
-      expect(McpSecret.parseHeaders(''), isEmpty);
-      expect(McpSecret.parseHeaders('no colon'), isNull);
-      expect(McpSecret.parseHeaders('Bad Name: v'), isNull);
-      expect(McpSecret.parseHeaders('X-Key:'), isNull);
+    test('have names of token characters only', () {
+      expect(McpSecret.isHeaderName('X-Api-Key'), isTrue);
+      expect(McpSecret.isHeaderName('Authorization'), isTrue);
+      expect(McpSecret.isHeaderName('Bad Name'), isFalse);
+      expect(McpSecret.isHeaderName('X:Key'), isFalse);
+      expect(McpSecret.isHeaderName(''), isFalse);
     });
 
     test('are never sent over plain http to another machine', () async {
@@ -214,6 +211,51 @@ void main() {
         McpAuth.signIn('http://mcp.example.net/mcp', open: (_) async {}),
         throwsStateError,
       );
+    });
+  });
+
+  group('saving', () {
+    test('adds a server with its headers, and connects it', () async {
+      mock.apiKey = 'k-1';
+      await McpTools.saveServer(url: mock.url, headers: {'X-Api-Key': 'k-1'});
+      expect(LlmStores.tool.mcpServers.get(), [mock.url]);
+      expect(McpTools.isServerConnected(McpTools.nameFor(mock.url)), isTrue);
+    });
+
+    test("a new address takes the old one's place, and not its sign-in", () async {
+      await McpTools.connect(mock.url);
+      await McpTools.signIn(McpTools.nameFor(mock.url), open: mock.approve);
+      LlmStores.tool.mcpServers.set(['https://a.example/mcp', mock.url, 'https://b.example/mcp']);
+
+      final moved = '${mock.base}/mcp?v=2';
+      await McpTools.saveServer(old: mock.url, url: moved, headers: {'X-K': 'v'});
+
+      expect(LlmStores.tool.mcpServers.get(), ['https://a.example/mcp', moved, 'https://b.example/mcp']);
+      expect(_stored(mock.url), isNull);
+      expect(_stored(moved), {'headers': {'X-K': 'v'}});
+      await McpTools.removeServer(McpTools.nameFor(moved));
+    });
+
+    test('keeps the sign-in when only the headers change', () async {
+      await McpTools.connect(mock.url);
+      await McpTools.signIn(McpTools.nameFor(mock.url), open: mock.approve);
+      LlmStores.tool.mcpServers.set([mock.url]);
+      await McpTools.saveServer(old: mock.url, url: mock.url, headers: {'X-K': 'v'});
+      expect(_stored(mock.url)!['oauth'], isNotNull);
+      expect(McpTools.isServerConnected(McpTools.nameFor(mock.url)), isTrue);
+    });
+
+    test('refuses an address already added, and headers over plain http', () async {
+      LlmStores.tool.mcpServers.set([mock.url, 'https://b.example/mcp']);
+      await expectLater(
+        McpTools.saveServer(old: 'https://b.example/mcp', url: mock.url, headers: const {}),
+        throwsStateError,
+      );
+      await expectLater(
+        McpTools.saveServer(url: 'http://mcp.example.net/mcp', headers: {'X-K': 'v'}),
+        throwsStateError,
+      );
+      expect(LlmStores.tool.mcpServers.get(), [mock.url, 'https://b.example/mcp']);
     });
   });
 

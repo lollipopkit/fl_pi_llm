@@ -310,11 +310,11 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Optional. One \"Name: value\" a line, such as Authorization: Bearer <token>. Kept on this device only, never backed up, and sent only to this server.';
+      'Optional, such as Authorization with Bearer <token>. Kept on this device only, never backed up, and sent only to this server.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Each line needs a name, a colon and a value.';
+      'A header needs a name of letters, digits and dashes, and a value.';
 
   @override
   String get mcpNeedsSignIn => 'Sign-in required';
@@ -335,4 +335,14 @@ class LlmLocalizationsEn extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Only an https address can be sent headers or signed in to.';
+
+  @override
+  String get mcpAddHeader => 'Add header';
+
+  @override
+  String get mcpNotSignedIn => 'Not signed in';
+
+  @override
+  String get mcpSignInTip =>
+      'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.';
 }

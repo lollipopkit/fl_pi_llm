@@ -614,13 +614,13 @@ abstract class LlmLocalizations {
   /// No description provided for @mcpHeadersTip.
   ///
   /// In en, this message translates to:
-  /// **'Optional. One \"Name: value\" a line, such as Authorization: Bearer <token>. Kept on this device only, never backed up, and sent only to this server.'**
+  /// **'Optional, such as Authorization with Bearer <token>. Kept on this device only, never backed up, and sent only to this server.'**
   String get mcpHeadersTip;
 
   /// No description provided for @mcpHeadersInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Each line needs a name, a colon and a value.'**
+  /// **'A header needs a name of letters, digits and dashes, and a value.'**
   String get mcpHeadersInvalid;
 
   /// No description provided for @mcpNeedsSignIn.
@@ -658,6 +658,24 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Only an https address can be sent headers or signed in to.'**
   String get mcpInsecure;
+
+  /// No description provided for @mcpAddHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get mcpAddHeader;
+
+  /// No description provided for @mcpNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get mcpNotSignedIn;
+
+  /// No description provided for @mcpSignInTip.
+  ///
+  /// In en, this message translates to:
+  /// **'For a server that uses OAuth. You sign in in the browser, and the token is renewed on its own.'**
+  String get mcpSignInTip;
 }
 
 class _LlmLocalizationsDelegate

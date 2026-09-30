@@ -82,12 +82,15 @@
   "supportsThinking": "Ondersteunt denken",
   "thinkingEffort": "Denkinspanning",
   "mcpHeaders": "Headers",
-  "mcpHeadersTip": "Optioneel. Eén \"Naam: waarde\" per regel, zoals Authorization: Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.",
-  "mcpHeadersInvalid": "Elke regel heeft een naam, een dubbele punt en een waarde nodig.",
+  "mcpHeadersTip": "Optioneel, zoals Authorization met Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.",
+  "mcpHeadersInvalid": "Een header heeft een naam van letters, cijfers en streepjes nodig, en een waarde.",
   "mcpNeedsSignIn": "Aanmelden vereist",
   "mcpSigningIn": "Rond het aanmelden af in de browser",
   "mcpSignedIn": "Aangemeld. Je kunt deze pagina sluiten.",
   "mcpSignedInShort": "Aangemeld",
   "mcpSignInFailed": "Aanmelden mislukt. Sluit deze pagina en probeer het opnieuw.",
-  "mcpInsecure": "Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld."
+  "mcpInsecure": "Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld.",
+  "mcpAddHeader": "Header toevoegen",
+  "mcpNotSignedIn": "Niet aangemeld",
+  "mcpSignInTip": "Voor een server die OAuth gebruikt. Je meldt je aan in de browser en het token wordt vanzelf vernieuwd."
 }

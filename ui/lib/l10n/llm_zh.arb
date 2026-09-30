@@ -82,12 +82,15 @@
   "supportsThinking": "支持思考",
   "thinkingEffort": "思考强度",
   "mcpHeaders": "请求头",
-  "mcpHeadersTip": "可选。每行一个\"名称: 值\"，例如 Authorization: Bearer <token>。只保存在本机，不会备份，只发送给该服务器。",
-  "mcpHeadersInvalid": "每行需要名称、冒号和值。",
+  "mcpHeadersTip": "可选，例如名称 Authorization、值 Bearer <token>。只保存在本机，不会备份，只发送给该服务器。",
+  "mcpHeadersInvalid": "请求头需要名称和值，名称只能包含字母、数字和连字符。",
   "mcpNeedsSignIn": "需要登录",
   "mcpSigningIn": "请在浏览器中完成登录",
   "mcpSignedIn": "已登录，可以关闭此页面。",
   "mcpSignedInShort": "已登录",
   "mcpSignInFailed": "登录失败，可以关闭此页面后重试。",
-  "mcpInsecure": "只有 https 地址可以使用请求头或登录。"
+  "mcpInsecure": "只有 https 地址可以使用请求头或登录。",
+  "mcpAddHeader": "添加请求头",
+  "mcpNotSignedIn": "未登录",
+  "mcpSignInTip": "适用于使用 OAuth 的服务器。在浏览器中完成登录，token 会自动续期。"
 }

@@ -292,11 +292,11 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Opsional. Satu \"Nama: nilai\" per baris, misalnya Authorization: Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.';
+      'Opsional, misalnya Authorization dengan Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Setiap baris memerlukan nama, titik dua, dan nilai.';
+      'Header memerlukan nama berupa huruf, angka, dan tanda hubung, serta sebuah nilai.';
 
   @override
   String get mcpNeedsSignIn => 'Perlu masuk';
@@ -316,4 +316,14 @@ class LlmLocalizationsId extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk.';
+
+  @override
+  String get mcpAddHeader => 'Tambah header';
+
+  @override
+  String get mcpNotSignedIn => 'Belum masuk';
+
+  @override
+  String get mcpSignInTip =>
+      'Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis.';
 }

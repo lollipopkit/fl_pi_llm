@@ -292,11 +292,11 @@ class LlmLocalizationsRu extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Необязательно. По одному «Имя: значение» в строке, например Authorization: Bearer <token>. Хранятся только на этом устройстве, не попадают в резервные копии и отправляются только этому серверу.';
+      'Необязательно, например Authorization со значением Bearer <token>. Хранятся только на этом устройстве, не попадают в резервные копии и отправляются только этому серверу.';
 
   @override
   String get mcpHeadersInvalid =>
-      'В каждой строке нужны имя, двоеточие и значение.';
+      'Заголовку нужны имя из букв, цифр и дефисов и значение.';
 
   @override
   String get mcpNeedsSignIn => 'Требуется вход';
@@ -317,4 +317,14 @@ class LlmLocalizationsRu extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Заголовки и вход доступны только для адреса https.';
+
+  @override
+  String get mcpAddHeader => 'Добавить заголовок';
+
+  @override
+  String get mcpNotSignedIn => 'Вход не выполнен';
+
+  @override
+  String get mcpSignInTip =>
+      'Для сервера с OAuth. Вход выполняется в браузере, токен обновляется автоматически.';
 }

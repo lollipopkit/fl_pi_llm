@@ -27,26 +27,8 @@ final class McpSecret {
     if (oauth != null) 'oauth': oauth!.toJson(),
   };
 
-  /// `Name: value`, one a line, as the user types them. Null when a line is
-  /// not one.
-  static Map<String, String>? parseHeaders(String text) {
-    final out = <String, String>{};
-    for (final raw in const LineSplitter().convert(text)) {
-      final line = raw.trim();
-      if (line.isEmpty) continue;
-      final i = line.indexOf(':');
-      if (i <= 0) return null;
-      final name = line.substring(0, i).trim();
-      final value = line.substring(i + 1).trim();
-      // RFC 9110 token characters; a value may not break the line.
-      if (!RegExp(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$").hasMatch(name) || value.isEmpty) return null;
-      out[name] = value;
-    }
-    return out;
-  }
-
-  static String formatHeaders(Map<String, String> headers) =>
-      [for (final MapEntry(:key, :value) in headers.entries) '$key: $value'].join('\n');
+  /// An RFC 9110 field name.
+  static bool isHeaderName(String name) => RegExp(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$").hasMatch(name);
 }
 
 /// What a sign-in got, and what renewing it takes.

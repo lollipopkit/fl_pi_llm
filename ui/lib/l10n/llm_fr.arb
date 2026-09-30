@@ -82,12 +82,15 @@
   "supportsThinking": "Raisonnement",
   "thinkingEffort": "Effort de réflexion",
   "mcpHeaders": "En-têtes",
-  "mcpHeadersTip": "Facultatif. Un « Nom: valeur » par ligne, par exemple Authorization: Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.",
-  "mcpHeadersInvalid": "Chaque ligne doit contenir un nom, deux-points et une valeur.",
+  "mcpHeadersTip": "Facultatif, par exemple Authorization avec Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.",
+  "mcpHeadersInvalid": "Un en-tête doit avoir un nom (lettres, chiffres et tirets) et une valeur.",
   "mcpNeedsSignIn": "Connexion requise",
   "mcpSigningIn": "Terminez la connexion dans le navigateur",
   "mcpSignedIn": "Connecté. Vous pouvez fermer cette page.",
   "mcpSignedInShort": "Connecté",
   "mcpSignInFailed": "Échec de la connexion. Fermez cette page et réessayez.",
-  "mcpInsecure": "Seule une adresse https peut recevoir des en-têtes ou une connexion."
+  "mcpInsecure": "Seule une adresse https peut recevoir des en-têtes ou une connexion.",
+  "mcpAddHeader": "Ajouter un en-tête",
+  "mcpNotSignedIn": "Non connecté",
+  "mcpSignInTip": "Pour un serveur qui utilise OAuth. La connexion se fait dans le navigateur et le jeton est renouvelé automatiquement."
 }

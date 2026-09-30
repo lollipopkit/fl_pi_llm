@@ -305,11 +305,11 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Optioneel. Eén \"Naam: waarde\" per regel, zoals Authorization: Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.';
+      'Optioneel, zoals Authorization met Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Elke regel heeft een naam, een dubbele punt en een waarde nodig.';
+      'Een header heeft een naam van letters, cijfers en streepjes nodig, en een waarde.';
 
   @override
   String get mcpNeedsSignIn => 'Aanmelden vereist';
@@ -330,4 +330,14 @@ class LlmLocalizationsNl extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld.';
+
+  @override
+  String get mcpAddHeader => 'Header toevoegen';
+
+  @override
+  String get mcpNotSignedIn => 'Niet aangemeld';
+
+  @override
+  String get mcpSignInTip =>
+      'Voor een server die OAuth gebruikt. Je meldt je aan in de browser en het token wordt vanzelf vernieuwd.';
 }

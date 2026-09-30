@@ -287,10 +287,10 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      '任意。1 行に 1 つ「名前: 値」、例: Authorization: Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。';
+      '任意。例: 名前 Authorization、値 Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。';
 
   @override
-  String get mcpHeadersInvalid => '各行には名前、コロン、値が必要です。';
+  String get mcpHeadersInvalid => 'ヘッダーには英数字とハイフンからなる名前と、値が必要です。';
 
   @override
   String get mcpNeedsSignIn => 'サインインが必要です';
@@ -309,4 +309,13 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get mcpInsecure => 'ヘッダーの送信やサインインは https のアドレスでのみ使えます。';
+
+  @override
+  String get mcpAddHeader => 'ヘッダーを追加';
+
+  @override
+  String get mcpNotSignedIn => '未サインイン';
+
+  @override
+  String get mcpSignInTip => 'OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。';
 }

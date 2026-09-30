@@ -82,12 +82,15 @@
   "supportsThinking": "思考対応",
   "thinkingEffort": "思考レベル",
   "mcpHeaders": "ヘッダー",
-  "mcpHeadersTip": "任意。1 行に 1 つ「名前: 値」、例: Authorization: Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。",
-  "mcpHeadersInvalid": "各行には名前、コロン、値が必要です。",
+  "mcpHeadersTip": "任意。例: 名前 Authorization、値 Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。",
+  "mcpHeadersInvalid": "ヘッダーには英数字とハイフンからなる名前と、値が必要です。",
   "mcpNeedsSignIn": "サインインが必要です",
   "mcpSigningIn": "ブラウザでサインインを完了してください",
   "mcpSignedIn": "サインインしました。このページは閉じてかまいません。",
   "mcpSignedInShort": "サインイン済み",
   "mcpSignInFailed": "サインインに失敗しました。このページを閉じてやり直してください。",
-  "mcpInsecure": "ヘッダーの送信やサインインは https のアドレスでのみ使えます。"
+  "mcpInsecure": "ヘッダーの送信やサインインは https のアドレスでのみ使えます。",
+  "mcpAddHeader": "ヘッダーを追加",
+  "mcpNotSignedIn": "未サインイン",
+  "mcpSignInTip": "OAuth を使うサーバー向けです。サインインはブラウザで行い、トークンは自動で更新されます。"
 }

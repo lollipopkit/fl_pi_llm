@@ -82,12 +82,15 @@
   "supportsThinking": "Suporta raciocínio",
   "thinkingEffort": "Esforço de raciocínio",
   "mcpHeaders": "Cabeçalhos",
-  "mcpHeadersTip": "Opcional. Um \"Nome: valor\" por linha, como Authorization: Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.",
-  "mcpHeadersInvalid": "Cada linha precisa de um nome, dois-pontos e um valor.",
+  "mcpHeadersTip": "Opcional, como Authorization com Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.",
+  "mcpHeadersInvalid": "Um cabeçalho precisa de um nome com letras, dígitos e hífens, e de um valor.",
   "mcpNeedsSignIn": "Requer login",
   "mcpSigningIn": "Conclua o login no navegador",
   "mcpSignedIn": "Login feito. Pode fechar esta página.",
   "mcpSignedInShort": "Login feito",
   "mcpSignInFailed": "Falha no login. Feche esta página e tente de novo.",
-  "mcpInsecure": "Só um endereço https pode receber cabeçalhos ou login."
+  "mcpInsecure": "Só um endereço https pode receber cabeçalhos ou login.",
+  "mcpAddHeader": "Adicionar cabeçalho",
+  "mcpNotSignedIn": "Sem login",
+  "mcpSignInTip": "Para um servidor que usa OAuth. O login é feito no navegador e o token é renovado sozinho."
 }

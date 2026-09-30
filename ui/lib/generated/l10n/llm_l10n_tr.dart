@@ -291,11 +291,11 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'İsteğe bağlı. Her satıra bir \"Ad: değer\", örneğin Authorization: Bearer <token>. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.';
+      'İsteğe bağlı, örneğin Bearer <token> değeriyle Authorization. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Her satırda bir ad, iki nokta ve bir değer olmalı.';
+      'Bir başlığın harf, rakam ve tirelerden oluşan bir adı ve bir değeri olmalı.';
 
   @override
   String get mcpNeedsSignIn => 'Oturum açılması gerekiyor';
@@ -316,4 +316,14 @@ class LlmLocalizationsTr extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir.';
+
+  @override
+  String get mcpAddHeader => 'Başlık ekle';
+
+  @override
+  String get mcpNotSignedIn => 'Oturum açılmadı';
+
+  @override
+  String get mcpSignInTip =>
+      'OAuth kullanan bir sunucu için. Oturum tarayıcıda açılır ve belirteç kendiliğinden yenilenir.';
 }

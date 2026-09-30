@@ -305,11 +305,11 @@ class LlmLocalizationsPt extends LlmLocalizations {
 
   @override
   String get mcpHeadersTip =>
-      'Opcional. Um \"Nome: valor\" por linha, como Authorization: Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.';
+      'Opcional, como Authorization com Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.';
 
   @override
   String get mcpHeadersInvalid =>
-      'Cada linha precisa de um nome, dois-pontos e um valor.';
+      'Um cabeçalho precisa de um nome com letras, dígitos e hífens, e de um valor.';
 
   @override
   String get mcpNeedsSignIn => 'Requer login';
@@ -330,4 +330,14 @@ class LlmLocalizationsPt extends LlmLocalizations {
   @override
   String get mcpInsecure =>
       'Só um endereço https pode receber cabeçalhos ou login.';
+
+  @override
+  String get mcpAddHeader => 'Adicionar cabeçalho';
+
+  @override
+  String get mcpNotSignedIn => 'Sem login';
+
+  @override
+  String get mcpSignInTip =>
+      'Para um servidor que usa OAuth. O login é feito no navegador e o token é renovado sozinho.';
 }

@@ -82,12 +82,15 @@
   "supportsThinking": "Mendukung penalaran",
   "thinkingEffort": "Upaya penalaran",
   "mcpHeaders": "Header",
-  "mcpHeadersTip": "Opsional. Satu \"Nama: nilai\" per baris, misalnya Authorization: Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.",
-  "mcpHeadersInvalid": "Setiap baris memerlukan nama, titik dua, dan nilai.",
+  "mcpHeadersTip": "Opsional, misalnya Authorization dengan Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.",
+  "mcpHeadersInvalid": "Header memerlukan nama berupa huruf, angka, dan tanda hubung, serta sebuah nilai.",
   "mcpNeedsSignIn": "Perlu masuk",
   "mcpSigningIn": "Selesaikan proses masuk di browser",
   "mcpSignedIn": "Sudah masuk. Halaman ini boleh ditutup.",
   "mcpSignedInShort": "Sudah masuk",
   "mcpSignInFailed": "Gagal masuk. Tutup halaman ini dan coba lagi.",
-  "mcpInsecure": "Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk."
+  "mcpInsecure": "Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk.",
+  "mcpAddHeader": "Tambah header",
+  "mcpNotSignedIn": "Belum masuk",
+  "mcpSignInTip": "Untuk server yang memakai OAuth. Masuk dilakukan di browser, dan token diperbarui otomatis."
 }
