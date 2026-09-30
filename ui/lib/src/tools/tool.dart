@@ -50,6 +50,9 @@ abstract final class Tools {
     ];
   }
 
+  /// What the model gets in a chat of the app's own list — see [enabledFor].
+  static List<LlmTool> get enabled => enabledFor(null);
+
   /// What the model gets in [meta]'s chat, when tools are on at all.
   static List<LlmTool> enabledFor(ChatMeta? meta) {
     if (!LlmStores.tool.enabled.get()) return const [];
