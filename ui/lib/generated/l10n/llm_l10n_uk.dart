@@ -280,4 +280,10 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get configure => 'Налаштувати';
+
+  @override
+  String get supportsThinking => 'Підтримує міркування';
+
+  @override
+  String get thinkingEffort => 'Глибина міркувань';
 }

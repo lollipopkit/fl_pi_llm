@@ -174,5 +174,7 @@
   "@allowInsecureTip": {
     "description": "Why plain http is refused unless allowed."
   },
-  "configure": "Configure"
+  "configure": "Configure",
+  "supportsThinking": "Thinking",
+  "thinkingEffort": "Thinking effort"
 }

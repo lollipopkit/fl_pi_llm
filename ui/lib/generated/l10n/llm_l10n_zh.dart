@@ -273,6 +273,12 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get configure => '配置';
+
+  @override
+  String get supportsThinking => '支持思考';
+
+  @override
+  String get thinkingEffort => '思考强度';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -543,4 +549,10 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get configure => '設定';
+
+  @override
+  String get supportsThinking => '支援思考';
+
+  @override
+  String get thinkingEffort => '思考強度';
 }

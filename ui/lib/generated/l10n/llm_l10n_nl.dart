@@ -293,4 +293,10 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get configure => 'Instellen';
+
+  @override
+  String get supportsThinking => 'Ondersteunt denken';
+
+  @override
+  String get thinkingEffort => 'Denkinspanning';
 }

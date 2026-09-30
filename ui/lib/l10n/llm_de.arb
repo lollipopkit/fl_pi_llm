@@ -78,5 +78,7 @@
   "useToolsTip": "Jeder Aufruf fragt zuerst, außer er ist unten erlaubt",
   "allowInsecure": "Unverschlüsseltes HTTP erlauben",
   "allowInsecureTip": "Diese Adresse ist http:// außerhalb dieses Geräts: Der API-Schlüssel wird unverschlüsselt gesendet und ist für jeden auf dem Netzwerkpfad lesbar. Nur in einem vertrauenswürdigen Netzwerk erlauben.",
-  "configure": "Einrichten"
+  "configure": "Einrichten",
+  "supportsThinking": "Denkfähig",
+  "thinkingEffort": "Denkaufwand"
 }

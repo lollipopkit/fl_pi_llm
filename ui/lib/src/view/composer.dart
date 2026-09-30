@@ -378,7 +378,7 @@ class _ThinkingChipState extends State<_ThinkingChip> {
       builder: (toggle) => widget.compact
           ? Btn.icon(
               icon: const Icon(Icons.psychology_outlined, size: _iconSize),
-              text: '${libL10n.thinking}: $cur',
+              text: '${llmL10n.thinkingEffort}: $cur',
               onTap: toggle,
               padding: _btnPadding,
             )

@@ -293,4 +293,10 @@ class LlmLocalizationsDe extends LlmLocalizations {
 
   @override
   String get configure => 'Einrichten';
+
+  @override
+  String get supportsThinking => 'Denkfähig';
+
+  @override
+  String get thinkingEffort => 'Denkaufwand';
 }

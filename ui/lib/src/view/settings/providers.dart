@@ -221,7 +221,7 @@ String modelSubtitle(LlmModelInfo m) {
       : w >= 1000
       ? '${(w / 1000).round()}K'
       : '$w';
-  return [m.id, ctx, if (m.reasoning) libL10n.thinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
+  return [m.id, ctx, if (m.reasoning) llmL10n.supportsThinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
 }
 
 /// A favorite star at the end of a model's row.

@@ -592,6 +592,18 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Configure'**
   String get configure;
+
+  /// No description provided for @supportsThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get supportsThinking;
+
+  /// No description provided for @thinkingEffort.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking effort'**
+  String get thinkingEffort;
 }
 
 class _LlmLocalizationsDelegate

@@ -280,4 +280,10 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get configure => 'Atur';
+
+  @override
+  String get supportsThinking => 'Mendukung penalaran';
+
+  @override
+  String get thinkingEffort => 'Upaya penalaran';
 }

@@ -279,4 +279,10 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get configure => 'Yapılandır';
+
+  @override
+  String get supportsThinking => 'Düşünme desteği';
+
+  @override
+  String get thinkingEffort => 'Düşünme düzeyi';
 }

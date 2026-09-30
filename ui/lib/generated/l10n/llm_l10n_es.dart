@@ -292,4 +292,10 @@ class LlmLocalizationsEs extends LlmLocalizations {
 
   @override
   String get configure => 'Configurar';
+
+  @override
+  String get supportsThinking => 'Admite razonamiento';
+
+  @override
+  String get thinkingEffort => 'Esfuerzo de razonamiento';
 }

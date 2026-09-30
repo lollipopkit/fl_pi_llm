@@ -78,5 +78,7 @@
   "useToolsTip": "Aşağıda izin verilmedikçe her çağrı önce sorar",
   "allowInsecure": "Şifresiz HTTP'ye izin ver",
   "allowInsecureTip": "Bu adres bu cihaz dışında http://: API anahtarı şifrelenmeden gönderilir ve ağ yolundaki herkes okuyabilir. Yalnızca güvendiğiniz bir ağda izin verin.",
-  "configure": "Yapılandır"
+  "configure": "Yapılandır",
+  "supportsThinking": "Düşünme desteği",
+  "thinkingEffort": "Düşünme düzeyi"
 }

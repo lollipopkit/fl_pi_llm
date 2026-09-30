@@ -275,4 +275,10 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get configure => '設定';
+
+  @override
+  String get supportsThinking => '思考対応';
+
+  @override
+  String get thinkingEffort => '思考レベル';
 }

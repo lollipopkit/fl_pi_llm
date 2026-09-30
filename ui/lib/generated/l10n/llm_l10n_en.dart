@@ -298,4 +298,10 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get configure => 'Configure';
+
+  @override
+  String get supportsThinking => 'Thinking';
+
+  @override
+  String get thinkingEffort => 'Thinking effort';
 }

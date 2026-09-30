@@ -280,4 +280,10 @@ class LlmLocalizationsRu extends LlmLocalizations {
 
   @override
   String get configure => 'Настроить';
+
+  @override
+  String get supportsThinking => 'Поддерживает рассуждения';
+
+  @override
+  String get thinkingEffort => 'Глубина рассуждений';
 }

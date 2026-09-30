@@ -78,5 +78,7 @@
   "useToolsTip": "每次呼叫都會先詢問，除非已在下方允許",
   "allowInsecure": "允許明文 HTTP",
   "allowInsecureTip": "該位址是本機以外的 http://，API Key 會以明文傳送，網路路徑上的任何人都能讀取。僅在可信網路中開啟。",
-  "configure": "設定"
+  "configure": "設定",
+  "supportsThinking": "支援思考",
+  "thinkingEffort": "思考強度"
 }
