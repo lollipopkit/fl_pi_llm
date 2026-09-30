@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "已更新 {n} 个",
   "skillsFromFolder": "从文件夹安装",
   "skillsFromZip": "从 .zip 安装",
-  "skillsUpdateFailedFmt": "{n} 个来源检查失败"
+  "skillsUpdateFailedFmt": "{n} 个来源检查失败",
+  "skillBuiltin": "内置"
 }

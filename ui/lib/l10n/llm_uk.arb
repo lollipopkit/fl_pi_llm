@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "Оновлено: {n}",
   "skillsFromFolder": "Встановити з теки",
   "skillsFromZip": "Встановити з .zip",
-  "skillsUpdateFailedFmt": "Не вдалося перевірити джерела: {n}"
+  "skillsUpdateFailedFmt": "Не вдалося перевірити джерела: {n}",
+  "skillBuiltin": "Вбудований"
 }

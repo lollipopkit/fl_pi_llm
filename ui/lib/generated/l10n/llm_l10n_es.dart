@@ -383,4 +383,7 @@ class LlmLocalizationsEs extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return 'No se pudieron comprobar $n fuentes';
   }
+
+  @override
+  String get skillBuiltin => 'Integrado';
 }

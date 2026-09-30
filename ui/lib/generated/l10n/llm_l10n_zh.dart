@@ -358,6 +358,9 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n 个来源检查失败';
   }
+
+  @override
+  String get skillBuiltin => '内置';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -713,4 +716,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   String skillsUpdateFailedFmt(int n) {
     return '$n 個來源檢查失敗';
   }
+
+  @override
+  String get skillBuiltin => '內建';
 }

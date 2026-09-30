@@ -748,6 +748,12 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'{n} sources could not be checked'**
   String skillsUpdateFailedFmt(int n);
+
+  /// No description provided for @skillBuiltin.
+  ///
+  /// In en, this message translates to:
+  /// **'Built in'**
+  String get skillBuiltin;
 }
 
 class _LlmLocalizationsDelegate

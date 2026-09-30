@@ -370,4 +370,7 @@ class LlmLocalizationsUk extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return 'Не вдалося перевірити джерела: $n';
   }
+
+  @override
+  String get skillBuiltin => 'Вбудований';
 }

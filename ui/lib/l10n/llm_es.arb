@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "{n} actualizados",
   "skillsFromFolder": "Instalar desde una carpeta",
   "skillsFromZip": "Instalar desde un .zip",
-  "skillsUpdateFailedFmt": "No se pudieron comprobar {n} fuentes"
+  "skillsUpdateFailedFmt": "No se pudieron comprobar {n} fuentes",
+  "skillBuiltin": "Integrado"
 }

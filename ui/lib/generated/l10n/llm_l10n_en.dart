@@ -389,4 +389,7 @@ class LlmLocalizationsEn extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n sources could not be checked';
   }
+
+  @override
+  String get skillBuiltin => 'Built in';
 }

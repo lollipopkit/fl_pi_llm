@@ -49,6 +49,7 @@ abstract final class SkillFetch {
       DownloadSource(:final url) => await _download(url),
       SiteSource(:final url) => await _wellKnown(url) ?? await _download(url),
       LocalSource(:final path) => await _local(path),
+      BuiltinSource() => throw StateError('A built-in skill comes with the app, not from a source'),
     };
     final wanted = source.skill?.toLowerCase();
     return (

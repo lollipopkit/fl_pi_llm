@@ -320,6 +320,34 @@ void main() {
       expect(res.failed.keys, ['o/r']);
     });
 
+    test("the app's own: kept current with the app, switched off rather than removed", () async {
+      FoundSkill help(String body) => SkillDiscovery.find({'SKILL.md': _b(_md('app-help', 'Help.', body))}).single;
+      await Skills.syncBuiltin([help('v1')]);
+      final first = Skills.byDir('app-help')!;
+      expect(first.builtin, isTrue);
+      expect(() => Skills.remove('app-help'), throwsStateError);
+
+      await Skills.syncBuiltin([help('v1')]);
+      expect(Skills.byDir('app-help')!.updatedAt, first.updatedAt, reason: 'unchanged, not rewritten');
+
+      Skills.setEnabled('app-help', false);
+      await Skills.syncBuiltin([help('v2')]);
+      expect(Skills.read('app-help'), contains('v2'));
+      expect(Skills.byDir('app-help')!.enabled, isFalse);
+      expect((await Skills.update()).failed, isEmpty, reason: 'never fetched');
+
+      await Skills.syncBuiltin(const []);
+      expect(Skills.byDir('app-help'), isNull);
+    });
+
+    test("one the user installed under the app's name stays theirs", () async {
+      served['/SKILL.md'] = _b(_md('app-help', 'Mine.'));
+      await installAll('$base/SKILL.md');
+      await Skills.syncBuiltin(SkillDiscovery.find({'SKILL.md': _b(_md('app-help', 'Theirs.'))}));
+      expect(Skills.byDir('app-help')!.description, 'Mine.');
+      expect(Skills.byDir('app-help')!.builtin, isFalse);
+    });
+
     test('removed, files and all', () async {
       served['/SKILL.md'] = _b(_md('gone'));
       await installAll('$base/SKILL.md');

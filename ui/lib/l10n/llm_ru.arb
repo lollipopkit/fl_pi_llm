@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "Обновлено: {n}",
   "skillsFromFolder": "Установить из папки",
   "skillsFromZip": "Установить из .zip",
-  "skillsUpdateFailedFmt": "Не удалось проверить источники: {n}"
+  "skillsUpdateFailedFmt": "Не удалось проверить источники: {n}",
+  "skillBuiltin": "Встроенный"
 }

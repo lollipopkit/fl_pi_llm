@@ -370,4 +370,7 @@ class LlmLocalizationsTr extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n kaynak denetlenemedi';
   }
+
+  @override
+  String get skillBuiltin => 'Yerleşik';
 }

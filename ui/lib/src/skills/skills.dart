@@ -41,6 +41,10 @@ final class InstalledSkill {
   final DateTime updatedAt;
   final bool enabled;
 
+  /// Shipped with the app: switched off rather than removed, and updated with
+  /// the app rather than from a source.
+  bool get builtin => source is BuiltinSource;
+
   InstalledSkill copyWith({bool? enabled}) => InstalledSkill(
     dir: dir,
     name: name,
@@ -204,6 +208,11 @@ abstract final class Skills {
   }
 
   static void remove(String dir) {
+    if (_skills[dir]?.builtin ?? false) throw StateError('$dir comes with the app');
+    _drop(dir);
+  }
+
+  static void _drop(String dir) {
     final d = Directory('$root/$dir');
     if (_inside(root, d.path) && d.existsSync()) d.deleteSync(recursive: true);
     _skills.remove(dir);
@@ -223,7 +232,7 @@ abstract final class Skills {
   static Future<({List<String> updated, Map<String, String> failed})> update() async {
     final bySource = <String, List<InstalledSkill>>{};
     for (final s in all) {
-      if (s.source case final src?) (bySource[jsonEncode(src.toJson())] ??= []).add(s);
+      if (s.source case final src? when src is! BuiltinSource) (bySource[jsonEncode(src.toJson())] ??= []).add(s);
     }
     final updated = <String>[];
     final failed = <String, String>{};
@@ -247,6 +256,24 @@ abstract final class Skills {
       }
     }
     return (updated: updated, failed: failed);
+  }
+
+  /// Installs the skills the app ships, [skills], where they are missing or
+  /// differ, and removes the ones it no longer ships. Each keeps its switch.
+  /// One the user installed under the same name stays theirs.
+  static Future<void> syncBuiltin(List<FoundSkill> skills) async {
+    if (!_hasRoot) return;
+    final shipped = <String>{};
+    for (final s in skills) {
+      final dir = SkillDiscovery.dirName(s.name);
+      shipped.add(dir);
+      final have = _skills[dir];
+      if (have != null && (!have.builtin || have.hash == hashOf(s.files))) continue;
+      await install(s, const BuiltinSource());
+    }
+    for (final s in all) {
+      if (s.builtin && !shipped.contains(s.dir)) _drop(s.dir);
+    }
   }
 
   /// SHA-256 over the files in path order, each its path then its bytes:

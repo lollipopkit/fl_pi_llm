@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "{n} aktualisiert",
   "skillsFromFolder": "Aus einem Ordner installieren",
   "skillsFromZip": "Aus einer .zip installieren",
-  "skillsUpdateFailedFmt": "{n} Quellen konnten nicht geprüft werden"
+  "skillsUpdateFailedFmt": "{n} Quellen konnten nicht geprüft werden",
+  "skillBuiltin": "Integriert"
 }

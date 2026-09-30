@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "{n} diperbarui",
   "skillsFromFolder": "Pasang dari folder",
   "skillsFromZip": "Pasang dari .zip",
-  "skillsUpdateFailedFmt": "{n} sumber tidak dapat diperiksa"
+  "skillsUpdateFailedFmt": "{n} sumber tidak dapat diperiksa",
+  "skillBuiltin": "Bawaan"
 }

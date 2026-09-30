@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "{n} bijgewerkt",
   "skillsFromFolder": "Installeren uit een map",
   "skillsFromZip": "Installeren uit een .zip",
-  "skillsUpdateFailedFmt": "{n} bronnen konden niet worden gecontroleerd"
+  "skillsUpdateFailedFmt": "{n} bronnen konden niet worden gecontroleerd",
+  "skillBuiltin": "Ingebouwd"
 }

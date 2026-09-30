@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "{n} güncellendi",
   "skillsFromFolder": "Klasörden kur",
   "skillsFromZip": ".zip’ten kur",
-  "skillsUpdateFailedFmt": "{n} kaynak denetlenemedi"
+  "skillsUpdateFailedFmt": "{n} kaynak denetlenemedi",
+  "skillBuiltin": "Yerleşik"
 }

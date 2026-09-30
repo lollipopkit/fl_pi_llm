@@ -104,5 +104,6 @@
   "skillsUpdatedFmt": "已更新 {n} 個",
   "skillsFromFolder": "從資料夾安裝",
   "skillsFromZip": "從 .zip 安裝",
-  "skillsUpdateFailedFmt": "{n} 個來源檢查失敗"
+  "skillsUpdateFailedFmt": "{n} 個來源檢查失敗",
+  "skillBuiltin": "內建"
 }

@@ -370,4 +370,7 @@ class LlmLocalizationsId extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n sumber tidak dapat diperiksa';
   }
+
+  @override
+  String get skillBuiltin => 'Bawaan';
 }

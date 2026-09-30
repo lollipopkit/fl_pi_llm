@@ -23,6 +23,7 @@ sealed class SkillSource {
     'download' => DownloadSource(Uri.parse(j['url'] as String)),
     'site' => SiteSource(Uri.parse(j['url'] as String)),
     'local' => LocalSource(j['path'] as String),
+    'builtin' => const BuiltinSource(),
     _ => null,
   };
 
@@ -260,6 +261,24 @@ final class LocalSource extends SkillSource {
 
   @override
   SkillSource _withSkill(String skill) => LocalSource(path, skill: skill);
+
+  @override
+  String toString() => id;
+}
+
+/// A skill the app ships: installed and replaced by [Skills.syncBuiltin], as
+/// the app is updated, and never fetched.
+final class BuiltinSource extends SkillSource {
+  const BuiltinSource({super.skill});
+
+  @override
+  String get id => 'builtin';
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'builtin'};
+
+  @override
+  SkillSource _withSkill(String skill) => BuiltinSource(skill: skill);
 
   @override
   String toString() => id;

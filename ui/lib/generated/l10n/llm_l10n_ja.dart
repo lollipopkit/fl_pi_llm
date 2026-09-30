@@ -361,4 +361,7 @@ class LlmLocalizationsJa extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n 件の提供元を確認できませんでした';
   }
+
+  @override
+  String get skillBuiltin => '内蔵';
 }

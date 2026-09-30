@@ -175,7 +175,7 @@ class _SkillsPageState extends State<SkillsPage> {
                 if (all.isEmpty) SettingsRow(icon: Icons.auto_stories_outlined, title: libL10n.empty, muted: true),
                 for (final s in all)
                   SettingsRow(
-                    title: s.name,
+                    title: s.builtin ? '${s.name} · ${llmL10n.skillBuiltin}' : s.name,
                     subtitle: s.description,
                     trailing: SwitchX(
                       value: s.enabled,
@@ -226,13 +226,18 @@ class SkillPage extends StatelessWidget {
     final files = Skills.filesOf(s.dir);
     return DetailPage(
       embedded: false,
-      header: () => ProviderHeader(title: s.name, subtitle: s.source?.id ?? s.dir),
+      header: () => ProviderHeader(title: s.name, subtitle: s.builtin ? llmL10n.skillBuiltin : s.source?.id ?? s.dir),
       children: [
         SettingsGroup(
           title: s.name,
           rows: [
             SettingsRow(icon: Icons.notes, title: s.description),
-            SettingsRow(icon: Icons.link, title: libL10n.source, subtitle: [?s.source?.id, s.skillPath].join(' · '), mono: true),
+            SettingsRow(
+              icon: Icons.link,
+              title: libL10n.source,
+              subtitle: s.builtin ? llmL10n.skillBuiltin : [?s.source?.id, s.skillPath].join(' · '),
+              mono: !s.builtin,
+            ),
             SettingsRow(
               icon: Icons.folder_outlined,
               title: '${libL10n.file} · ${files.length}',
@@ -246,16 +251,18 @@ class SkillPage extends StatelessWidget {
             title: 'SKILL.md',
             header: Padding(padding: const EdgeInsets.all(13), child: ChatMarkdown(body)),
           ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Btn.text(
-              text: libL10n.delete,
-              textStyle: TextStyle(color: context.theme.colorScheme.error),
-              onTap: () => _delete(context, s),
-            ),
-          ],
-        ),
+        // One that comes with the app is switched off instead.
+        if (!s.builtin)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Btn.text(
+                text: libL10n.delete,
+                textStyle: TextStyle(color: context.theme.colorScheme.error),
+                onTap: () => _delete(context, s),
+              ),
+            ],
+          ),
       ],
     );
   }

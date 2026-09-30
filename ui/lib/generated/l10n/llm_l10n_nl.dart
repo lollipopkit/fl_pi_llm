@@ -384,4 +384,7 @@ class LlmLocalizationsNl extends LlmLocalizations {
   String skillsUpdateFailedFmt(int n) {
     return '$n bronnen konden niet worden gecontroleerd';
   }
+
+  @override
+  String get skillBuiltin => 'Ingebouwd';
 }

@@ -221,5 +221,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "skillBuiltin": "Built in"
 }
