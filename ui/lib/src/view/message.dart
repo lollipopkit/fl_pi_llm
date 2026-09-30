@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_markdown_plus_latex/flutter_markdown_plus_latex.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
@@ -530,7 +531,10 @@ class _ToolCardState extends State<_ToolCard> {
               children: [
                 Row(
                   children: [
-                    Icon(iconOf(widget.name), size: 19, color: scheme.onSurfaceVariant),
+                    if (McpTools.serverOfTool(widget.name) case final server?)
+                      McpIconView(server: server, tool: widget.name, size: 19, color: scheme.onSurfaceVariant)
+                    else
+                      Icon(iconOf(widget.name), size: 19, color: scheme.onSurfaceVariant),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,3 +758,71 @@ List<(String, String)> _imagesOf(LlmMessage m) {
   ];
 }
 
+/// An MCP server's icon, or its tool's: the first of [McpTools.iconsOf] that
+/// loads, the extension glyph until one does and when none does.
+class McpIconView extends StatefulWidget {
+  const McpIconView({super.key, required this.server, this.tool, required this.size, this.color});
+
+  final String server;
+  final String? tool;
+  final double size;
+  final Color? color;
+
+  @override
+  State<McpIconView> createState() => _McpIconViewState();
+}
+
+class _McpIconViewState extends State<McpIconView> {
+  /// Those that did not load, this run: a favicon a site does not have is
+  /// asked for once, not by every card.
+  static final _failed = <Uri>{};
+
+  void _fail(Uri u) {
+    if (!_failed.add(u)) return;
+    // Not in the build that found out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Icon(Icons.extension_outlined, size: widget.size, color: widget.color);
+    final dark = context.theme.brightness == Brightness.dark;
+    final source = McpTools.iconsOf(widget.server, name: widget.tool, dark: dark).firstWhereOrNull((c) => !_failed.contains(c.uri));
+    if (source == null) return fallback;
+    final u = source.uri;
+    final size = widget.size;
+    Widget onError(BuildContext _, Object _, StackTrace? _) {
+      _fail(u);
+      return fallback;
+    }
+
+    final Widget image;
+    if (u.data case final data?) {
+      final bytes = data.contentAsBytes();
+      image = source.svg || data.mimeType == 'image/svg+xml'
+          ? SvgPicture.memory(bytes, width: size, height: size, errorBuilder: onError)
+          : Image.memory(bytes, width: size, height: size, errorBuilder: onError);
+    } else if (source.svg) {
+      image = SvgPicture.network(
+        '$u',
+        width: size,
+        height: size,
+        placeholderBuilder: (_) => fallback,
+        errorBuilder: onError,
+      );
+    } else {
+      image = Image.network(
+        '$u',
+        width: size,
+        height: size,
+        filterQuality: FilterQuality.medium,
+        // The glyph while it loads, so a card does not jump when it arrives.
+        frameBuilder: (_, child, frame, sync) => sync || frame != null ? child : fallback,
+        errorBuilder: onError,
+      );
+    }
+    return ClipRRect(borderRadius: BorderRadius.circular(4), child: image);
+  }
+}

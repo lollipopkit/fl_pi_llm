@@ -22,6 +22,9 @@ final class _Mock {
   /// Access tokens that let a request in.
   final valid = <String>{};
 
+  /// Added to the server's `serverInfo`.
+  Map<String, Object?> serverInfo = const {};
+
   /// Token expiry in seconds, per grant.
   int codeExpiresIn = 3600;
   bool refreshFails = false;
@@ -118,7 +121,7 @@ final class _Mock {
       'initialize' => {
         'protocolVersion': (msg['params'] as Map)['protocolVersion'],
         'capabilities': {'tools': {}},
-        'serverInfo': {'name': 'mock', 'version': '1'},
+        'serverInfo': {'name': 'mock', 'version': '1', ...serverInfo},
       },
       'tools/list' => {
         'tools': [
@@ -257,6 +260,34 @@ void main() {
       );
       expect(LlmStores.tool.mcpServers.get(), [mock.url, 'https://b.example/mcp']);
     });
+  });
+
+  test('icons: declared ones from its own hosts, then favicons', () async {
+    mock
+      ..apiKey = 'k'
+      ..serverInfo = {
+        'websiteUrl': 'https://example.com/about',
+        'icons': [
+          {'src': 'https://tracker.example.net/i.png'},
+          {'src': 'data:image/png;base64,AAAA', 'theme': 'light'},
+          {'src': 'https://cdn.example.com/dark.svg', 'theme': 'dark'},
+          {'src': 'http://example.com/plain.png'},
+        ],
+      };
+    await McpTools.saveServer(url: mock.url, headers: {'X-Api-Key': 'k'});
+    final id = McpTools.nameFor(mock.url);
+    final dark = McpTools.iconsOf(id, dark: true);
+    expect([for (final i in dark) '${i.uri}'.substring(0, 24)], [
+      'https://cdn.example.com/',
+      'data:image/png;base64,AA',
+      'https://example.com/favi',
+      '${mock.base}/favicon.ico'.substring(0, 24),
+    ]);
+    expect(dark.first.svg, isTrue);
+    expect('${dark[3].uri}', '${mock.base}/favicon.ico');
+    expect('${McpTools.iconsOf(id, dark: false).first.uri}', startsWith('data:'));
+    expect(McpTools.serverOfTool(McpTools.toolName(id, 'echo')), id);
+    expect(McpTools.serverOfTool('memory_read'), isNull);
   });
 
   group('sign-in', () {

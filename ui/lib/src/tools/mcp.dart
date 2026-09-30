@@ -26,6 +26,15 @@ final class _McpServer {
   String get label => client?.getServerVersion()?.name ?? Uri.tryParse(url)?.host ?? url;
 }
 
+/// An image an MCP server or tool may be shown with.
+@immutable
+final class McpIconSource {
+  const McpIconSource(this.uri, {this.svg = false});
+
+  final Uri uri;
+  final bool svg;
+}
+
 /// The MCP servers (Streamable HTTP) and their tools.
 abstract final class McpTools {
   static final _servers = <String, _McpServer>{};
@@ -263,6 +272,55 @@ abstract final class McpTools {
 
   /// The headers [id] is sent, to edit them.
   static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
+
+  /// The server whose tool [name] is, of [toolName]'s making.
+  static String? serverOfTool(String name) => _servers.keys.firstWhereOrNull((id) => name.startsWith('${id}__'));
+
+  /// Where the icon of [id], or of its tool [name], may be, best first.
+  ///
+  /// What the tool and the server declare (MCP's `icons`), in the theme's
+  /// shade first, then the favicons of the server's website and of its own
+  /// host and that host's parent domain — an `mcp.example.com` whose site is
+  /// `example.com`. A declared icon is taken only as data or from those
+  /// hosts: an arbitrary URL would have the app call wherever a server says.
+  static List<McpIconSource> iconsOf(String id, {String? name, required bool dark}) {
+    final s = _servers[id];
+    if (s == null) return const [];
+    final info = s.client?.getServerVersion();
+    final url = Uri.parse(s.url);
+    final site = Uri.tryParse(info?.websiteUrl ?? '');
+    final siteHost = site != null && site.isScheme('https') && site.host.isNotEmpty ? site.host : null;
+    final trusted = {
+      for (final h in [url.host, ?siteHost]) ...[h, ?_parentDomain(h)],
+    };
+    bool allowed(Uri u) =>
+        u.isScheme('data') || (u.isScheme('https') && trusted.any((t) => u.host == t || u.host.endsWith('.$t')));
+    // The theme's shade, then either, then the other.
+    int rank(McpIcon i) => i.theme == null ? 1 : ((i.theme!.name == 'dark') == dark ? 0 : 2);
+    final tool = name == null ? null : s.tools.firstWhereOrNull((t) => toolName(id, t.name) == name);
+    final declared = [...?tool?.icons, ...?info?.icons]..sort((a, b) => rank(a).compareTo(rank(b)));
+    final seen = <Uri>{};
+    return [
+      for (final i in declared)
+        if (Uri.tryParse(i.src) case final u? when allowed(u) && seen.add(u))
+          McpIconSource(u, svg: i.mimeType == 'image/svg+xml' || u.path.endsWith('.svg')),
+      for (final origin in [
+        if (siteHost != null) Uri.https(siteHost),
+        url,
+        if (_parentDomain(url.host) case final h?) Uri.https(h),
+      ])
+        if (origin.resolve('/favicon.ico') case final u when seen.add(u)) McpIconSource(u),
+    ];
+  }
+
+  /// `example.com` of `mcp.example.com`; null for an address or a name with
+  /// no dot left to drop. `co.uk` of `a.co.uk` is a miss, not a harm: its
+  /// favicon does not exist, and the next candidate is tried.
+  static String? _parentDomain(String host) {
+    if (InternetAddress.tryParse(host) != null) return null;
+    final parts = host.split('.');
+    return parts.length > 2 ? parts.sublist(1).join('.') : null;
+  }
 
   /// [id]'s tools, as the user reads them.
   static List<({String title, String? description})> toolsOf(String id) => [
