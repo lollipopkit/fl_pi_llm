@@ -37,6 +37,10 @@ class Composer extends StatefulWidget {
   /// Text put in by a deep link, for the new-chat composer.
   static final draft = nvn<String>();
 
+  /// The scope [draft] is for — see [scope]. Set before [draft]: only the
+  /// new-chat composer of that scope takes it. Null is the app's own list.
+  static String? draftScope;
+
   /// Set when a message makes the chat: the composer that takes over keeps
   /// the keyboard.
   static var _keepFocus = false;
@@ -74,10 +78,12 @@ class _ComposerState extends State<Composer> {
 
   void _takeDraft() {
     final d = Composer.draft.value;
-    // A chat's composer leaves it to the new chat's, which is on its way.
-    if (d == null || widget.chatId != null) return;
+    // A chat's composer leaves it to the new chat's, which is on its way —
+    // and another place's new-chat composer to that place's.
+    if (d == null || widget.chatId != null || Composer.draftScope != widget.scope) return;
     _ctrl.text = d;
     Composer.draft.value = null;
+    Composer.draftScope = null;
   }
 
   LlmModelRef? get _model {
