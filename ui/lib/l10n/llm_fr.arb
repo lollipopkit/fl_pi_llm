@@ -75,5 +75,7 @@
   "untitled": "Sans titre",
   "usableModelsFmt": "{n} utilisables · {m} fournisseurs",
   "useTools": "Utiliser les outils",
-  "useToolsTip": "Chaque appel demande d'abord, sauf s'il est autorisé ci-dessous"
+  "useToolsTip": "Chaque appel demande d'abord, sauf s'il est autorisé ci-dessous",
+  "allowInsecure": "Autoriser HTTP non chiffré",
+  "allowInsecureTip": "Cette adresse est en http:// hors de cet appareil : la clé d'API est envoyée en clair, lisible par quiconque sur le chemin réseau. À n'autoriser que sur un réseau de confiance."
 }

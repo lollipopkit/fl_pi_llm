@@ -270,4 +270,11 @@ class LlmLocalizationsId extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Setiap panggilan bertanya dulu kecuali diizinkan di bawah';
+
+  @override
+  String get allowInsecure => 'Izinkan HTTP tanpa enkripsi';
+
+  @override
+  String get allowInsecureTip =>
+      'Alamat ini http:// di luar perangkat ini: kunci API dikirim tanpa enkripsi dan dapat dibaca siapa pun di jalur jaringan. Izinkan hanya di jaringan tepercaya.';
 }

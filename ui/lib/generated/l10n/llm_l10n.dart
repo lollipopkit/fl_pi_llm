@@ -574,6 +574,18 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Each call asks first unless it is allowed below'**
   String get useToolsTip;
+
+  /// Switch on a custom provider whose address is plain http off the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow plain HTTP'**
+  String get allowInsecure;
+
+  /// Why plain http is refused unless allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This address is http:// off this device: the API key is sent unencrypted, readable to anyone on the network path. Allow it only on a network you trust.'**
+  String get allowInsecureTip;
 }
 
 class _LlmLocalizationsDelegate

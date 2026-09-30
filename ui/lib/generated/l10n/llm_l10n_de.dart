@@ -283,4 +283,11 @@ class LlmLocalizationsDe extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Jeder Aufruf fragt zuerst, außer er ist unten erlaubt';
+
+  @override
+  String get allowInsecure => 'Unverschlüsseltes HTTP erlauben';
+
+  @override
+  String get allowInsecureTip =>
+      'Diese Adresse ist http:// außerhalb dieses Geräts: Der API-Schlüssel wird unverschlüsselt gesendet und ist für jeden auf dem Netzwerkpfad lesbar. Nur in einem vertrauenswürdigen Netzwerk erlauben.';
 }

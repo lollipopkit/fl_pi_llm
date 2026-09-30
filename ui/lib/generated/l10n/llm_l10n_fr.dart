@@ -284,4 +284,11 @@ class LlmLocalizationsFr extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Chaque appel demande d\'abord, sauf s\'il est autorisé ci-dessous';
+
+  @override
+  String get allowInsecure => 'Autoriser HTTP non chiffré';
+
+  @override
+  String get allowInsecureTip =>
+      'Cette adresse est en http:// hors de cet appareil : la clé d\'API est envoyée en clair, lisible par quiconque sur le chemin réseau. À n\'autoriser que sur un réseau de confiance.';
 }

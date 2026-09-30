@@ -270,4 +270,11 @@ class LlmLocalizationsUk extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Кожен виклик спершу питає, якщо його не дозволено нижче';
+
+  @override
+  String get allowInsecure => 'Дозволити незашифрований HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      'Ця адреса — http:// поза цим пристроєм: ключ API надсилається без шифрування і доступний будь-кому на мережевому шляху. Дозволяйте лише в довіреній мережі.';
 }

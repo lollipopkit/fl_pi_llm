@@ -358,10 +358,11 @@ abstract final class Chats {
     return sb.toString();
   }
 
-  /// Makes a new chat and returns its id. Its session is created on open.
-  static String create() {
+  /// Makes a new chat in [scope] and returns its id. Its session is created
+  /// on open.
+  static String create({String? scope}) {
     final id = shortid.generate();
-    LlmStores.chat.put(ChatMeta(id: id, updatedAt: DateTime.now(), model: Llm.defaultModel));
+    LlmStores.chat.put(ChatMeta(id: id, updatedAt: DateTime.now(), model: Llm.defaultModel, scope: scope));
     return id;
   }
 
@@ -437,7 +438,10 @@ abstract final class Chats {
     chat.approvals.value = chat.approvals.value.skip(1).toList();
     switch (answer) {
       case ApprovalAnswer.always:
-        LlmStores.tool.permittedTools.set({...LlmStores.tool.permittedTools.get(), pending.call.name}.toList());
+        // Remembered only for a tool that offers it — see [ToolFunc.allowAlways].
+        if (Tools.internal(pending.call.name)?.allowAlways ?? true) {
+          LlmStores.tool.permittedTools.set({...LlmStores.tool.permittedTools.get(), pending.call.name}.toList());
+        }
         pending._complete(const LlmApproval.allow());
       case ApprovalAnswer.once:
         pending._complete(const LlmApproval.allow());
@@ -533,16 +537,17 @@ abstract final class Chats {
   static Future<void> purgeTrash() async {
     final keep = Duration(days: LlmUi.trashDays());
     final now = DateTime.now();
-    for (final m in LlmStores.chat.all(trashed: true)) {
+    for (final m in LlmStores.chat.all(trashed: true, anyScope: true)) {
       if (now.difference(m.trashedAt!) > keep) await deleteForever(m.id);
     }
   }
 
-  /// Chats whose title or conversation contains [query], newest first.
-  static Future<List<ChatMeta>> search(String query) async {
+  /// Chats in [scope] whose title or conversation contains [query], newest
+  /// first.
+  static Future<List<ChatMeta>> search(String query, {String? scope}) async {
     final q = query.toLowerCase();
     final hits = await Llm.sessionsContaining(query);
-    final all = LlmStores.chat.all();
+    final all = LlmStores.chat.all(scope: scope);
     return [
       for (final m in all)
         if ((m.title?.toLowerCase().contains(q) ?? false) || hits.contains(m.id)) m,
@@ -561,6 +566,7 @@ abstract final class Chats {
     final tools = _toolsFor(meta).isNotEmpty;
     return [
       LlmStores.llm.systemPrompt.get(),
+      ?LlmUi.appPrompt(meta),
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
     ].where((e) => e.isNotEmpty).join('\n\n');
@@ -592,7 +598,7 @@ abstract final class Chats {
 
   static List<LlmTool> _toolsFor(ChatMeta? meta) {
     if (meta?.useTools == false) return const [];
-    return Tools.enabled;
+    return Tools.enabledFor(meta);
   }
 
   static ThinkingLevel _thinkingFor(LlmModelRef model) {
@@ -610,8 +616,17 @@ abstract final class Chats {
   }
 
   static Future<LlmApproval> _approve(LlmToolCall call) async {
-    if (Tools.internal(call.name)?.trusted ?? false) return const LlmApproval.allow();
-    if (LlmStores.tool.permittedTools.get().contains(call.name)) return const LlmApproval.allow();
+    final tool = Tools.internal(call.name);
+    if (tool?.trusted ?? false) return const LlmApproval.allow();
+    try {
+      if (await tool?.preApprove(call.args, call.sessionId) case final decided?) return decided;
+    } catch (e, s) {
+      // Not decided, then: the user is asked, which is never the unsafe way.
+      Loggers.app.warning('Pre-approve ${call.name}', e, s);
+    }
+    if ((tool?.allowAlways ?? true) && LlmStores.tool.permittedTools.get().contains(call.name)) {
+      return const LlmApproval.allow();
+    }
     // A chat's id is its session's: the question goes where the run is.
     final chat = _open[call.sessionId];
     if (chat == null) return const LlmApproval.deny('The chat is not open');

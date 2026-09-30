@@ -93,17 +93,61 @@ final class FlPiLlm {
   /// The models [provider]'s endpoint lists, fetched with [credential]
   /// without registering it — while the user is still setting it up. Only
   /// for an API that [LlmApi.listsModels].
-  Future<List<LlmModelInfo>> listModels(LlmCustomProvider provider, {LlmCredential? credential}) async => [
-    for (final m in await _request('providers.probe', {
-      'provider': provider.toJson(),
-      'credential': ?credential?.json,
-    }) as List)
-      LlmModelInfo((m as Map).cast<String, Object?>()),
-  ];
+  Future<List<LlmModelInfo>> listModels(LlmCustomProvider provider, {LlmCredential? credential}) async {
+    // The probe goes to an endpoint that is not registered yet, on the terms
+    // it is being set up with.
+    final origin = provider.allowInsecure ? _originOf(provider.baseUrl) : null;
+    final added = origin != null && _probeOrigins.add(origin);
+    try {
+      return [
+        for (final m in await _request('providers.probe', {
+          'provider': provider.toJson(),
+          'credential': ?credential?.json,
+        }) as List)
+          LlmModelInfo((m as Map).cast<String, Object?>()),
+      ];
+    } finally {
+      if (added) _probeOrigins.remove(origin);
+    }
+  }
 
   /// Replaces the user's custom providers.
-  Future<void> setCustomProviders(List<LlmCustomProvider> providers) =>
-      _request('providers.setCustom', {'providers': [for (final p in providers) p.toJson()]});
+  Future<void> setCustomProviders(List<LlmCustomProvider> providers) {
+    _insecureOrigins
+      ..clear()
+      ..addAll([
+        for (final p in providers)
+          if (p.allowInsecure) ?_originOf(p.baseUrl),
+      ]);
+    return _request('providers.setCustom', {'providers': [for (final p in providers) p.toJson()]});
+  }
+
+  /// The origins of custom providers allowed plain `http` off this device,
+  /// and of one being probed with that allowance.
+  final _insecureOrigins = <String>{};
+  final _probeOrigins = <String>{};
+
+  static String? _originOf(String url) {
+    final u = Uri.tryParse(url);
+    return u == null || u.host.isEmpty ? null : u.origin;
+  }
+
+  /// Whether a request to [uri] may go out: `https` anywhere, `http` only to
+  /// this device or to an origin in [insecureOrigins], and nothing else.
+  ///
+  /// Every request pi makes carries or may carry an API key, and plain `http`
+  /// off the device hands it to anyone on the path. A provider on the local
+  /// network that speaks nothing else has to be let through by name —
+  /// [LlmCustomProvider.allowInsecure]. Public for a settings page to know
+  /// before saving whether an address needs that.
+  static bool fetchAllowed(Uri uri, Set<String> insecureOrigins) {
+    if (uri.isScheme('https')) return true;
+    if (!uri.isScheme('http')) return false;
+    final host = uri.host.toLowerCase();
+    if (host == 'localhost' || host == '::1' || host == '[::1]') return true;
+    if (InternetAddress.tryParse(host)?.isLoopback ?? false) return true;
+    return insecureOrigins.contains(uri.origin);
+  }
 
   /// Lists the models of dynamic providers again, over the network. Returns
   /// the error of each provider that failed.
@@ -323,6 +367,10 @@ final class FlPiLlm {
 
   Future<void> _fetch(int callId, Map<String, Object?> p, Uint8List? body) async {
     final uri = Uri.parse(p['url'] as String);
+    if (!fetchAllowed(uri, {..._insecureOrigins, ..._probeOrigins})) {
+      _answerError(callId, 'fetch refused: $uri is plain http off this device; allow it on its provider');
+      return;
+    }
     final HttpClientRequest req;
     try {
       req = await _http.openUrl(p['method'] as String, uri);

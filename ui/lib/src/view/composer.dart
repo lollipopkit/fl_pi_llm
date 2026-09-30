@@ -16,7 +16,13 @@ import 'package:image_picker/image_picker.dart';
 /// Where a message is written: text, attachments, the model, thinking, tools
 /// and send. Makes the chat when there is none yet.
 class Composer extends StatefulWidget {
-  const Composer({super.key, required this.chatId, required this.onChatCreated, this.compact = false});
+  const Composer({
+    super.key,
+    required this.chatId,
+    required this.onChatCreated,
+    this.compact = false,
+    this.scope,
+  });
 
   /// The chat it sends to; null until the first message makes one.
   final String? chatId;
@@ -24,6 +30,9 @@ class Composer extends StatefulWidget {
 
   /// On a phone: the thinking level is an icon.
   final bool compact;
+
+  /// Where a chat this starts belongs — see [ChatMeta.scope].
+  final String? scope;
 
   /// Text put in by a deep link, for the new-chat composer.
   static final draft = nvn<String>();
@@ -96,7 +105,7 @@ class _ComposerState extends State<Composer> {
     }
     var id = widget.chatId;
     if (id == null) {
-      id = Chats.create();
+      id = Chats.create(scope: widget.scope);
       Composer._keepFocus = _focus.hasFocus;
       widget.onChatCreated(id);
     }

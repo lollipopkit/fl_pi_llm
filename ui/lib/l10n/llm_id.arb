@@ -75,5 +75,7 @@
   "untitled": "Tanpa judul",
   "usableModelsFmt": "{n} tersedia · {m} penyedia",
   "useTools": "Gunakan alat",
-  "useToolsTip": "Setiap panggilan bertanya dulu kecuali diizinkan di bawah"
+  "useToolsTip": "Setiap panggilan bertanya dulu kecuali diizinkan di bawah",
+  "allowInsecure": "Izinkan HTTP tanpa enkripsi",
+  "allowInsecureTip": "Alamat ini http:// di luar perangkat ini: kunci API dikirim tanpa enkripsi dan dapat dibaca siapa pun di jalur jaringan. Izinkan hanya di jaringan tepercaya."
 }

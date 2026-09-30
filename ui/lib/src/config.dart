@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
+import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 
 /// What the app decides for the LLM layer and its views. Set once, before
 /// anything here runs; the defaults suit an app that sets nothing.
@@ -30,4 +32,18 @@ abstract final class LlmUi {
   /// Opens the app's provider settings: asked when a model is wanted and no
   /// provider has a key. Null: nothing to open.
   static void Function(BuildContext context)? openProviders;
+
+  /// The app's own tools, beside the built-in ones: listed in the tool
+  /// settings with a switch per group, and offered to chats that [offers]
+  /// lets have them.
+  static List<ToolFunc> Function() appTools = () => const [];
+
+  /// Whether a chat is offered the tools of [group] — a [ToolFunc.group], or
+  /// [Tools.mcpGroup] for every MCP server's. A chat in a [ChatMeta.scope]
+  /// that has a narrower job than the app's own list, say.
+  static bool Function(ChatMeta? meta, String group) offers = (_, _) => true;
+
+  /// What the app adds to a chat's system prompt, after the user's own.
+  /// Applied when a chat opens and on [Chats.reconfigure].
+  static String? Function(ChatMeta? meta) appPrompt = (_) => null;
 }

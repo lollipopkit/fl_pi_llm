@@ -263,6 +263,13 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get useToolsTip => '每次调用都会先询问，除非已在下方允许';
+
+  @override
+  String get allowInsecure => '允许明文 HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      '该地址是本机以外的 http://，API Key 会以明文发送，网络路径上的任何人都能读取。仅在可信网络中开启。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -523,4 +530,11 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get useToolsTip => '每次呼叫都會先詢問，除非已在下方允許';
+
+  @override
+  String get allowInsecure => '允許明文 HTTP';
+
+  @override
+  String get allowInsecureTip =>
+      '該位址是本機以外的 http://，API Key 會以明文傳送，網路路徑上的任何人都能讀取。僅在可信網路中開啟。';
 }

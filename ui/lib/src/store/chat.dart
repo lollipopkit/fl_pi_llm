@@ -10,13 +10,15 @@ final class ChatStore extends SqliteStore {
   /// Notified on every change, for the chat list.
   final changes = RNode();
 
-  /// Every chat, newest first.
-  List<ChatMeta> all({bool trashed = false}) {
+  /// Every chat in [scope], newest first: the app's own list when null.
+  /// [anyScope] for every chat there is, whatever it belongs to.
+  List<ChatMeta> all({bool trashed = false, String? scope, bool anyScope = false}) {
     final out = <ChatMeta>[];
     // One query: the list is read on every change.
     for (final MapEntry(:key, :value) in getAllMap().entries) {
       final m = _decode(key, value);
-      if (m != null && m.trashed == trashed) out.add(m);
+      if (m == null || m.trashed != trashed) continue;
+      if (anyScope || m.scope == scope) out.add(m);
     }
     out.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return out;

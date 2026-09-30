@@ -75,5 +75,7 @@
   "untitled": "Sem título",
   "usableModelsFmt": "{n} disponíveis · {m} provedores",
   "useTools": "Usar ferramentas",
-  "useToolsTip": "Cada chamada pergunta antes, a menos que esteja permitida abaixo"
+  "useToolsTip": "Cada chamada pergunta antes, a menos que esteja permitida abaixo",
+  "allowInsecure": "Permitir HTTP sem criptografia",
+  "allowInsecureTip": "Este endereço é http:// fora deste dispositivo: a chave de API é enviada sem criptografia e qualquer pessoa no caminho da rede pode lê-la. Permita apenas em uma rede confiável."
 }

@@ -403,6 +403,7 @@ class _ToolCardState extends State<_ToolCard> {
   var _open = false;
 
   static IconData iconOf(String name) => switch (Tools.internal(name)) {
+    ToolFunc(:final icon?) => icon,
     TfHttpReq() => Icons.language,
     TfHistory() => Icons.history,
     TfMemory() => Icons.psychology_alt_outlined,
@@ -544,6 +545,7 @@ class ApprovalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.theme.colorScheme;
     final call = pending.call;
+    final tool = Tools.internal(call.name);
     final detail = call.args.isEmpty ? call.name : Tools.summaryOf(call.name, call.args);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 560),
@@ -565,16 +567,18 @@ class ApprovalCard extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-              decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(9)),
-              child: SelectableText(detail, style: _mono12.copyWith(height: 1.5)),
-            ),
+            tool?.preview(context, call.args) ??
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                  decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(9)),
+                  child: SelectableText(detail, style: _mono12.copyWith(height: 1.5)),
+                ),
             Row(
               children: [
                 Expanded(child: Text(llmL10n.replyWaits, style: UIs.text12Grey)),
                 Btn.text(text: llmL10n.deny, onTap: () => Chats.answer(chatId, ApprovalAnswer.deny)),
-                Btn.text(text: llmL10n.allowAlways, onTap: () => Chats.answer(chatId, ApprovalAnswer.always)),
+                if (tool?.allowAlways ?? true)
+                  Btn.text(text: llmL10n.allowAlways, onTap: () => Chats.answer(chatId, ApprovalAnswer.always)),
                 Btn.text(text: llmL10n.allow, onTap: () => Chats.answer(chatId, ApprovalAnswer.once)),
               ].joinWith(const SizedBox(width: 3)),
             ),

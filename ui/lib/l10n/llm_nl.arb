@@ -75,5 +75,7 @@
   "untitled": "Naamloos",
   "usableModelsFmt": "{n} bruikbaar · {m} providers",
   "useTools": "Tools gebruiken",
-  "useToolsTip": "Elke aanroep vraagt eerst, tenzij hieronder toegestaan"
+  "useToolsTip": "Elke aanroep vraagt eerst, tenzij hieronder toegestaan",
+  "allowInsecure": "Onversleuteld HTTP toestaan",
+  "allowInsecureTip": "Dit adres is http:// buiten dit apparaat: de API-sleutel wordt onversleuteld verzonden en is leesbaar voor iedereen op het netwerkpad. Sta dit alleen toe op een vertrouwd netwerk."
 }

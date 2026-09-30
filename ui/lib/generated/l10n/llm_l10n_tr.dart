@@ -269,4 +269,11 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get useToolsTip => 'Aşağıda izin verilmedikçe her çağrı önce sorar';
+
+  @override
+  String get allowInsecure => 'Şifresiz HTTP\'ye izin ver';
+
+  @override
+  String get allowInsecureTip =>
+      'Bu adres bu cihaz dışında http://: API anahtarı şifrelenmeden gönderilir ve ağ yolundaki herkes okuyabilir. Yalnızca güvendiğiniz bir ağda izin verin.';
 }

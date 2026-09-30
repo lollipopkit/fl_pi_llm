@@ -283,4 +283,11 @@ class LlmLocalizationsNl extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Elke aanroep vraagt eerst, tenzij hieronder toegestaan';
+
+  @override
+  String get allowInsecure => 'Onversleuteld HTTP toestaan';
+
+  @override
+  String get allowInsecureTip =>
+      'Dit adres is http:// buiten dit apparaat: de API-sleutel wordt onversleuteld verzonden en is leesbaar voor iedereen op het netwerkpad. Sta dit alleen toe op een vertrouwd netwerk.';
 }

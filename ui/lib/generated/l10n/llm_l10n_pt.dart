@@ -283,4 +283,11 @@ class LlmLocalizationsPt extends LlmLocalizations {
   @override
   String get useToolsTip =>
       'Cada chamada pergunta antes, a menos que esteja permitida abaixo';
+
+  @override
+  String get allowInsecure => 'Permitir HTTP sem criptografia';
+
+  @override
+  String get allowInsecureTip =>
+      'Este endereço é http:// fora deste dispositivo: a chave de API é enviada sem criptografia e qualquer pessoa no caminho da rede pode lê-la. Permita apenas em uma rede confiável.';
 }

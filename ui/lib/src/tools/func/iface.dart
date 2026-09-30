@@ -25,6 +25,21 @@ abstract class ToolFunc {
   /// can see and undo.
   bool get trusted => false;
 
+  /// Decides a call before the user is asked: allow or deny it outright, or
+  /// null to ask. For a tool whose calls differ in how much harm they can do —
+  /// a command that only reads, beside one that deletes.
+  FutureOr<LlmApproval?> preApprove(_Map args, String chatId) => null;
+
+  /// Whether "always allow" is offered for it. Off for a tool that no single
+  /// answer covers: it asks every time [preApprove] leaves it to the user.
+  bool get allowAlways => true;
+
+  /// Its mark beside a call in the conversation.
+  IconData? get icon => null;
+
+  /// A call, as the approval card shows it; null for [summary] on a line.
+  Widget? preview(BuildContext context, _Map args) => null;
+
   String? get l10nTip => null;
 
   /// [args] on one line: what a call does, at a glance.

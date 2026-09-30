@@ -28,6 +28,15 @@ Then, at startup:
 4. Add `LlmLocalizations.delegate` and call `context.setLlmL10n()` where the app sets its own l10n.
 5. Views are on [material_ui](https://pub.dev/packages/material_ui), like fl_lib. flutter_markdown_plus and flutter_highlight still look the theme up by `package:flutter/material.dart`'s types, so the app wraps `MaterialApp.builder`'s child in material_ui's `MaterialUiCompatibilityBridge` until they move.
 
+### An app's own tools and places
+
+An app with more to offer than a chat list plugs into the same `Chats`:
+
+- **Its tools**: `LlmUi.appTools` returns `ToolFunc`s, listed in the tool settings beside the built-in ones. A `ToolFunc` can decide a call before the user is asked (`preApprove`: allow, deny, or `null` to ask), keep "always allow" off for calls no single answer covers (`allowAlways`), and draw a call in the approval card (`preview`) and in the conversation (`icon`).
+- **Its places**: a chat made with `Chats.create(scope: ...)` — or a `Composer(scope: ...)` — belongs to that scope, and `LlmStores.chat.all(scope: ...)` lists it apart from the app's own list. `LlmUi.offers(meta, group)` decides which tool groups (`Tools.mcpGroup` for MCP) a chat gets, and `LlmUi.appPrompt(meta)` adds to its system prompt; call `Chats.reconfigureSoon()` when either would answer differently.
+
+A custom provider's plain `http` address off the device is refused unless the provider is saved with `allowInsecure` — the page offers the switch when the address needs it.
+
 ## Development
 
 In the app's checkout, `pubspec_overrides.yaml` (not committed) points fl_lib at the app's submodule:

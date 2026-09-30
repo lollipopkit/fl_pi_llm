@@ -265,4 +265,11 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get useToolsTip => '下で許可したもの以外、呼び出しごとに確認します';
+
+  @override
+  String get allowInsecure => '平文の HTTP を許可';
+
+  @override
+  String get allowInsecureTip =>
+      'このアドレスはこの端末以外の http:// です。API キーは暗号化されずに送信され、ネットワーク経路上の誰でも読み取れます。信頼できるネットワークでのみ許可してください。';
 }
