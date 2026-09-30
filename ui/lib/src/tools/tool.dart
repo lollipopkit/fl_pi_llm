@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart' hide RequestOptions;
@@ -25,6 +26,7 @@ part 'func/html_text.dart';
 part 'func/memory.dart';
 part 'func/history.dart';
 part 'mcp.dart';
+part 'mcp_auth.dart';
 
 /// The tools a chat offers the model: the built-in ones, the app's own
 /// ([LlmUi.appTools]), and every tool of every connected MCP server.

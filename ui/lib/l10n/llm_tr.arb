@@ -80,5 +80,14 @@
   "allowInsecureTip": "Bu adres bu cihaz dışında http://: API anahtarı şifrelenmeden gönderilir ve ağ yolundaki herkes okuyabilir. Yalnızca güvendiğiniz bir ağda izin verin.",
   "configure": "Yapılandır",
   "supportsThinking": "Düşünme desteği",
-  "thinkingEffort": "Düşünme düzeyi"
+  "thinkingEffort": "Düşünme düzeyi",
+  "mcpHeaders": "Başlıklar",
+  "mcpHeadersTip": "İsteğe bağlı. Her satıra bir \"Ad: değer\", örneğin Authorization: Bearer <token>. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.",
+  "mcpHeadersInvalid": "Her satırda bir ad, iki nokta ve bir değer olmalı.",
+  "mcpNeedsSignIn": "Oturum açılması gerekiyor",
+  "mcpSigningIn": "Oturum açmayı tarayıcıda tamamlayın",
+  "mcpSignedIn": "Oturum açıldı. Bu sayfayı kapatabilirsiniz.",
+  "mcpSignedInShort": "Oturum açık",
+  "mcpSignInFailed": "Oturum açılamadı. Bu sayfayı kapatıp yeniden deneyin.",
+  "mcpInsecure": "Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir."
 }

@@ -279,6 +279,34 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get thinkingEffort => '思考强度';
+
+  @override
+  String get mcpHeaders => '请求头';
+
+  @override
+  String get mcpHeadersTip =>
+      '可选。每行一个\"名称: 值\"，例如 Authorization: Bearer <token>。只保存在本机，不会备份，只发送给该服务器。';
+
+  @override
+  String get mcpHeadersInvalid => '每行需要名称、冒号和值。';
+
+  @override
+  String get mcpNeedsSignIn => '需要登录';
+
+  @override
+  String get mcpSigningIn => '请在浏览器中完成登录';
+
+  @override
+  String get mcpSignedIn => '已登录，可以关闭此页面。';
+
+  @override
+  String get mcpSignedInShort => '已登录';
+
+  @override
+  String get mcpSignInFailed => '登录失败，可以关闭此页面后重试。';
+
+  @override
+  String get mcpInsecure => '只有 https 地址可以使用请求头或登录。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -555,4 +583,32 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get thinkingEffort => '思考強度';
+
+  @override
+  String get mcpHeaders => '請求標頭';
+
+  @override
+  String get mcpHeadersTip =>
+      '選填。每行一個「名稱: 值」，例如 Authorization: Bearer <token>。只儲存在本機，不會備份，只傳送給此伺服器。';
+
+  @override
+  String get mcpHeadersInvalid => '每行需要名稱、冒號和值。';
+
+  @override
+  String get mcpNeedsSignIn => '需要登入';
+
+  @override
+  String get mcpSigningIn => '請在瀏覽器中完成登入';
+
+  @override
+  String get mcpSignedIn => '已登入，可以關閉此頁面。';
+
+  @override
+  String get mcpSignedInShort => '已登入';
+
+  @override
+  String get mcpSignInFailed => '登入失敗，可以關閉此頁面後重試。';
+
+  @override
+  String get mcpInsecure => '只有 https 位址可以使用請求標頭或登入。';
 }

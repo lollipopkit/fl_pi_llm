@@ -299,4 +299,35 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Denkinspanning';
+
+  @override
+  String get mcpHeaders => 'Headers';
+
+  @override
+  String get mcpHeadersTip =>
+      'Optioneel. Eén \"Naam: waarde\" per regel, zoals Authorization: Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Elke regel heeft een naam, een dubbele punt en een waarde nodig.';
+
+  @override
+  String get mcpNeedsSignIn => 'Aanmelden vereist';
+
+  @override
+  String get mcpSigningIn => 'Rond het aanmelden af in de browser';
+
+  @override
+  String get mcpSignedIn => 'Aangemeld. Je kunt deze pagina sluiten.';
+
+  @override
+  String get mcpSignedInShort => 'Aangemeld';
+
+  @override
+  String get mcpSignInFailed =>
+      'Aanmelden mislukt. Sluit deze pagina en probeer het opnieuw.';
+
+  @override
+  String get mcpInsecure =>
+      'Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld.';
 }

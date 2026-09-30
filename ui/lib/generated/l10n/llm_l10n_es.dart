@@ -298,4 +298,35 @@ class LlmLocalizationsEs extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Esfuerzo de razonamiento';
+
+  @override
+  String get mcpHeaders => 'Encabezados';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opcional. Un \"Nombre: valor\" por línea, como Authorization: Bearer <token>. Se guarda solo en este dispositivo, nunca en copias de seguridad, y solo se envía a este servidor.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Cada línea necesita un nombre, dos puntos y un valor.';
+
+  @override
+  String get mcpNeedsSignIn => 'Requiere iniciar sesión';
+
+  @override
+  String get mcpSigningIn => 'Termina de iniciar sesión en el navegador';
+
+  @override
+  String get mcpSignedIn => 'Sesión iniciada. Puedes cerrar esta página.';
+
+  @override
+  String get mcpSignedInShort => 'Sesión iniciada';
+
+  @override
+  String get mcpSignInFailed =>
+      'No se pudo iniciar sesión. Cierra esta página e inténtalo de nuevo.';
+
+  @override
+  String get mcpInsecure =>
+      'Solo una dirección https puede recibir encabezados o iniciar sesión.';
 }

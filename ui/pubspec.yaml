@@ -35,6 +35,7 @@ dependencies:
       url: https://github.com/leehack/mcp_dart
       ref: main
   shortid: ^0.1.2
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:

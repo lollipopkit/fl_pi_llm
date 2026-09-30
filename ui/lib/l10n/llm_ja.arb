@@ -80,5 +80,14 @@
   "allowInsecureTip": "このアドレスはこの端末以外の http:// です。API キーは暗号化されずに送信され、ネットワーク経路上の誰でも読み取れます。信頼できるネットワークでのみ許可してください。",
   "configure": "設定",
   "supportsThinking": "思考対応",
-  "thinkingEffort": "思考レベル"
+  "thinkingEffort": "思考レベル",
+  "mcpHeaders": "ヘッダー",
+  "mcpHeadersTip": "任意。1 行に 1 つ「名前: 値」、例: Authorization: Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。",
+  "mcpHeadersInvalid": "各行には名前、コロン、値が必要です。",
+  "mcpNeedsSignIn": "サインインが必要です",
+  "mcpSigningIn": "ブラウザでサインインを完了してください",
+  "mcpSignedIn": "サインインしました。このページは閉じてかまいません。",
+  "mcpSignedInShort": "サインイン済み",
+  "mcpSignInFailed": "サインインに失敗しました。このページを閉じてやり直してください。",
+  "mcpInsecure": "ヘッダーの送信やサインインは https のアドレスでのみ使えます。"
 }

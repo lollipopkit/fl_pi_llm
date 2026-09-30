@@ -281,4 +281,32 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get thinkingEffort => '思考レベル';
+
+  @override
+  String get mcpHeaders => 'ヘッダー';
+
+  @override
+  String get mcpHeadersTip =>
+      '任意。1 行に 1 つ「名前: 値」、例: Authorization: Bearer <token>。この端末にのみ保存され、バックアップされず、このサーバーにのみ送信されます。';
+
+  @override
+  String get mcpHeadersInvalid => '各行には名前、コロン、値が必要です。';
+
+  @override
+  String get mcpNeedsSignIn => 'サインインが必要です';
+
+  @override
+  String get mcpSigningIn => 'ブラウザでサインインを完了してください';
+
+  @override
+  String get mcpSignedIn => 'サインインしました。このページは閉じてかまいません。';
+
+  @override
+  String get mcpSignedInShort => 'サインイン済み';
+
+  @override
+  String get mcpSignInFailed => 'サインインに失敗しました。このページを閉じてやり直してください。';
+
+  @override
+  String get mcpInsecure => 'ヘッダーの送信やサインインは https のアドレスでのみ使えます。';
 }

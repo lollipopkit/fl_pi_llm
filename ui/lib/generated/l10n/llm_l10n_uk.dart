@@ -286,4 +286,34 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Глибина міркувань';
+
+  @override
+  String get mcpHeaders => 'Заголовки';
+
+  @override
+  String get mcpHeadersTip =>
+      'Необов’язково. По одному «Назва: значення» в рядку, наприклад Authorization: Bearer <token>. Зберігаються лише на цьому пристрої, не потрапляють у резервні копії й надсилаються лише цьому серверу.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Кожен рядок має містити назву, двокрапку й значення.';
+
+  @override
+  String get mcpNeedsSignIn => 'Потрібен вхід';
+
+  @override
+  String get mcpSigningIn => 'Завершіть вхід у браузері';
+
+  @override
+  String get mcpSignedIn => 'Вхід виконано. Цю сторінку можна закрити.';
+
+  @override
+  String get mcpSignedInShort => 'Вхід виконано';
+
+  @override
+  String get mcpSignInFailed =>
+      'Не вдалося увійти. Закрийте сторінку й спробуйте ще раз.';
+
+  @override
+  String get mcpInsecure => 'Заголовки та вхід доступні лише для адреси https.';
 }

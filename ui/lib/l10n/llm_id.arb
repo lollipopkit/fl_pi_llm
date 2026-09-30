@@ -80,5 +80,14 @@
   "allowInsecureTip": "Alamat ini http:// di luar perangkat ini: kunci API dikirim tanpa enkripsi dan dapat dibaca siapa pun di jalur jaringan. Izinkan hanya di jaringan tepercaya.",
   "configure": "Atur",
   "supportsThinking": "Mendukung penalaran",
-  "thinkingEffort": "Upaya penalaran"
+  "thinkingEffort": "Upaya penalaran",
+  "mcpHeaders": "Header",
+  "mcpHeadersTip": "Opsional. Satu \"Nama: nilai\" per baris, misalnya Authorization: Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.",
+  "mcpHeadersInvalid": "Setiap baris memerlukan nama, titik dua, dan nilai.",
+  "mcpNeedsSignIn": "Perlu masuk",
+  "mcpSigningIn": "Selesaikan proses masuk di browser",
+  "mcpSignedIn": "Sudah masuk. Halaman ini boleh ditutup.",
+  "mcpSignedInShort": "Sudah masuk",
+  "mcpSignInFailed": "Gagal masuk. Tutup halaman ini dan coba lagi.",
+  "mcpInsecure": "Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk."
 }

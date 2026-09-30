@@ -304,4 +304,35 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Thinking effort';
+
+  @override
+  String get mcpHeaders => 'Headers';
+
+  @override
+  String get mcpHeadersTip =>
+      'Optional. One \"Name: value\" a line, such as Authorization: Bearer <token>. Kept on this device only, never backed up, and sent only to this server.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Each line needs a name, a colon and a value.';
+
+  @override
+  String get mcpNeedsSignIn => 'Sign-in required';
+
+  @override
+  String get mcpSigningIn => 'Finish signing in in the browser';
+
+  @override
+  String get mcpSignedIn => 'Signed in. You can close this page.';
+
+  @override
+  String get mcpSignedInShort => 'Signed in';
+
+  @override
+  String get mcpSignInFailed =>
+      'Sign-in failed. You can close this page and try again.';
+
+  @override
+  String get mcpInsecure =>
+      'Only an https address can be sent headers or signed in to.';
 }

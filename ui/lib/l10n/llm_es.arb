@@ -80,5 +80,14 @@
   "allowInsecureTip": "Esta dirección es http:// fuera de este dispositivo: la clave de API se envía sin cifrar y cualquiera en la ruta de red puede leerla. Permítelo solo en una red de confianza.",
   "configure": "Configurar",
   "supportsThinking": "Admite razonamiento",
-  "thinkingEffort": "Esfuerzo de razonamiento"
+  "thinkingEffort": "Esfuerzo de razonamiento",
+  "mcpHeaders": "Encabezados",
+  "mcpHeadersTip": "Opcional. Un \"Nombre: valor\" por línea, como Authorization: Bearer <token>. Se guarda solo en este dispositivo, nunca en copias de seguridad, y solo se envía a este servidor.",
+  "mcpHeadersInvalid": "Cada línea necesita un nombre, dos puntos y un valor.",
+  "mcpNeedsSignIn": "Requiere iniciar sesión",
+  "mcpSigningIn": "Termina de iniciar sesión en el navegador",
+  "mcpSignedIn": "Sesión iniciada. Puedes cerrar esta página.",
+  "mcpSignedInShort": "Sesión iniciada",
+  "mcpSignInFailed": "No se pudo iniciar sesión. Cierra esta página e inténtalo de nuevo.",
+  "mcpInsecure": "Solo una dirección https puede recibir encabezados o iniciar sesión."
 }

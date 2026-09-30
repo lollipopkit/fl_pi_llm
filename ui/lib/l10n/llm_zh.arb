@@ -80,5 +80,14 @@
   "allowInsecureTip": "该地址是本机以外的 http://，API Key 会以明文发送，网络路径上的任何人都能读取。仅在可信网络中开启。",
   "configure": "配置",
   "supportsThinking": "支持思考",
-  "thinkingEffort": "思考强度"
+  "thinkingEffort": "思考强度",
+  "mcpHeaders": "请求头",
+  "mcpHeadersTip": "可选。每行一个\"名称: 值\"，例如 Authorization: Bearer <token>。只保存在本机，不会备份，只发送给该服务器。",
+  "mcpHeadersInvalid": "每行需要名称、冒号和值。",
+  "mcpNeedsSignIn": "需要登录",
+  "mcpSigningIn": "请在浏览器中完成登录",
+  "mcpSignedIn": "已登录，可以关闭此页面。",
+  "mcpSignedInShort": "已登录",
+  "mcpSignInFailed": "登录失败，可以关闭此页面后重试。",
+  "mcpInsecure": "只有 https 地址可以使用请求头或登录。"
 }

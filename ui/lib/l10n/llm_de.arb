@@ -80,5 +80,14 @@
   "allowInsecureTip": "Diese Adresse ist http:// außerhalb dieses Geräts: Der API-Schlüssel wird unverschlüsselt gesendet und ist für jeden auf dem Netzwerkpfad lesbar. Nur in einem vertrauenswürdigen Netzwerk erlauben.",
   "configure": "Einrichten",
   "supportsThinking": "Denkfähig",
-  "thinkingEffort": "Denkaufwand"
+  "thinkingEffort": "Denkaufwand",
+  "mcpHeaders": "Header",
+  "mcpHeadersTip": "Optional. Ein „Name: Wert“ pro Zeile, z. B. Authorization: Bearer <token>. Nur auf diesem Gerät gespeichert, nie gesichert und nur an diesen Server gesendet.",
+  "mcpHeadersInvalid": "Jede Zeile braucht einen Namen, einen Doppelpunkt und einen Wert.",
+  "mcpNeedsSignIn": "Anmeldung erforderlich",
+  "mcpSigningIn": "Anmeldung im Browser abschließen",
+  "mcpSignedIn": "Angemeldet. Diese Seite kann geschlossen werden.",
+  "mcpSignedInShort": "Angemeldet",
+  "mcpSignInFailed": "Anmeldung fehlgeschlagen. Seite schließen und erneut versuchen.",
+  "mcpInsecure": "Nur an eine https-Adresse können Header gesendet oder kann sich angemeldet werden."
 }

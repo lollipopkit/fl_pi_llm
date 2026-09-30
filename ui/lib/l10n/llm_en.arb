@@ -176,5 +176,14 @@
   },
   "configure": "Configure",
   "supportsThinking": "Thinking",
-  "thinkingEffort": "Thinking effort"
+  "thinkingEffort": "Thinking effort",
+  "mcpHeaders": "Headers",
+  "mcpHeadersTip": "Optional. One \"Name: value\" a line, such as Authorization: Bearer <token>. Kept on this device only, never backed up, and sent only to this server.",
+  "mcpHeadersInvalid": "Each line needs a name, a colon and a value.",
+  "mcpNeedsSignIn": "Sign-in required",
+  "mcpSigningIn": "Finish signing in in the browser",
+  "mcpSignedIn": "Signed in. You can close this page.",
+  "mcpSignedInShort": "Signed in",
+  "mcpSignInFailed": "Sign-in failed. You can close this page and try again.",
+  "mcpInsecure": "Only an https address can be sent headers or signed in to."
 }

@@ -604,6 +604,60 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Thinking effort'**
   String get thinkingEffort;
+
+  /// No description provided for @mcpHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get mcpHeaders;
+
+  /// No description provided for @mcpHeadersTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. One \"Name: value\" a line, such as Authorization: Bearer <token>. Kept on this device only, never backed up, and sent only to this server.'**
+  String get mcpHeadersTip;
+
+  /// No description provided for @mcpHeadersInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Each line needs a name, a colon and a value.'**
+  String get mcpHeadersInvalid;
+
+  /// No description provided for @mcpNeedsSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in required'**
+  String get mcpNeedsSignIn;
+
+  /// No description provided for @mcpSigningIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in in the browser'**
+  String get mcpSigningIn;
+
+  /// No description provided for @mcpSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in. You can close this page.'**
+  String get mcpSignedIn;
+
+  /// No description provided for @mcpSignedInShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get mcpSignedInShort;
+
+  /// No description provided for @mcpSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. You can close this page and try again.'**
+  String get mcpSignInFailed;
+
+  /// No description provided for @mcpInsecure.
+  ///
+  /// In en, this message translates to:
+  /// **'Only an https address can be sent headers or signed in to.'**
+  String get mcpInsecure;
 }
 
 class _LlmLocalizationsDelegate

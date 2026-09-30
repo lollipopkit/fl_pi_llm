@@ -299,4 +299,35 @@ class LlmLocalizationsPt extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Esforço de raciocínio';
+
+  @override
+  String get mcpHeaders => 'Cabeçalhos';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opcional. Um \"Nome: valor\" por linha, como Authorization: Bearer <token>. Guardados só neste dispositivo, nunca em backups, e enviados só a este servidor.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Cada linha precisa de um nome, dois-pontos e um valor.';
+
+  @override
+  String get mcpNeedsSignIn => 'Requer login';
+
+  @override
+  String get mcpSigningIn => 'Conclua o login no navegador';
+
+  @override
+  String get mcpSignedIn => 'Login feito. Pode fechar esta página.';
+
+  @override
+  String get mcpSignedInShort => 'Login feito';
+
+  @override
+  String get mcpSignInFailed =>
+      'Falha no login. Feche esta página e tente de novo.';
+
+  @override
+  String get mcpInsecure =>
+      'Só um endereço https pode receber cabeçalhos ou login.';
 }

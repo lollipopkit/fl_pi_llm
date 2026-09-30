@@ -299,4 +299,35 @@ class LlmLocalizationsDe extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Denkaufwand';
+
+  @override
+  String get mcpHeaders => 'Header';
+
+  @override
+  String get mcpHeadersTip =>
+      'Optional. Ein „Name: Wert“ pro Zeile, z. B. Authorization: Bearer <token>. Nur auf diesem Gerät gespeichert, nie gesichert und nur an diesen Server gesendet.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Jede Zeile braucht einen Namen, einen Doppelpunkt und einen Wert.';
+
+  @override
+  String get mcpNeedsSignIn => 'Anmeldung erforderlich';
+
+  @override
+  String get mcpSigningIn => 'Anmeldung im Browser abschließen';
+
+  @override
+  String get mcpSignedIn => 'Angemeldet. Diese Seite kann geschlossen werden.';
+
+  @override
+  String get mcpSignedInShort => 'Angemeldet';
+
+  @override
+  String get mcpSignInFailed =>
+      'Anmeldung fehlgeschlagen. Seite schließen und erneut versuchen.';
+
+  @override
+  String get mcpInsecure =>
+      'Nur an eine https-Adresse können Header gesendet oder kann sich angemeldet werden.';
 }

@@ -285,4 +285,35 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Düşünme düzeyi';
+
+  @override
+  String get mcpHeaders => 'Başlıklar';
+
+  @override
+  String get mcpHeadersTip =>
+      'İsteğe bağlı. Her satıra bir \"Ad: değer\", örneğin Authorization: Bearer <token>. Yalnızca bu cihazda saklanır, yedeklenmez ve yalnızca bu sunucuya gönderilir.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Her satırda bir ad, iki nokta ve bir değer olmalı.';
+
+  @override
+  String get mcpNeedsSignIn => 'Oturum açılması gerekiyor';
+
+  @override
+  String get mcpSigningIn => 'Oturum açmayı tarayıcıda tamamlayın';
+
+  @override
+  String get mcpSignedIn => 'Oturum açıldı. Bu sayfayı kapatabilirsiniz.';
+
+  @override
+  String get mcpSignedInShort => 'Oturum açık';
+
+  @override
+  String get mcpSignInFailed =>
+      'Oturum açılamadı. Bu sayfayı kapatıp yeniden deneyin.';
+
+  @override
+  String get mcpInsecure =>
+      'Başlık gönderme ve oturum açma yalnızca https adresleriyle kullanılabilir.';
 }

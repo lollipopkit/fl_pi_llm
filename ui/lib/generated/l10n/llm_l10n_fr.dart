@@ -300,4 +300,35 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Effort de réflexion';
+
+  @override
+  String get mcpHeaders => 'En-têtes';
+
+  @override
+  String get mcpHeadersTip =>
+      'Facultatif. Un « Nom: valeur » par ligne, par exemple Authorization: Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Chaque ligne doit contenir un nom, deux-points et une valeur.';
+
+  @override
+  String get mcpNeedsSignIn => 'Connexion requise';
+
+  @override
+  String get mcpSigningIn => 'Terminez la connexion dans le navigateur';
+
+  @override
+  String get mcpSignedIn => 'Connecté. Vous pouvez fermer cette page.';
+
+  @override
+  String get mcpSignedInShort => 'Connecté';
+
+  @override
+  String get mcpSignInFailed =>
+      'Échec de la connexion. Fermez cette page et réessayez.';
+
+  @override
+  String get mcpInsecure =>
+      'Seule une adresse https peut recevoir des en-têtes ou une connexion.';
 }

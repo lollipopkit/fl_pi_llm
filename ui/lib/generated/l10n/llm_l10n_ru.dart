@@ -286,4 +286,35 @@ class LlmLocalizationsRu extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Глубина рассуждений';
+
+  @override
+  String get mcpHeaders => 'Заголовки';
+
+  @override
+  String get mcpHeadersTip =>
+      'Необязательно. По одному «Имя: значение» в строке, например Authorization: Bearer <token>. Хранятся только на этом устройстве, не попадают в резервные копии и отправляются только этому серверу.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'В каждой строке нужны имя, двоеточие и значение.';
+
+  @override
+  String get mcpNeedsSignIn => 'Требуется вход';
+
+  @override
+  String get mcpSigningIn => 'Завершите вход в браузере';
+
+  @override
+  String get mcpSignedIn => 'Вход выполнен. Эту страницу можно закрыть.';
+
+  @override
+  String get mcpSignedInShort => 'Вход выполнен';
+
+  @override
+  String get mcpSignInFailed =>
+      'Не удалось войти. Закройте страницу и попробуйте снова.';
+
+  @override
+  String get mcpInsecure =>
+      'Заголовки и вход доступны только для адреса https.';
 }

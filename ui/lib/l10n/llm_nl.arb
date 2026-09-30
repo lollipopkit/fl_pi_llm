@@ -80,5 +80,14 @@
   "allowInsecureTip": "Dit adres is http:// buiten dit apparaat: de API-sleutel wordt onversleuteld verzonden en is leesbaar voor iedereen op het netwerkpad. Sta dit alleen toe op een vertrouwd netwerk.",
   "configure": "Instellen",
   "supportsThinking": "Ondersteunt denken",
-  "thinkingEffort": "Denkinspanning"
+  "thinkingEffort": "Denkinspanning",
+  "mcpHeaders": "Headers",
+  "mcpHeadersTip": "Optioneel. Eén \"Naam: waarde\" per regel, zoals Authorization: Bearer <token>. Alleen op dit apparaat bewaard, nooit geback-upt en alleen naar deze server verstuurd.",
+  "mcpHeadersInvalid": "Elke regel heeft een naam, een dubbele punt en een waarde nodig.",
+  "mcpNeedsSignIn": "Aanmelden vereist",
+  "mcpSigningIn": "Rond het aanmelden af in de browser",
+  "mcpSignedIn": "Aangemeld. Je kunt deze pagina sluiten.",
+  "mcpSignedInShort": "Aangemeld",
+  "mcpSignInFailed": "Aanmelden mislukt. Sluit deze pagina en probeer het opnieuw.",
+  "mcpInsecure": "Alleen naar een https-adres kunnen headers worden gestuurd of kan worden aangemeld."
 }

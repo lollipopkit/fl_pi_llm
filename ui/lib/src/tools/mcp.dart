@@ -13,6 +13,15 @@ final class _McpServer {
   Timer? retry;
   int attempts = 0;
 
+  /// Its headers and tokens, read from the keychain when connecting.
+  McpSecret secret = const McpSecret();
+
+  /// It answered that it wants a sign-in.
+  bool needsSignIn = false;
+
+  /// Completed to stop waiting for the browser, while a sign-in is.
+  Completer<void>? signingIn;
+
   /// What the server calls itself; its host until it has said.
   String get label => client?.getServerVersion()?.name ?? Uri.tryParse(url)?.host ?? url;
 }
@@ -57,8 +66,18 @@ abstract final class McpTools {
     final s = _servers[id] ??= _McpServer(url);
     s.retry?.cancel();
     await _close(s);
+    s.secret = McpAuth.canCarrySecrets(url) ? McpSecrets.read(id) : const McpSecret();
     // A fresh transport each time: a closed one cannot be started again.
-    final transport = StreamableHttpClientTransport(Uri.parse(url));
+    final transport = StreamableHttpClientTransport(
+      Uri.parse(url),
+      opts: StreamableHttpClientTransportOptions(
+        // Only with a token to give: a provider with none makes the transport
+        // give up before asking, and a header could have been enough.
+        authProvider: s.secret.oauth == null ? null : _McpTokens(s),
+        oauthUriValidator: McpAuth.acceptEndpoint,
+        requestInit: {'headers': s.secret.headers},
+      ),
+    );
     final client = McpClient(Implementation(name: LlmUi.appName, version: LlmUi.appVersion));
     s
       ..transport = transport
@@ -77,6 +96,7 @@ abstract final class McpTools {
       );
       s
         ..connected = true
+        ..needsSignIn = false
         ..error = null
         ..attempts = 0;
       await _listTools(s);
@@ -84,13 +104,21 @@ abstract final class McpTools {
     } catch (e, s_) {
       if (!identical(s.transport, transport)) return;
       Loggers.app.warning('MCP connect $url', e, s_);
+      // Asking again would get the same answer: it waits for a sign-in.
+      final unauthorized = _isUnauthorized(e);
       s
         ..connected = false
-        ..error = '$e';
-      _retryLater(s);
+        ..needsSignIn = unauthorized
+        ..error = unauthorized ? null : '$e';
+      if (!unauthorized) _retryLater(s);
     }
     changes.notify();
   }
+
+  /// A 401 or 403. The transport says so with [UnauthorizedError] where it had
+  /// a token to offer, and only in the message otherwise.
+  static bool _isUnauthorized(Object e) =>
+      e is UnauthorizedError || (e is McpError && RegExp(r'\(HTTP 40[13]\)').hasMatch(e.message));
 
   /// [transport] errored or closed. Only the current one counts: an old one
   /// closing after a reconnect says nothing about the server.
@@ -155,11 +183,73 @@ abstract final class McpTools {
 
   static Future<void> removeServer(String id) async {
     final s = _servers.remove(id);
+    McpSecrets.delete(id);
     if (s == null) return;
     s.retry?.cancel();
+    s.signingIn?.complete();
     await _close(s);
     changes.notify();
   }
+
+  /// Signs in to [id] in the browser, then connects with what it got.
+  /// Returns quietly when the user stopped waiting.
+  static Future<void> signIn(String id, {required Future<void> Function(Uri) open}) async {
+    final s = _servers[id];
+    if (s == null || s.signingIn != null) return;
+    final cancel = s.signingIn = Completer<void>();
+    s.error = null;
+    changes.notify();
+    try {
+      final secret = McpSecrets.read(id);
+      final tokens = await McpAuth.signIn(s.url, headers: secret.headers, open: open, cancel: cancel.future);
+      McpSecrets.write(id, secret.withOAuth(tokens));
+    } on McpSignInCancelled {
+      return;
+    } catch (e, st) {
+      Loggers.app.warning('MCP ${s.label}: sign in', e, st);
+      s.error = '$e';
+      return;
+    } finally {
+      s.signingIn = null;
+      changes.notify();
+    }
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// Stops waiting for the browser.
+  static void cancelSignIn(String id) {
+    final c = _servers[id]?.signingIn;
+    if (c != null && !c.isCompleted) c.complete();
+  }
+
+  /// Forgets [id]'s tokens, and connects without them.
+  static Future<void> signOut(String id) async {
+    final s = _servers[id];
+    if (s == null) return;
+    McpSecrets.write(id, McpSecrets.read(id).withOAuth(null));
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// Replaces [id]'s headers, and connects with them.
+  static Future<void> setHeaders(String id, Map<String, String> headers) async {
+    final s = _servers[id];
+    if (s == null) return;
+    if (headers.isNotEmpty && !McpAuth.canCarrySecrets(s.url)) throw StateError('Not sending headers to ${s.url} over plain http');
+    McpSecrets.write(id, McpSecrets.read(id).withHeaders(headers));
+    s.attempts = 0;
+    await connect(s.url);
+  }
+
+  /// The headers [id] is sent, to edit them.
+  static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
+
+  static bool needsSignIn(String id) => _servers[id]?.needsSignIn ?? false;
+
+  static bool isSigningIn(String id) => _servers[id]?.signingIn != null;
+
+  static bool isSignedIn(String id) => _servers[id]?.secret.oauth != null;
 
   static bool isServerConnected(String id) => _servers[id]?.connected ?? false;
 

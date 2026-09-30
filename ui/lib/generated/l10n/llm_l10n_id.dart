@@ -286,4 +286,34 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get thinkingEffort => 'Upaya penalaran';
+
+  @override
+  String get mcpHeaders => 'Header';
+
+  @override
+  String get mcpHeadersTip =>
+      'Opsional. Satu \"Nama: nilai\" per baris, misalnya Authorization: Bearer <token>. Hanya disimpan di perangkat ini, tidak pernah dicadangkan, dan hanya dikirim ke server ini.';
+
+  @override
+  String get mcpHeadersInvalid =>
+      'Setiap baris memerlukan nama, titik dua, dan nilai.';
+
+  @override
+  String get mcpNeedsSignIn => 'Perlu masuk';
+
+  @override
+  String get mcpSigningIn => 'Selesaikan proses masuk di browser';
+
+  @override
+  String get mcpSignedIn => 'Sudah masuk. Halaman ini boleh ditutup.';
+
+  @override
+  String get mcpSignedInShort => 'Sudah masuk';
+
+  @override
+  String get mcpSignInFailed => 'Gagal masuk. Tutup halaman ini dan coba lagi.';
+
+  @override
+  String get mcpInsecure =>
+      'Hanya alamat https yang dapat dikirimi header atau digunakan untuk masuk.';
 }

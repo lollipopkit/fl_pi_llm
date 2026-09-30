@@ -80,5 +80,14 @@
   "allowInsecureTip": "該位址是本機以外的 http://，API Key 會以明文傳送，網路路徑上的任何人都能讀取。僅在可信網路中開啟。",
   "configure": "設定",
   "supportsThinking": "支援思考",
-  "thinkingEffort": "思考強度"
+  "thinkingEffort": "思考強度",
+  "mcpHeaders": "請求標頭",
+  "mcpHeadersTip": "選填。每行一個「名稱: 值」，例如 Authorization: Bearer <token>。只儲存在本機，不會備份，只傳送給此伺服器。",
+  "mcpHeadersInvalid": "每行需要名稱、冒號和值。",
+  "mcpNeedsSignIn": "需要登入",
+  "mcpSigningIn": "請在瀏覽器中完成登入",
+  "mcpSignedIn": "已登入，可以關閉此頁面。",
+  "mcpSignedInShort": "已登入",
+  "mcpSignInFailed": "登入失敗，可以關閉此頁面後重試。",
+  "mcpInsecure": "只有 https 位址可以使用請求標頭或登入。"
 }

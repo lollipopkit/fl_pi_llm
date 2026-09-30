@@ -6,6 +6,7 @@ import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
 import 'package:fl_pi_llm_ui/src/view/settings/memory.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Tools: the switch, the built-in ones, and the MCP servers.
 class ToolsPage extends StatelessWidget {
@@ -96,51 +97,172 @@ class ToolsPage extends StatelessWidget {
     final name = McpTools.nameFor(url);
     final on = McpTools.isServerConnected(name);
     final err = McpTools.errorOf(name);
+    final signingIn = McpTools.isSigningIn(name);
+    final needsSignIn = McpTools.needsSignIn(name);
+    final signedIn = McpTools.isSignedIn(name);
+    final secure = McpAuth.canCarrySecrets(url);
     void menu([Offset? at]) => showContextMenu(
       context,
       [
+        if (secure) ...[
+          ContextMenuAction(text: llmL10n.mcpHeaders, icon: Icons.vpn_key_outlined, onTap: () => _editHeaders(context, url)),
+          if (signedIn)
+            ContextMenuAction(text: libL10n.logout, icon: Icons.logout, onTap: () => _run(() => McpTools.signOut(name)))
+          else if (!signingIn)
+            ContextMenuAction(text: libL10n.login, icon: Icons.login, onTap: () => _signIn(name)),
+        ],
         ContextMenuAction(text: libL10n.delete, icon: Icons.delete_outline, destructive: true, onTap: () => _removeServer(context, url)),
       ],
       title: url,
       at: at,
       sheet: at == null && isMobile,
     );
+    final String subtitle;
+    final Widget? trailing;
+    if (signingIn) {
+      subtitle = llmL10n.mcpSigningIn;
+      trailing = Btn.text(text: libL10n.cancel, onTap: () => McpTools.cancelSignIn(name));
+    } else if (on) {
+      subtitle = [
+        ?McpTools.labelOf(name),
+        llmL10n.connectedFmt(McpTools.toolCounts[name] ?? 0),
+        if (signedIn) llmL10n.mcpSignedInShort,
+      ].join(' · ');
+      trailing = null;
+    } else if (needsSignIn && secure) {
+      subtitle = [llmL10n.mcpNeedsSignIn, ?err].join(' · ');
+      trailing = Btn.text(text: libL10n.login, onTap: () => _signIn(name));
+    } else {
+      subtitle = [llmL10n.disconnected, if (needsSignIn) llmL10n.mcpInsecure, ?err].join(' · ');
+      trailing = Btn.text(text: libL10n.retry, onTap: () => _run(() => McpTools.retryConnection(name)));
+    }
     return SettingsRow(
       leading: RowDot(on ? StateColors.running : StateColors.failed),
       title: url.replaceFirst(RegExp(r'^https?://'), ''),
       mono: true,
-      subtitle: on
-          ? [?McpTools.labelOf(name), llmL10n.connectedFmt(McpTools.toolCounts[name] ?? 0)].join(' · ')
-          : [llmL10n.disconnected, ?err].join(' · '),
-      trailing: on
-          ? null
-          : Btn.text(
-              text: libL10n.retry,
-              onTap: () async {
-                await McpTools.retryConnection(name);
-                Chats.reconfigureSoon();
-              },
-            ),
+      subtitle: subtitle,
+      trailing: trailing,
+      onTap: menu,
       onLongPress: menu,
     ).onSecondary(menu);
   }
 
+  /// [f], then the chats' tools again.
+  static Future<void> _run(Future<void> Function() f) async {
+    try {
+      await f();
+    } catch (e, s) {
+      Loggers.app.warning('MCP', e, s);
+      Toast.error('$e');
+    }
+    Chats.reconfigureSoon();
+  }
+
+  static Future<void> _signIn(String name) => _run(() async {
+    await McpTools.signIn(name, open: _openBrowser);
+    await _closeBrowser();
+  });
+
+  /// In the app on a phone, where going to the browser and back is a trip
+  /// through the app switcher; in the user's own browser on a desktop, where
+  /// they are signed in already.
+  static Future<void> _openBrowser(Uri uri) async {
+    final inApp = isMobile && await supportsLaunchMode(LaunchMode.inAppBrowserView);
+    final ok = await launchUrl(uri, mode: inApp ? LaunchMode.inAppBrowserView : LaunchMode.externalApplication);
+    if (!ok) throw StateError('Cannot open $uri');
+  }
+
+  static Future<void> _closeBrowser() async {
+    if (!isMobile) return;
+    try {
+      if (await supportsCloseForLaunchMode(LaunchMode.inAppBrowserView)) await closeInAppWebView();
+    } catch (_) {}
+  }
+
+  /// The headers as a text field: `Name: value`, a line each.
+  static Widget _headersInput(TextEditingController ctrl) => Input(
+    controller: ctrl,
+    label: llmL10n.mcpHeaders,
+    hint: 'Authorization: Bearer …',
+    maxLines: 4,
+    minLines: 2,
+    type: TextInputType.multiline,
+    noWrap: true,
+  );
+
+  /// The headers in [text], or null after saying why they are not.
+  static Map<String, String>? _parseHeaders(String text, String url) {
+    final headers = McpSecret.parseHeaders(text);
+    if (headers == null) {
+      Toast.warn(llmL10n.mcpHeadersInvalid);
+      return null;
+    }
+    if (headers.isNotEmpty && !McpAuth.canCarrySecrets(url)) {
+      Toast.warn(llmL10n.mcpInsecure);
+      return null;
+    }
+    return headers;
+  }
+
   Future<void> _addServer(BuildContext context) async {
-    final ctrl = TextEditingController();
-    final url = await context.showRoundDialog<String>(
+    final urlCtrl = TextEditingController();
+    final headersCtrl = TextEditingController();
+    final ok = await context.showRoundDialog<bool>(
       title: llmL10n.addServer,
-      child: Input(controller: ctrl, autoFocus: true, hint: 'https://mcp.example.net/sse', onSubmitted: context.pop),
-      actions: [Btn.ok(onTap: () => context.pop(ctrl.text))],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Input(controller: urlCtrl, autoFocus: true, hint: 'https://mcp.example.net/mcp', type: TextInputType.url),
+          _headersInput(headersCtrl),
+          Text(llmL10n.mcpHeadersTip, style: UIs.text12Grey),
+        ],
+      ),
+      actions: [Btn.ok(onTap: () => context.pop(true))],
     );
-    ctrl.dispose();
-    final u = url?.trim();
-    if (u == null || u.isEmpty || !context.mounted) return;
+    final u = urlCtrl.text.trim();
+    final headersText = headersCtrl.text;
+    urlCtrl.dispose();
+    headersCtrl.dispose();
+    if (ok != true || u.isEmpty || !context.mounted) return;
     if (_store.mcpServers.get().contains(u)) return;
+    final headers = _parseHeaders(headersText, u);
+    if (headers == null) return;
+    final name = McpTools.nameFor(u);
+    // Before connecting, so the first request carries them.
+    McpSecrets.write(name, McpSecret(headers: headers));
     // Stored first: a server that is down now is still one the user added,
     // and it shows as disconnected with a retry.
     _store.mcpServers.set([..._store.mcpServers.get(), u]);
+    if (!context.mounted) return;
     await context.showLoadingDialog(fn: () => McpTools.connect(u));
-    Chats.reconfigureSoon();
+    // Just added by a tap, so the browser may open without another one.
+    if (McpTools.needsSignIn(name) && McpAuth.canCarrySecrets(u)) {
+      await _signIn(name);
+    } else {
+      Chats.reconfigureSoon();
+    }
+  }
+
+  Future<void> _editHeaders(BuildContext context, String url) async {
+    final name = McpTools.nameFor(url);
+    final ctrl = TextEditingController(text: McpSecret.formatHeaders(McpTools.headersOf(name)));
+    final ok = await context.showRoundDialog<bool>(
+      title: llmL10n.mcpHeaders,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _headersInput(ctrl),
+          Text(llmL10n.mcpHeadersTip, style: UIs.text12Grey),
+        ],
+      ),
+      actions: [Btn.ok(onTap: () => context.pop(true))],
+    );
+    final text = ctrl.text;
+    ctrl.dispose();
+    if (ok != true) return;
+    final headers = _parseHeaders(text, url);
+    if (headers == null) return;
+    await _run(() => McpTools.setHeaders(name, headers));
   }
 
   Future<void> _removeServer(BuildContext context, String url) async {

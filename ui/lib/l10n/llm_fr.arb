@@ -80,5 +80,14 @@
   "allowInsecureTip": "Cette adresse est en http:// hors de cet appareil : la clé d'API est envoyée en clair, lisible par quiconque sur le chemin réseau. À n'autoriser que sur un réseau de confiance.",
   "configure": "Configurer",
   "supportsThinking": "Raisonnement",
-  "thinkingEffort": "Effort de réflexion"
+  "thinkingEffort": "Effort de réflexion",
+  "mcpHeaders": "En-têtes",
+  "mcpHeadersTip": "Facultatif. Un « Nom: valeur » par ligne, par exemple Authorization: Bearer <token>. Conservés uniquement sur cet appareil, jamais sauvegardés, et envoyés uniquement à ce serveur.",
+  "mcpHeadersInvalid": "Chaque ligne doit contenir un nom, deux-points et une valeur.",
+  "mcpNeedsSignIn": "Connexion requise",
+  "mcpSigningIn": "Terminez la connexion dans le navigateur",
+  "mcpSignedIn": "Connecté. Vous pouvez fermer cette page.",
+  "mcpSignedInShort": "Connecté",
+  "mcpSignInFailed": "Échec de la connexion. Fermez cette page et réessayez.",
+  "mcpInsecure": "Seule une adresse https peut recevoir des en-têtes ou une connexion."
 }
