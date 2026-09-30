@@ -379,6 +379,18 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return '全部更新（$n）';
   }
+
+  @override
+  String get askUser => '向你询问';
+
+  @override
+  String get fieldRequired => '必填';
+
+  @override
+  String get fieldInvalid => '格式不正确';
+
+  @override
+  String get waitingForYou => '等你处理';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -755,4 +767,16 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   String skillsUpdateAllFmt(int n) {
     return '全部更新（$n）';
   }
+
+  @override
+  String get askUser => '向你詢問';
+
+  @override
+  String get fieldRequired => '必填';
+
+  @override
+  String get fieldInvalid => '格式不正確';
+
+  @override
+  String get waitingForYou => '等你處理';
 }

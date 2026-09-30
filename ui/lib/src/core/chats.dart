@@ -7,6 +7,7 @@ import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -64,6 +65,8 @@ final class OpenChat {
   OpenChat._(this.id, LlmSession session) {
     _attach(session);
     running.addListener(Chats.runningChanges.notify);
+    approvals.addListener(Chats.runningChanges.notify);
+    pendingInput.addListener(Chats.runningChanges.notify);
   }
 
   final String id;
@@ -110,12 +113,20 @@ final class OpenChat {
   /// The first is the one on screen.
   final approvals = <PendingApproval>[].vn;
 
-  /// Answers every pending call: a run is never left waiting.
+  /// A form the model asked the user to fill in (`ask_user`), while it waits.
+  final pendingInput = nvn<PendingInput>();
+
+  /// Waiting on the user: a call to approve, or a form to fill in.
+  bool get waiting => approvals.value.isNotEmpty || pendingInput.value != null;
+
+  /// Answers every pending call and form: a run is never left waiting.
   void _denyPending(String why) {
     for (final p in approvals.value) {
       p._complete(LlmApproval.deny(why));
     }
     approvals.value = const [];
+    pendingInput.value?.complete(const UserInputCancelled());
+    pendingInput.value = null;
   }
 
   Future<void> reload() async {
@@ -240,6 +251,42 @@ abstract final class Chats {
   /// Whether chat [id] is writing a reply or running a tool.
   static bool isRunning(String id) => _open[id]?.running.value ?? false;
 
+  /// Whether chat [id] is waiting on the user: a call to approve, or a form.
+  static bool isWaiting(String id) => _open[id]?.waiting ?? false;
+
+  /// Shows [request] in chat [id] and waits for the user to fill it in or
+  /// not. One at a time: a second while one is on screen is refused.
+  static Future<UserInputAnswer> ask(String id, UserInputRequest request) async {
+    final chat = _open[id] ?? (throw const LlmException('The chat is not open'));
+    if (chat.pendingInput.value != null) throw const LlmException('A form is already waiting on the user');
+    final pending = PendingInput(id, request);
+    chat.pendingInput.value = pending;
+    try {
+      return await pending.answer;
+    } finally {
+      if (chat.pendingInput.value == pending) chat.pendingInput.value = null;
+    }
+  }
+
+  /// Fills in chat [id]'s form with [values], by field id. What a secret
+  /// field holds is sealed here ([LlmSecrets]): the model gets a handle.
+  static void submitInput(String id, Map<String, Object?> values) {
+    final pending = _open[id]?.pendingInput.value;
+    if (pending == null) return;
+    pending.complete(UserInputSubmitted({
+      for (final f in pending.request.fields)
+        if (values.containsKey(f.id))
+          f.id: f.type == UserInputType.secret && values[f.id] is String && (values[f.id] as String).isNotEmpty
+              ? {'secret': LlmSecrets.seal(id, values[f.id] as String)}
+              : values[f.id],
+    }));
+  }
+
+  /// Leaves chat [id]'s form unfilled — with [message], what the user sent
+  /// instead, for the model to go on from.
+  static void cancelInput(String id, {String? message}) =>
+      _open[id]?.pendingInput.value?.complete(UserInputCancelled(message: message));
+
   /// Temporary users of each chat ([borrow]), which close it when done.
   static final _borrows = <String, int>{};
 
@@ -322,6 +369,7 @@ abstract final class Chats {
   static Future<void> close(String id) async {
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
+    LlmSecrets.forget(id);
     await c?._dispose();
   }
 
@@ -628,8 +676,8 @@ abstract final class Chats {
   /// what the model saves mid-chat it already knows, and a prompt that stays
   /// put keeps the provider's prompt cache.
   static String systemPromptFor(ChatMeta? meta) {
-    // The tools the switch is about, not the loader of skills.
-    final tools = _toolsFor(meta).any((t) => t.name != TfSkill.instance.name);
+    // The tools the switch is about, not the loader of skills nor the form.
+    final tools = _toolsFor(meta).any((t) => t.name != TfSkill.instance.name && t.name != TfAskUser.instance.name);
     return [
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
@@ -665,8 +713,13 @@ abstract final class Chats {
   }
 
   static List<LlmTool> _toolsFor(ChatMeta? meta) {
-    // Off for this chat: the tools, not the skills.
-    if (meta?.useTools == false) return [if (Tools.skillsOffered(meta)) TfSkill.instance.llmTool];
+    // Off for this chat: the tools, not the skills nor asking the user.
+    if (meta?.useTools == false) {
+      return [
+        if (Tools.skillsOffered(meta)) TfSkill.instance.llmTool,
+        if (LlmUi.offers(meta, TfAskUser.groupName)) TfAskUser.instance.llmTool,
+      ];
+    }
     return Tools.enabledFor(meta);
   }
 

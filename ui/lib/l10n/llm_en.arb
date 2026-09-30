@@ -247,5 +247,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "askUser": "Ask you",
+  "fieldRequired": "Required",
+  "fieldInvalid": "Not valid",
+  "waitingForYou": "Waiting for you"
 }

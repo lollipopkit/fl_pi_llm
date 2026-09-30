@@ -391,4 +391,16 @@ class LlmLocalizationsUk extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'Оновити все ($n)';
   }
+
+  @override
+  String get askUser => 'Запитати вас';
+
+  @override
+  String get fieldRequired => 'Обовʼязково';
+
+  @override
+  String get fieldInvalid => 'Неправильний формат';
+
+  @override
+  String get waitingForYou => 'Чекає на вас';
 }

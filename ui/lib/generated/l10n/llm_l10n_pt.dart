@@ -405,4 +405,16 @@ class LlmLocalizationsPt extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'Atualizar tudo ($n)';
   }
+
+  @override
+  String get askUser => 'Perguntar a você';
+
+  @override
+  String get fieldRequired => 'Obrigatório';
+
+  @override
+  String get fieldInvalid => 'Inválido';
+
+  @override
+  String get waitingForYou => 'Aguardando você';
 }

@@ -6,6 +6,7 @@ import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -99,7 +100,22 @@ class _ComposerState extends State<Composer> {
     return id != null && (Chats.openOf(id)?.running.value ?? false);
   }
 
+  /// The form chat [widget.chatId] waits on, if one.
+  PendingInput? get _pendingInput {
+    final id = widget.chatId;
+    return id == null ? null : Chats.openOf(id)?.pendingInput.value;
+  }
+
   Future<void> _send() async {
+    // With a form waiting, a message is the answer instead of it: the form is
+    // cancelled, and what was written goes to the model with that.
+    if (_pendingInput != null) {
+      final text = _ctrl.text.trim();
+      if (text.isEmpty) return;
+      _ctrl.clear();
+      Chats.cancelInput(widget.chatId!, message: text);
+      return;
+    }
     if (_running) return;
     final raw = _ctrl.text;
     final text = raw.trim();
@@ -250,7 +266,12 @@ class _ComposerState extends State<Composer> {
                   listenable: Chats.openChanges,
                   builder: (context, _) {
                     final id = widget.chatId;
-                    return ((id == null ? null : Chats.openOf(id))?.running ?? _idle).listenVal((r) {
+                    final chat = id == null ? null : Chats.openOf(id);
+                    return ListenableBuilder(
+                      listenable: Listenable.merge([chat?.running ?? _idle, ?chat?.pendingInput]),
+                      builder: (context, _) {
+                  // A form waiting is answered by sending, not stopped.
+                  final r = (chat?.running.value ?? false) && chat?.pendingInput.value == null;
                   return r
                       ? _CircleBtn(
                           icon: Icons.stop_rounded,
@@ -266,7 +287,8 @@ class _ComposerState extends State<Composer> {
                           onColor: scheme.onPrimary,
                           onTap: _send,
                         );
-                    });
+                      },
+                    );
                   },
                 ),
               ],

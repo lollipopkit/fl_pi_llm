@@ -391,4 +391,16 @@ class LlmLocalizationsId extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'Perbarui semua ($n)';
   }
+
+  @override
+  String get askUser => 'Bertanya padamu';
+
+  @override
+  String get fieldRequired => 'Wajib';
+
+  @override
+  String get fieldInvalid => 'Tidak valid';
+
+  @override
+  String get waitingForYou => 'Menunggumu';
 }

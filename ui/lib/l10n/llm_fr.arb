@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Clé depuis {name}",
   "keyFromEnvTipFmt": "La clé utilisée est celle de la variable d’environnement {name}. Une clé saisie ici la remplace.",
   "skillUpdateAvailable": "Mise à jour disponible",
-  "skillsUpdateAllFmt": "Tout mettre à jour ({n})"
+  "skillsUpdateAllFmt": "Tout mettre à jour ({n})",
+  "askUser": "Vous demander",
+  "fieldRequired": "Obligatoire",
+  "fieldInvalid": "Non valide",
+  "waitingForYou": "Vous attend"
 }

@@ -1,6 +1,7 @@
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/view/ask_user_card.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/view/message.dart';
 import 'package:fl_pi_llm_ui/src/view/pull_actions.dart';
@@ -100,7 +101,7 @@ class _LlmConversationState extends State<LlmConversation> {
         }
         // Not on each streamed token: that is the last block's alone.
         return ListenableBuilder(
-          listenable: Listenable.merge([chat.entries, chat.error, chat.approvals, chat.running, chat.interrupted]),
+          listenable: Listenable.merge([chat.entries, chat.error, chat.approvals, chat.pendingInput, chat.running, chat.interrupted]),
           builder: (context, _) {
             final blocks = threadBlocks(chat.entries.value);
             final error = chat.error.value;
@@ -141,6 +142,7 @@ class _LlmConversationState extends State<LlmConversation> {
                 );
               }),
               if (pending != null) ApprovalCard(chatId: chat.id, pending: pending),
+              if (chat.pendingInput.value case final input?) AskUserCard(key: ObjectKey(input), pending: input),
               if (!chat.running.value && error != null)
                 _Notice(
                   text: error,

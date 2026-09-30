@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Anahtar {name} değişkeninden",
   "keyFromEnvTipFmt": "Şu an {name} ortam değişkenindeki anahtar kullanılıyor. Buraya girilen anahtar önceliklidir.",
   "skillUpdateAvailable": "Güncelleme var",
-  "skillsUpdateAllFmt": "Tümünü güncelle ({n})"
+  "skillsUpdateAllFmt": "Tümünü güncelle ({n})",
+  "askUser": "Sana sor",
+  "fieldRequired": "Zorunlu",
+  "fieldInvalid": "Geçersiz",
+  "waitingForYou": "Seni bekliyor"
 }

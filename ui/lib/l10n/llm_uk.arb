@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Ключ із {name}",
   "keyFromEnvTipFmt": "Зараз використовується ключ зі змінної середовища {name}. Ключ, введений тут, має пріоритет.",
   "skillUpdateAvailable": "Є оновлення",
-  "skillsUpdateAllFmt": "Оновити все ({n})"
+  "skillsUpdateAllFmt": "Оновити все ({n})",
+  "askUser": "Запитати вас",
+  "fieldRequired": "Обовʼязково",
+  "fieldInvalid": "Неправильний формат",
+  "waitingForYou": "Чекає на вас"
 }

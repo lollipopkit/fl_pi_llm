@@ -382,4 +382,16 @@ class LlmLocalizationsJa extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'すべて更新（$n）';
   }
+
+  @override
+  String get askUser => 'あなたに質問';
+
+  @override
+  String get fieldRequired => '必須';
+
+  @override
+  String get fieldInvalid => '形式が正しくありません';
+
+  @override
+  String get waitingForYou => 'あなたの操作待ち';
 }

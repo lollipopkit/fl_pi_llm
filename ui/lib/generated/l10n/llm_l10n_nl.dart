@@ -405,4 +405,16 @@ class LlmLocalizationsNl extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'Alles bijwerken ($n)';
   }
+
+  @override
+  String get askUser => 'Jou vragen';
+
+  @override
+  String get fieldRequired => 'Verplicht';
+
+  @override
+  String get fieldInvalid => 'Ongeldig';
+
+  @override
+  String get waitingForYou => 'Wacht op jou';
 }

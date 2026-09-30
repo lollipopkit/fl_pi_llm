@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "{name} のキー",
   "keyFromEnvTipFmt": "環境変数 {name} のキーを使用しています。ここに入力したキーが優先されます。",
   "skillUpdateAvailable": "更新あり",
-  "skillsUpdateAllFmt": "すべて更新（{n}）"
+  "skillsUpdateAllFmt": "すべて更新（{n}）",
+  "askUser": "あなたに質問",
+  "fieldRequired": "必須",
+  "fieldInvalid": "形式が正しくありません",
+  "waitingForYou": "あなたの操作待ち"
 }

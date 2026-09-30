@@ -391,4 +391,16 @@ class LlmLocalizationsTr extends LlmLocalizations {
   String skillsUpdateAllFmt(int n) {
     return 'Tümünü güncelle ($n)';
   }
+
+  @override
+  String get askUser => 'Sana sor';
+
+  @override
+  String get fieldRequired => 'Zorunlu';
+
+  @override
+  String get fieldInvalid => 'Geçersiz';
+
+  @override
+  String get waitingForYou => 'Seni bekliyor';
 }

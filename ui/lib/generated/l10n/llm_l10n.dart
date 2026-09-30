@@ -778,6 +778,30 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Update all ({n})'**
   String skillsUpdateAllFmt(int n);
+
+  /// No description provided for @askUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask you'**
+  String get askUser;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequired;
+
+  /// No description provided for @fieldInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not valid'**
+  String get fieldInvalid;
+
+  /// No description provided for @waitingForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get waitingForYou;
 }
 
 class _LlmLocalizationsDelegate

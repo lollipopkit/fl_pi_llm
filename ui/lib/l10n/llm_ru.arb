@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Ключ из {name}",
   "keyFromEnvTipFmt": "Сейчас используется ключ из переменной окружения {name}. Ключ, введённый здесь, имеет приоритет.",
   "skillUpdateAvailable": "Есть обновление",
-  "skillsUpdateAllFmt": "Обновить все ({n})"
+  "skillsUpdateAllFmt": "Обновить все ({n})",
+  "askUser": "Спросить вас",
+  "fieldRequired": "Обязательно",
+  "fieldInvalid": "Неверный формат",
+  "waitingForYou": "Ждёт вас"
 }

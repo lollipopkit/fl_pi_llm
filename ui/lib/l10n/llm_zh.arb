@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "key 来自 {name}",
   "keyFromEnvTipFmt": "当前使用环境变量 {name} 中的 key。在此填写的 key 会优先使用。",
   "skillUpdateAvailable": "有更新",
-  "skillsUpdateAllFmt": "全部更新（{n}）"
+  "skillsUpdateAllFmt": "全部更新（{n}）",
+  "askUser": "向你询问",
+  "fieldRequired": "必填",
+  "fieldInvalid": "格式不正确",
+  "waitingForYou": "等你处理"
 }

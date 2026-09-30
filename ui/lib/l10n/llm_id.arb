@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Kunci dari {name}",
   "keyFromEnvTipFmt": "Kunci yang dipakai berasal dari variabel lingkungan {name}. Kunci yang diisi di sini akan diutamakan.",
   "skillUpdateAvailable": "Ada pembaruan",
-  "skillsUpdateAllFmt": "Perbarui semua ({n})"
+  "skillsUpdateAllFmt": "Perbarui semua ({n})",
+  "askUser": "Bertanya padamu",
+  "fieldRequired": "Wajib",
+  "fieldInvalid": "Tidak valid",
+  "waitingForYou": "Menunggumu"
 }

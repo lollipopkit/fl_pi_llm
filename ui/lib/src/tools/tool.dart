@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import 'package:material_ui/material_ui.dart' show Icons;
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -29,6 +30,7 @@ part 'func/html_text.dart';
 part 'func/memory.dart';
 part 'func/history.dart';
 part 'func/skill.dart';
+part 'func/ask_user.dart';
 part 'mcp.dart';
 part 'mcp_auth.dart';
 
@@ -70,6 +72,7 @@ abstract final class Tools {
           if (isOn(t) && LlmUi.offers(meta, t.group)) t.llmTool,
       if (tools && LlmUi.offers(meta, mcpGroup)) ...McpTools.llmTools,
       if (skillsOffered(meta)) TfSkill.instance.llmTool,
+      if (LlmUi.offers(meta, TfAskUser.groupName)) TfAskUser.instance.llmTool,
     ];
   }
 
@@ -94,8 +97,11 @@ abstract final class Tools {
   static bool get memoryOn => isOn(TfMemory.all.first);
 
   /// The tool named [name], built into this package or into the app.
-  static ToolFunc? internal(String name) =>
-      name == TfSkill.instance.name ? TfSkill.instance : all.firstWhereOrNull((e) => e.name == name);
+  static ToolFunc? internal(String name) => switch (name) {
+    _ when name == TfSkill.instance.name => TfSkill.instance,
+    _ when name == TfAskUser.instance.name => TfAskUser.instance,
+    _ => all.firstWhereOrNull((e) => e.name == name),
+  };
 
   /// Runs [run] and keeps how long it took in the result's `details`, which
   /// the session stores with it for the UI (`ms`).

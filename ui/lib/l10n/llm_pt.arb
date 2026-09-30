@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Chave de {name}",
   "keyFromEnvTipFmt": "A chave em uso vem da variável de ambiente {name}. Uma chave inserida aqui tem prioridade.",
   "skillUpdateAvailable": "Atualização disponível",
-  "skillsUpdateAllFmt": "Atualizar tudo ({n})"
+  "skillsUpdateAllFmt": "Atualizar tudo ({n})",
+  "askUser": "Perguntar a você",
+  "fieldRequired": "Obrigatório",
+  "fieldInvalid": "Inválido",
+  "waitingForYou": "Aguardando você"
 }

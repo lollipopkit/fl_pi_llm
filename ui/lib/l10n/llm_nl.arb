@@ -109,5 +109,9 @@
   "keyFromEnvFmt": "Sleutel uit {name}",
   "keyFromEnvTipFmt": "De sleutel komt uit de omgevingsvariabele {name}. Een hier ingevoerde sleutel gaat voor.",
   "skillUpdateAvailable": "Update beschikbaar",
-  "skillsUpdateAllFmt": "Alles bijwerken ({n})"
+  "skillsUpdateAllFmt": "Alles bijwerken ({n})",
+  "askUser": "Jou vragen",
+  "fieldRequired": "Verplicht",
+  "fieldInvalid": "Ongeldig",
+  "waitingForYou": "Wacht op jou"
 }
