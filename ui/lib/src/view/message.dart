@@ -204,6 +204,16 @@ class _UserMessageState extends State<_UserMessage> {
   Widget build(BuildContext context) {
     final forCapture = widget.forCapture;
     final m = entry.message!;
+    // The app's, not the user's: a line across, not a bubble to edit.
+    if (Chats.noticeOf(m) case final notice?) {
+      return Row(
+        children: [
+          Icon(Icons.notifications_none, size: 15, color: context.theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 7),
+          Expanded(child: Text(notice, style: UIs.text13Grey)),
+        ],
+      );
+    }
     final images = _imagesOf(m);
     final chat = widget.chat;
     final scheme = context.theme.colorScheme;

@@ -9,7 +9,7 @@ final class TfHttpReq extends ToolFunc {
   // chats refer to it.
   const TfHttpReq._()
     : super(
-        name: 'httpReq',
+        name: 'http_request',
         parametersSchema: const {
           'type': 'object',
           'properties': {

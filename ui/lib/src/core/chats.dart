@@ -503,6 +503,47 @@ abstract final class Chats {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Notices
+
+  static const _noticeTag = 'app_notice';
+
+  /// Tells the model in chat [id] that [text] happened — something it started
+  /// finished, say — and lets it answer. Written as a user turn, the only
+  /// kind a model is prompted with, but marked: the view draws it as the
+  /// app's notice rather than as the user's words, and the system prompt
+  /// says what the mark means. Waits for a reply being written to end.
+  static Future<void> notify(String id, String text) async {
+    if (LlmStores.chat.fetch(id) == null) return;
+    final chat = await open(id);
+    while (chat.running.value) {
+      final idle = Completer<void>();
+      void done() {
+        if (!chat.running.value && !idle.isCompleted) idle.complete();
+      }
+      chat.running.addListener(done);
+      await idle.future;
+      chat.running.removeListener(done);
+    }
+    _claim(chat);
+    _touch(id);
+    await _run(chat, () => chat.session.prompt('<$_noticeTag>\n$text\n</$_noticeTag>'));
+  }
+
+  /// [m]'s text, when it is one of [notify]'s rather than the user's.
+  static String? noticeOf(LlmMessage m) {
+    if (m.role != 'user') return null;
+    final t = m.text.trim();
+    const open = '<$_noticeTag>', close = '</$_noticeTag>';
+    if (!t.startsWith(open) || !t.endsWith(close)) return null;
+    return t.substring(open.length, t.length - close.length).trim();
+  }
+
+  static String get _noticePrompt =>
+      'A user message wrapped in <$_noticeTag> comes from the app, not from the user: it reports something that '
+      'happened, such as a task you started having finished. Act on it as the task calls for; the user may not be '
+      'watching.';
+
   static void _touch(String id) {
     final meta = LlmStores.chat.fetch(id);
     if (meta != null) LlmStores.chat.put(meta.copyWith(updatedAt: DateTime.now()));
@@ -592,6 +633,7 @@ abstract final class Chats {
     return [
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
+      _noticePrompt,
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
       if (Tools.skillsOffered(meta)) ?Skills.prompt(TfSkill.instance.name),
