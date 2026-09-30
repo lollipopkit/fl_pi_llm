@@ -60,6 +60,7 @@ final class UnsupportedAttachment implements Exception {
 final class OpenChat {
   OpenChat._(this.id, LlmSession session) {
     _attach(session);
+    running.addListener(Chats.runningChanges.notify);
   }
 
   final String id;
@@ -228,6 +229,13 @@ abstract final class Chats {
 
   /// Notified when a chat is opened or closed: what shows its state follows.
   static final openChanges = RNode();
+
+  /// Notified when any chat starts or stops running: for a list of chats that
+  /// marks the ones writing a reply, without a listener on each.
+  static final runningChanges = RNode();
+
+  /// Whether chat [id] is writing a reply or running a tool.
+  static bool isRunning(String id) => _open[id]?.running.value ?? false;
 
   /// Temporary users of each chat ([borrow]), which close it when done.
   static final _borrows = <String, int>{};

@@ -111,7 +111,12 @@ class _LlmConversationState extends State<LlmConversation> {
                 if (i < blocks.length - 1) view(i, b),
               // The reply being written continues the last reply, or starts
               // one under the last block.
-              chat.streaming.listenVal((s) {
+              chat.streaming.listenVal((streamed) {
+                // Running with nothing streamed yet — the request is out and
+                // the model has not started, or a turn ended and the next is
+                // on its way — is still a reply being written, and an empty
+                // one draws as the spinner. Not while a call waits on the user.
+                final s = streamed ?? (chat.running.value && pending == null ? const StreamingReply() : null);
                 final last = blocks.lastOrNull;
                 final lastView = last == null ? null : view(blocks.length - 1, last, lastIsReply ? s : null);
                 if (s == null || lastIsReply) return lastView ?? UIs.placeholder;
