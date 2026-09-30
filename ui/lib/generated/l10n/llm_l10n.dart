@@ -754,6 +754,30 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Built in'**
   String get skillBuiltin;
+
+  /// No description provided for @keyFromEnvFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Key from {name}'**
+  String keyFromEnvFmt(String name);
+
+  /// No description provided for @keyFromEnvTipFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'The key now in use is the environment variable {name}. A key entered here takes its place.'**
+  String keyFromEnvTipFmt(String name);
+
+  /// No description provided for @skillUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get skillUpdateAvailable;
+
+  /// No description provided for @skillsUpdateAllFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'Update all ({n})'**
+  String skillsUpdateAllFmt(int n);
 }
 
 class _LlmLocalizationsDelegate

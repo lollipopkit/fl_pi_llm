@@ -105,5 +105,9 @@
   "skillsFromFolder": "Aus einem Ordner installieren",
   "skillsFromZip": "Aus einer .zip installieren",
   "skillsUpdateFailedFmt": "{n} Quellen konnten nicht geprüft werden",
-  "skillBuiltin": "Integriert"
+  "skillBuiltin": "Integriert",
+  "keyFromEnvFmt": "Schlüssel aus {name}",
+  "keyFromEnvTipFmt": "Verwendet wird der Schlüssel aus der Umgebungsvariable {name}. Ein hier eingegebener Schlüssel hat Vorrang.",
+  "skillUpdateAvailable": "Update verfügbar",
+  "skillsUpdateAllFmt": "Alle aktualisieren ({n})"
 }

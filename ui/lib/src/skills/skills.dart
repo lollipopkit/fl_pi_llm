@@ -23,6 +23,7 @@ final class InstalledSkill {
     required this.installedAt,
     required this.updatedAt,
     this.enabled = true,
+    this.updateAvailable = false,
   });
 
   /// Its directory's name: what the model asks for it by.
@@ -41,11 +42,15 @@ final class InstalledSkill {
   final DateTime updatedAt;
   final bool enabled;
 
+  /// The last [Skills.check] found its source changed; [Skills.update]
+  /// installs it.
+  final bool updateAvailable;
+
   /// Shipped with the app: switched off rather than removed, and updated with
   /// the app rather than from a source.
   bool get builtin => source is BuiltinSource;
 
-  InstalledSkill copyWith({bool? enabled}) => InstalledSkill(
+  InstalledSkill copyWith({bool? enabled, bool? updateAvailable}) => InstalledSkill(
     dir: dir,
     name: name,
     description: description,
@@ -55,6 +60,7 @@ final class InstalledSkill {
     installedAt: installedAt,
     updatedAt: updatedAt,
     enabled: enabled ?? this.enabled,
+    updateAvailable: updateAvailable ?? this.updateAvailable,
   );
 
   factory InstalledSkill.fromJson(String dir, Map<String, Object?> j) => InstalledSkill(
@@ -70,6 +76,7 @@ final class InstalledSkill {
     installedAt: DateTime.tryParse(j['installedAt'] as String? ?? '') ?? DateTime.now(),
     updatedAt: DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? DateTime.now(),
     enabled: j['enabled'] as bool? ?? true,
+    updateAvailable: j['updateAvailable'] as bool? ?? false,
   );
 
   Map<String, Object?> toJson() => {
@@ -81,6 +88,7 @@ final class InstalledSkill {
     'installedAt': installedAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'enabled': enabled,
+    if (updateAvailable) 'updateAvailable': true,
   };
 }
 
@@ -115,6 +123,7 @@ abstract final class Skills {
   static set root(String dir) {
     _root = dir;
     _lock = null;
+    _checkedAt = null;
   }
 
   static const _lockName = '.lock.json';
@@ -124,6 +133,9 @@ abstract final class Skills {
 
   static Map<String, InstalledSkill>? _lock;
 
+  /// When [check] last ran to the end.
+  static DateTime? _checkedAt;
+
   static Map<String, InstalledSkill> get _skills => _lock ??= _readLock();
 
   static Map<String, InstalledSkill> _readLock() {
@@ -132,6 +144,7 @@ abstract final class Skills {
     if (!f.existsSync()) return {};
     try {
       final j = (jsonDecode(f.readAsStringSync()) as Map).cast<String, Object?>();
+      _checkedAt = DateTime.tryParse(j['checkedAt'] as String? ?? '');
       final skills = (j['skills'] as Map?)?.cast<String, Object?>() ?? const {};
       return {
         for (final MapEntry(:key, :value) in skills.entries)
@@ -149,6 +162,7 @@ abstract final class Skills {
     File('$root/$_lockName').writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert({
         'version': 1,
+        'checkedAt': ?_checkedAt?.toIso8601String(),
         'skills': {for (final k in keys) k: _skills[k]!.toJson()},
       }),
     );
@@ -226,36 +240,96 @@ abstract final class Skills {
     _saveLock();
   }
 
-  /// Fetches every source again and installs what changed: the names of
-  /// those that did, and why a source could not be fetched. A folder or file
-  /// that is gone — a copy the picker made, since cleared — is left alone.
-  static Future<({List<String> updated, Map<String, String> failed})> update() async {
+  /// How often [check] asks the sources on its own.
+  static const checkEvery = Duration(days: 1);
+
+  static Future<({int available, Map<String, String> failed})>? _checking;
+
+  /// Whether one or more has an update waiting.
+  static int get updatesAvailable => all.where((s) => s.updateAvailable).length;
+
+  /// Asks every source whether its skills changed, and marks those that did
+  /// ([InstalledSkill.updateAvailable]) without installing anything — `npx
+  /// skills check`, where [update] is `npx skills update`. Unless [force], it
+  /// only asks when the last check is [checkEvery] old: it runs on its own,
+  /// at launch and when the skills are shown.
+  static Future<({int available, Map<String, String> failed})> check({bool force = false}) {
+    // Nothing to ask while only the app's own are installed.
+    if (!_hasRoot || _skills.values.every((s) => s.builtin)) {
+      return Future.value((available: 0, failed: const <String, String>{}));
+    }
+    final last = _checkedAt;
+    if (!force && last != null && DateTime.now().difference(last) < checkEvery) {
+      return Future.value((available: updatesAvailable, failed: const <String, String>{}));
+    }
+    return _checking ??= _check().whenComplete(() => _checking = null);
+  }
+
+  static Future<({int available, Map<String, String> failed})> _check() async {
+    final (:found, :failed) = await _fetchSources();
+    for (final MapEntry(key: dir, value: next) in found.entries) {
+      final s = _skills[dir];
+      if (s == null) continue;
+      final changed = next != null && hashOf(next.$1.files) != s.hash;
+      if (changed != s.updateAvailable) _skills[dir] = s.copyWith(updateAvailable: changed);
+    }
+    _checkedAt = DateTime.now();
+    _saveLock();
+    return (available: updatesAvailable, failed: failed);
+  }
+
+  /// Fetches the sources again and installs what changed — of [only] when
+  /// given: the names of those that did, and why a source could not be
+  /// fetched.
+  static Future<({List<String> updated, Map<String, String> failed})> update({String? only}) async {
+    final (:found, :failed) = await _fetchSources(only: only);
+    final updated = <String>[];
+    for (final MapEntry(key: dir, value: next) in found.entries) {
+      final s = _skills[dir];
+      if (s == null || next == null) continue;
+      if (hashOf(next.$1.files) == s.hash) {
+        if (s.updateAvailable) _skills[dir] = s.copyWith(updateAvailable: false);
+        continue;
+      }
+      await install(next.$1, next.$2);
+      updated.add(s.name);
+    }
+    _saveLock();
+    return (updated: updated, failed: failed);
+  }
+
+  /// What each installed skill's source holds now, by directory: null for
+  /// one no longer there. A source is fetched once for all its skills. A
+  /// folder or file that is gone — a copy the picker made, since cleared —
+  /// is left out rather than failed.
+  static Future<({Map<String, (FoundSkill, SkillSource)?> found, Map<String, String> failed})> _fetchSources({
+    String? only,
+  }) async {
     final bySource = <String, List<InstalledSkill>>{};
     for (final s in all) {
+      if (only != null && s.dir != only) continue;
       if (s.source case final src? when src is! BuiltinSource) (bySource[jsonEncode(src.toJson())] ??= []).add(s);
     }
-    final updated = <String>[];
+    final found = <String, (FoundSkill, SkillSource)?>{};
     final failed = <String, String>{};
     for (final group in bySource.values) {
       final source = group.first.source!;
       if (source is LocalSource && FileSystemEntity.typeSync(source.path) == FileSystemEntityType.notFound) continue;
-      final List<FoundSkill> found;
+      final List<FoundSkill> skills;
       try {
-        found = (await SkillFetch.fetch(source)).skills;
+        skills = (await SkillFetch.fetch(source)).skills;
       } catch (e, s) {
-        Loggers.app.warning('Update skills from ${source.id}', e, s);
+        Loggers.app.warning('Skills from ${source.id}', e, s);
         failed[source.id] = '$e';
         continue;
       }
       for (final s in group) {
-        final next = found.firstWhereOrNull((f) => f.skillPath == s.skillPath) ??
-            found.firstWhereOrNull((f) => f.name == s.name);
-        if (next == null || hashOf(next.files) == s.hash) continue;
-        await install(next, source);
-        updated.add(s.name);
+        final next = skills.firstWhereOrNull((f) => f.skillPath == s.skillPath) ??
+            skills.firstWhereOrNull((f) => f.name == s.name);
+        found[s.dir] = next == null ? null : (next, source);
       }
     }
-    return (updated: updated, failed: failed);
+    return (found: found, failed: failed);
   }
 
   /// Installs the skills the app ships, [skills], where they are missing or

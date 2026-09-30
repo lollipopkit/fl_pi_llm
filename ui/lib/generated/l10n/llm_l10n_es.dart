@@ -386,4 +386,22 @@ class LlmLocalizationsEs extends LlmLocalizations {
 
   @override
   String get skillBuiltin => 'Integrado';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Clave de $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Se usa la clave de la variable de entorno $name. Una clave introducida aquí tiene prioridad.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Actualización disponible';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Actualizar todo ($n)';
+  }
 }

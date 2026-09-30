@@ -105,5 +105,9 @@
   "skillsFromFolder": "Installer depuis un dossier",
   "skillsFromZip": "Installer depuis un .zip",
   "skillsUpdateFailedFmt": "{n} sources n’ont pas pu être vérifiées",
-  "skillBuiltin": "Intégré"
+  "skillBuiltin": "Intégré",
+  "keyFromEnvFmt": "Clé depuis {name}",
+  "keyFromEnvTipFmt": "La clé utilisée est celle de la variable d’environnement {name}. Une clé saisie ici la remplace.",
+  "skillUpdateAvailable": "Mise à jour disponible",
+  "skillsUpdateAllFmt": "Tout mettre à jour ({n})"
 }

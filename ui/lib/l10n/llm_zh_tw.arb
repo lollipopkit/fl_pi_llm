@@ -105,5 +105,9 @@
   "skillsFromFolder": "從資料夾安裝",
   "skillsFromZip": "從 .zip 安裝",
   "skillsUpdateFailedFmt": "{n} 個來源檢查失敗",
-  "skillBuiltin": "內建"
+  "skillBuiltin": "內建",
+  "keyFromEnvFmt": "key 來自 {name}",
+  "keyFromEnvTipFmt": "目前使用環境變數 {name} 中的 key。在此填寫的 key 會優先使用。",
+  "skillUpdateAvailable": "有更新",
+  "skillsUpdateAllFmt": "全部更新（{n}）"
 }

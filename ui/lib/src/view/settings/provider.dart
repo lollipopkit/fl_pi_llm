@@ -113,7 +113,13 @@ class _ProviderPageState extends State<ProviderPage> {
                 Input(controller: _key, label: libL10n.apiKey, obscureText: true),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(13, 0, 13, 6),
-                  child: Text(llmL10n.keyInKeychain, style: UIs.text12Grey),
+                  child: Text(
+                    switch (Llm.envAuth.value[_id]) {
+                      final name? => '${llmL10n.keyFromEnvTipFmt(name)} ${llmL10n.keyInKeychain}',
+                      null => llmL10n.keyInKeychain,
+                    },
+                    style: UIs.text12Grey,
+                  ),
                 ),
                 Input(controller: _env, label: llmL10n.extraVars, hint: llmL10n.extraVarsTip, maxLines: 3, minLines: 1),
               ],

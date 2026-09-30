@@ -373,4 +373,22 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get skillBuiltin => 'Bawaan';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Kunci dari $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Kunci yang dipakai berasal dari variabel lingkungan $name. Kunci yang diisi di sini akan diutamakan.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Ada pembaruan';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Perbarui semua ($n)';
+  }
 }

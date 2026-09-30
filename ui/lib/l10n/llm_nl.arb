@@ -105,5 +105,9 @@
   "skillsFromFolder": "Installeren uit een map",
   "skillsFromZip": "Installeren uit een .zip",
   "skillsUpdateFailedFmt": "{n} bronnen konden niet worden gecontroleerd",
-  "skillBuiltin": "Ingebouwd"
+  "skillBuiltin": "Ingebouwd",
+  "keyFromEnvFmt": "Sleutel uit {name}",
+  "keyFromEnvTipFmt": "De sleutel komt uit de omgevingsvariabele {name}. Een hier ingevoerde sleutel gaat voor.",
+  "skillUpdateAvailable": "Update beschikbaar",
+  "skillsUpdateAllFmt": "Alles bijwerken ({n})"
 }

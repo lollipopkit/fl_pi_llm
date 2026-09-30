@@ -105,5 +105,9 @@
   "skillsFromFolder": "Встановити з теки",
   "skillsFromZip": "Встановити з .zip",
   "skillsUpdateFailedFmt": "Не вдалося перевірити джерела: {n}",
-  "skillBuiltin": "Вбудований"
+  "skillBuiltin": "Вбудований",
+  "keyFromEnvFmt": "Ключ із {name}",
+  "keyFromEnvTipFmt": "Зараз використовується ключ зі змінної середовища {name}. Ключ, введений тут, має пріоритет.",
+  "skillUpdateAvailable": "Є оновлення",
+  "skillsUpdateAllFmt": "Оновити все ({n})"
 }

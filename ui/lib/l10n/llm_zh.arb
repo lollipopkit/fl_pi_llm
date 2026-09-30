@@ -105,5 +105,9 @@
   "skillsFromFolder": "从文件夹安装",
   "skillsFromZip": "从 .zip 安装",
   "skillsUpdateFailedFmt": "{n} 个来源检查失败",
-  "skillBuiltin": "内置"
+  "skillBuiltin": "内置",
+  "keyFromEnvFmt": "key 来自 {name}",
+  "keyFromEnvTipFmt": "当前使用环境变量 {name} 中的 key。在此填写的 key 会优先使用。",
+  "skillUpdateAvailable": "有更新",
+  "skillsUpdateAllFmt": "全部更新（{n}）"
 }

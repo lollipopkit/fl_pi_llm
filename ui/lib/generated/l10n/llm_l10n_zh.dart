@@ -361,6 +361,24 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get skillBuiltin => '内置';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'key 来自 $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return '当前使用环境变量 $name 中的 key。在此填写的 key 会优先使用。';
+  }
+
+  @override
+  String get skillUpdateAvailable => '有更新';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return '全部更新（$n）';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -719,4 +737,22 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get skillBuiltin => '內建';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'key 來自 $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return '目前使用環境變數 $name 中的 key。在此填寫的 key 會優先使用。';
+  }
+
+  @override
+  String get skillUpdateAvailable => '有更新';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return '全部更新（$n）';
+  }
 }

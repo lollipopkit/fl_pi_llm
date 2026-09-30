@@ -373,4 +373,22 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get skillBuiltin => 'Вбудований';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Ключ із $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Зараз використовується ключ зі змінної середовища $name. Ключ, введений тут, має пріоритет.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Є оновлення';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Оновити все ($n)';
+  }
 }

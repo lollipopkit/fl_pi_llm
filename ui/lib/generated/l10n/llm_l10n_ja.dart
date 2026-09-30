@@ -364,4 +364,22 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get skillBuiltin => '内蔵';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return '$name のキー';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return '環境変数 $name のキーを使用しています。ここに入力したキーが優先されます。';
+  }
+
+  @override
+  String get skillUpdateAvailable => '更新あり';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'すべて更新（$n）';
+  }
 }

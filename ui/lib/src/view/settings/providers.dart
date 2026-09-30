@@ -199,7 +199,11 @@ class _ProvidersPageState extends State<ProvidersPage> {
       icon: has ? Icons.key : Icons.key_off_outlined,
       iconColor: has ? context.theme.colorScheme.primary : null,
       title: p.name,
-      subtitle: [if (p.custom) p.baseUrl ?? '' else p.id, llmL10n.modelsCountFmt(p.models.length)].join(' · '),
+      subtitle: [
+        if (p.custom) p.baseUrl ?? '' else p.id,
+        llmL10n.modelsCountFmt(p.models.length),
+        if (Llm.envAuth.value[p.id] case final name?) llmL10n.keyFromEnvFmt(name),
+      ].join(' · '),
       error: Llm.modelErrors.value[p.id],
       trailing: p.custom
           ? Btn.icon(

@@ -373,4 +373,22 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get skillBuiltin => 'Yerleşik';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Anahtar $name değişkeninden';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'Şu an $name ortam değişkenindeki anahtar kullanılıyor. Buraya girilen anahtar önceliklidir.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Güncelleme var';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Tümünü güncelle ($n)';
+  }
 }

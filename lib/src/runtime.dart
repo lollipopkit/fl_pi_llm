@@ -25,7 +25,7 @@ typedef LlmLogger = void Function(String level, String message);
 /// [HttpClient], so the platform's proxy and certificate settings apply.
 /// Sessions are kept in the [PiSessionStore] the runtime is started with.
 final class FlPiLlm {
-  FlPiLlm._(this._http, this._log, this._store, this._credentials);
+  FlPiLlm._(this._http, this._log, this._store, this._credentials, this._environment);
 
   static Future<void>? _libInit;
 
@@ -43,9 +43,16 @@ final class FlPiLlm {
     HttpClient? httpClient,
     LlmLogger? logger,
     ExternalLibrary? externalLibrary,
+    Map<String, String> Function()? environment,
   }) async {
     await (_libInit ??= RustLib.init(externalLibrary: externalLibrary));
-    final rt = FlPiLlm._(httpClient ?? HttpClient(), logger, store, credentials);
+    final rt = FlPiLlm._(
+      httpClient ?? HttpClient(),
+      logger,
+      store,
+      credentials,
+      environment ?? () => Platform.environment,
+    );
     rt._ownsHttp = httpClient == null;
     rt._start();
     return rt;
@@ -55,6 +62,11 @@ final class FlPiLlm {
   final LlmLogger? _log;
   final PiSessionStore _store;
   final LlmCredentials _credentials;
+
+  /// Where a provider without a stored credential finds its key, as pi-ai
+  /// does under Node: `OPENAI_API_KEY` and the like. The app's own
+  /// environment by default, which on a desktop is what it was started with.
+  final Map<String, String> Function() _environment;
   bool _ownsHttp = false;
 
   late final LlmEngine _engine;
@@ -148,6 +160,11 @@ final class FlPiLlm {
     if (InternetAddress.tryParse(host)?.isLoopback ?? false) return true;
     return insecureOrigins.contains(uri.origin);
   }
+
+  /// Where each provider with usable auth gets it, by provider id: `stored
+  /// credential`, or the environment variable its key came from.
+  Future<Map<String, String>> authSources() async =>
+      ((await _request('providers.auth', const {})) as Map).cast<String, String>();
 
   /// Lists the models of dynamic providers again, over the network. Returns
   /// the error of each provider that failed.
@@ -347,6 +364,9 @@ final class FlPiLlm {
           _answer(callId, await _fs(fs, p));
         case final auth when auth.startsWith('auth.'):
           _answer(callId, await _auth(auth, p));
+        case 'env.get':
+          final v = _environment()[p['name'] as String? ?? ''];
+          _answer(callId, v == null || v.isEmpty ? null : v);
         default:
           _answerError(callId, 'Unknown host call: $name');
       }

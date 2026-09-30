@@ -105,5 +105,9 @@
   "skillsFromFolder": "Instalar de uma pasta",
   "skillsFromZip": "Instalar de um .zip",
   "skillsUpdateFailedFmt": "Não foi possível verificar {n} fontes",
-  "skillBuiltin": "Integrado"
+  "skillBuiltin": "Integrado",
+  "keyFromEnvFmt": "Chave de {name}",
+  "keyFromEnvTipFmt": "A chave em uso vem da variável de ambiente {name}. Uma chave inserida aqui tem prioridade.",
+  "skillUpdateAvailable": "Atualização disponível",
+  "skillsUpdateAllFmt": "Atualizar tudo ({n})"
 }

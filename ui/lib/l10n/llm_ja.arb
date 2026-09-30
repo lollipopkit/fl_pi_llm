@@ -105,5 +105,9 @@
   "skillsFromFolder": "フォルダからインストール",
   "skillsFromZip": ".zip からインストール",
   "skillsUpdateFailedFmt": "{n} 件の提供元を確認できませんでした",
-  "skillBuiltin": "内蔵"
+  "skillBuiltin": "内蔵",
+  "keyFromEnvFmt": "{name} のキー",
+  "keyFromEnvTipFmt": "環境変数 {name} のキーを使用しています。ここに入力したキーが優先されます。",
+  "skillUpdateAvailable": "更新あり",
+  "skillsUpdateAllFmt": "すべて更新（{n}）"
 }

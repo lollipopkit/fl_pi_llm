@@ -105,5 +105,9 @@
   "skillsFromFolder": "Pasang dari folder",
   "skillsFromZip": "Pasang dari .zip",
   "skillsUpdateFailedFmt": "{n} sumber tidak dapat diperiksa",
-  "skillBuiltin": "Bawaan"
+  "skillBuiltin": "Bawaan",
+  "keyFromEnvFmt": "Kunci dari {name}",
+  "keyFromEnvTipFmt": "Kunci yang dipakai berasal dari variabel lingkungan {name}. Kunci yang diisi di sini akan diutamakan.",
+  "skillUpdateAvailable": "Ada pembaruan",
+  "skillsUpdateAllFmt": "Perbarui semua ({n})"
 }

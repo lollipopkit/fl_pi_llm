@@ -105,5 +105,9 @@
   "skillsFromFolder": "Klasörden kur",
   "skillsFromZip": ".zip’ten kur",
   "skillsUpdateFailedFmt": "{n} kaynak denetlenemedi",
-  "skillBuiltin": "Yerleşik"
+  "skillBuiltin": "Yerleşik",
+  "keyFromEnvFmt": "Anahtar {name} değişkeninden",
+  "keyFromEnvTipFmt": "Şu an {name} ortam değişkenindeki anahtar kullanılıyor. Buraya girilen anahtar önceliklidir.",
+  "skillUpdateAvailable": "Güncelleme var",
+  "skillsUpdateAllFmt": "Tümünü güncelle ({n})"
 }

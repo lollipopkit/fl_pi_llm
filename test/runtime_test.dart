@@ -205,6 +205,26 @@ void main() {
     expect((await llm.sessions()).map((i) => i.id), isNot(contains('kept')));
   });
 
+  test("a built-in provider's key can come from the environment", () async {
+    final rt = await FlPiLlm.start(
+      store: MemorySessionStore(),
+      credentials: MemoryCredentials({'anthropic': LlmCredential.apiKey('sk-stored')}),
+      environment: () => {'OPENAI_API_KEY': 'sk-env', 'ANTHROPIC_API_KEY': 'sk-env-too', 'GEMINI_API_KEY': ''},
+    );
+    addTearDown(rt.dispose);
+    final sources = await rt.authSources();
+    expect(sources['openai'], 'OPENAI_API_KEY');
+    expect(sources['anthropic'], 'stored credential', reason: 'a stored key comes first');
+    expect(sources, isNot(contains('google')), reason: 'an empty variable is no key');
+    expect(await rt.availableModels(providerId: 'openai'), isNotEmpty);
+  });
+
+  test('with no environment, only stored keys count', () async {
+    final rt = await FlPiLlm.start(store: MemorySessionStore(), credentials: MemoryCredentials({}), environment: () => {});
+    addTearDown(rt.dispose);
+    expect(await rt.authSources(), isEmpty);
+  });
+
   test('a session outlives the runtime', () async {
     final dir = await Directory.systemTemp.createTemp('fl_pi_llm');
     addTearDown(() => dir.delete(recursive: true));

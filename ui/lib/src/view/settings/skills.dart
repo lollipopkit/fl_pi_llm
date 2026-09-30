@@ -26,6 +26,13 @@ class _SkillsPageState extends State<SkillsPage> {
   static const _timeout = Duration(minutes: 2);
 
   @override
+  void initState() {
+    super.initState();
+    // Due or not, the check decides; the page redraws when it marks one.
+    Skills.check().ignore();
+  }
+
+  @override
   void dispose() {
     _source.dispose();
     super.dispose();
@@ -120,8 +127,22 @@ class _SkillsPageState extends State<SkillsPage> {
     );
   }
 
+  /// Asks every source now, and says what it found.
+  Future<void> _check() async {
+    final (res, err) = await context.showLoadingDialog(fn: () => Skills.check(force: true), timeout: const Duration(minutes: 5));
+    if (res == null || err != null) return;
+    final (:available, :failed) = res;
+    if (failed.isNotEmpty) {
+      Toast.warn(
+        llmL10n.skillsUpdateFailedFmt(failed.length),
+        body: [for (final MapEntry(:key, :value) in failed.entries) '$key: $value'].join('\n'),
+      );
+    }
+    if (available == 0 && failed.isEmpty) Toast.info(llmL10n.skillsUpToDate);
+  }
+
   Future<void> _update() async {
-    final (res, err) = await context.showLoadingDialog(fn: Skills.update, timeout: const Duration(minutes: 5));
+    final (res, err) = await context.showLoadingDialog(fn: () => Skills.update(), timeout: const Duration(minutes: 5));
     if (res == null || err != null) return;
     final (:updated, :failed) = res;
     if (failed.isNotEmpty) {
@@ -175,7 +196,11 @@ class _SkillsPageState extends State<SkillsPage> {
                 if (all.isEmpty) SettingsRow(icon: Icons.auto_stories_outlined, title: libL10n.empty, muted: true),
                 for (final s in all)
                   SettingsRow(
-                    title: s.builtin ? '${s.name} · ${llmL10n.skillBuiltin}' : s.name,
+                    title: [
+                      s.name,
+                      if (s.builtin) llmL10n.skillBuiltin,
+                      if (s.updateAvailable) llmL10n.skillUpdateAvailable,
+                    ].join(' · '),
                     subtitle: s.description,
                     trailing: SwitchX(
                       value: s.enabled,
@@ -186,7 +211,10 @@ class _SkillsPageState extends State<SkillsPage> {
                     ),
                     onTap: () => SkillPage.route.go(context, args: s.dir),
                   ),
-                if (all.isNotEmpty) SettingsRow(icon: Icons.update, title: libL10n.checkUpdate, onTap: _update),
+                if (Skills.updatesAvailable case final n when n > 0)
+                  SettingsRow(icon: Icons.system_update_alt, title: llmL10n.skillsUpdateAllFmt(n), onTap: _update)
+                else if (all.any((s) => !s.builtin))
+                  SettingsRow(icon: Icons.update, title: libL10n.checkUpdate, onTap: _check),
               ],
             ),
           ],
@@ -217,8 +245,21 @@ class SkillPage extends StatelessWidget {
     context.pop();
   }
 
+  Future<void> _update(BuildContext context, InstalledSkill s) async {
+    final (res, err) = await context.showLoadingDialog(fn: () => Skills.update(only: s.dir), timeout: const Duration(minutes: 2));
+    if (res == null || err != null) return;
+    if (res.failed.values.firstOrNull case final e?) {
+      Toast.error(e);
+    } else {
+      Toast.success(llmL10n.skillsUpdatedFmt(res.updated.length));
+      Chats.reconfigureSoon();
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(listenable: Skills.changes, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
     final s = Skills.byDir(args ?? '');
     if (s == null) return Scaffold(appBar: CustomAppBar(), body: Center(child: Text(libL10n.empty)));
     final md = Skills.read(s.dir);
@@ -256,6 +297,7 @@ class SkillPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (s.updateAvailable) Btn.text(text: libL10n.update, onTap: () => _update(context, s)),
               Btn.text(
                 text: libL10n.delete,
                 textStyle: TextStyle(color: context.theme.colorScheme.error),

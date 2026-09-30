@@ -105,5 +105,9 @@
   "skillsFromFolder": "Установить из папки",
   "skillsFromZip": "Установить из .zip",
   "skillsUpdateFailedFmt": "Не удалось проверить источники: {n}",
-  "skillBuiltin": "Встроенный"
+  "skillBuiltin": "Встроенный",
+  "keyFromEnvFmt": "Ключ из {name}",
+  "keyFromEnvTipFmt": "Сейчас используется ключ из переменной окружения {name}. Ключ, введённый здесь, имеет приоритет.",
+  "skillUpdateAvailable": "Есть обновление",
+  "skillsUpdateAllFmt": "Обновить все ({n})"
 }

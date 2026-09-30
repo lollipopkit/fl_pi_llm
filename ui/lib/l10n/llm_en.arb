@@ -222,5 +222,30 @@
       }
     }
   },
-  "skillBuiltin": "Built in"
+  "skillBuiltin": "Built in",
+  "keyFromEnvFmt": "Key from {name}",
+  "@keyFromEnvFmt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "keyFromEnvTipFmt": "The key now in use is the environment variable {name}. A key entered here takes its place.",
+  "@keyFromEnvTipFmt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillUpdateAvailable": "Update available",
+  "skillsUpdateAllFmt": "Update all ({n})",
+  "@skillsUpdateAllFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

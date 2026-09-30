@@ -234,6 +234,16 @@ const methods = {
     return { errors: Object.fromEntries([...r.errors].map(([k, e]) => [k, e?.message ?? String(e)])) };
   },
 
+  /** Where each provider with usable auth gets it: `stored credential`, or an env var. */
+  'providers.auth': async () => {
+    const out = {};
+    for (const p of models.getProviders()) {
+      const auth = await models.checkAuth(p.id);
+      if (auth) out[p.id] = auth.source;
+    }
+    return out;
+  },
+
   /** Whether a provider's auth is set up, as pi-ai sees it. */
   'providers.checkAuth': async (p) => (await models.checkAuth(p.providerId)) ?? null,
 

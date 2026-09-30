@@ -387,4 +387,22 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get skillBuiltin => 'Ingebouwd';
+
+  @override
+  String keyFromEnvFmt(String name) {
+    return 'Sleutel uit $name';
+  }
+
+  @override
+  String keyFromEnvTipFmt(String name) {
+    return 'De sleutel komt uit de omgevingsvariabele $name. Een hier ingevoerde sleutel gaat voor.';
+  }
+
+  @override
+  String get skillUpdateAvailable => 'Update beschikbaar';
+
+  @override
+  String skillsUpdateAllFmt(int n) {
+    return 'Alles bijwerken ($n)';
+  }
 }

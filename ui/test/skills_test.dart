@@ -231,6 +231,35 @@ void main() {
       expect(Skills.byDir('b')!.enabled, isFalse, reason: 'an update keeps the switch');
     });
 
+    test('a check marks what changed, once a day unless asked, and installs nothing', () async {
+      served['/o/r/archive/HEAD.tar.gz'] = _targz({'skills/a/SKILL.md': _md('a'), 'skills/b/SKILL.md': _md('b')});
+      await installAll('o/r');
+      expect((await Skills.check()).available, 0);
+
+      served['/o/r/archive/HEAD.tar.gz'] = _targz({
+        'skills/a/SKILL.md': _md('a'),
+        'skills/b/SKILL.md': _md('b', 'Does a thing.', 'New.'),
+      });
+      expect((await Skills.check()).available, 0, reason: 'checked less than a day ago');
+      expect((await Skills.check(force: true)).available, 1);
+      expect(Skills.byDir('b')!.updateAvailable, isTrue);
+      expect(Skills.read('b'), isNot(contains('New.')), reason: 'a check installs nothing');
+
+      // Kept in the lock, across a relaunch.
+      Skills.root = root.path;
+      expect(Skills.byDir('b')!.updateAvailable, isTrue);
+      expect(Skills.updatesAvailable, 1);
+
+      expect((await Skills.update(only: 'b')).updated, ['b']);
+      expect(Skills.byDir('b')!.updateAvailable, isFalse);
+      expect(Skills.read('b'), contains('New.'));
+    });
+
+    test('with only the app\'s own, there is nothing to check', () async {
+      await Skills.syncBuiltin(SkillDiscovery.find({'SKILL.md': _b(_md('own'))}));
+      expect((await Skills.check(force: true)).available, 0);
+    });
+
     test('a lone SKILL.md by its link', () async {
       served['/SKILL.md'] = _b(_md('lone'));
       await installAll('$base/SKILL.md');
