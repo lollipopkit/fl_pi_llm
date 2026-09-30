@@ -27,7 +27,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
   }
 
   @override
-  String get allProviders => '全部服务商';
+  String get allProviders => '全部提供商';
 
   @override
   String alreadyExists(String path) {
@@ -80,7 +80,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String get copied => '已复制';
 
   @override
-  String get customProvider => '自定义服务商';
+  String get customProvider => '自定义提供商';
 
   @override
   String get defaultModel => '默认模型';
@@ -105,7 +105,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get extraVarsTip =>
-      '每行一个 KEY=VALUE，用于需要不止一个 key 的服务商（如 Azure 资源、Cloudflare 账号）。';
+      '每行一个 KEY=VALUE，用于需要不止一个 key 的提供商（如 Azure 资源、Cloudflare 账号）。';
 
   @override
   String get favorite => '收藏';
@@ -188,7 +188,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
   }
 
   @override
-  String get noProviderKey => '还没有任何服务商配置了 key，添加一个即可开始对话。';
+  String get noProviderKey => '还没有任何提供商配置了 key，添加一个即可开始对话。';
 
   @override
   String get refreshModels => '刷新模型';
@@ -212,7 +212,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String get searchModels => '搜索模型';
 
   @override
-  String get searchProviders => '搜索服务商';
+  String get searchProviders => '搜索提供商';
 
   @override
   String secondsFmt(String n) {
@@ -255,7 +255,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String usableModelsFmt(int n, int m) {
-    return '$n 个可用 · $m 个服务商';
+    return '$n 个可用 · $m 个提供商';
   }
 
   @override
@@ -403,7 +403,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   }
 
   @override
-  String get allProviders => '全部服務商';
+  String get allProviders => '全部提供者';
 
   @override
   String alreadyExists(String path) {
@@ -456,7 +456,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   String get copied => '已複製';
 
   @override
-  String get customProvider => '自訂服務商';
+  String get customProvider => '自訂提供者';
 
   @override
   String get defaultModel => '預設模型';
@@ -481,7 +481,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get extraVarsTip =>
-      '每行一個 KEY=VALUE，用於除金鑰外還需要其他設定的服務商（Azure 資源、Cloudflare 帳號）。';
+      '每行一個 KEY=VALUE，用於除金鑰外還需要其他設定的提供者（Azure 資源、Cloudflare 帳號）。';
 
   @override
   String get favorite => '收藏';
@@ -564,7 +564,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   }
 
   @override
-  String get noProviderKey => '還沒有服務商設定了金鑰。新增一個即可開始聊天。';
+  String get noProviderKey => '還沒有提供者設定了金鑰。新增一個即可開始聊天。';
 
   @override
   String get refreshModels => '重新整理模型';
@@ -588,7 +588,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   String get searchModels => '搜尋模型';
 
   @override
-  String get searchProviders => '搜尋服務商';
+  String get searchProviders => '搜尋提供者';
 
   @override
   String secondsFmt(String n) {
@@ -631,7 +631,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String usableModelsFmt(int n, int m) {
-    return '$n 個可用 · $m 個服務商';
+    return '$n 個可用 · $m 個提供者';
   }
 
   @override

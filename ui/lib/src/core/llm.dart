@@ -5,6 +5,7 @@ import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/core/credentials.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
+import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
@@ -30,6 +31,14 @@ abstract final class Llm {
 
   static LlmCredentials _credentials = KeychainCredentials.instance;
 
+  static Map<String, String> Function() _environment = SystemProvider.platform;
+
+  /// What the runtime asks: the stored ones, and the system provider's.
+  static late LlmCredentials _all;
+
+  /// The provider the environment describes (`OPENAI_BASE_URL`), if it does.
+  static LlmCustomProvider? get system => SystemProvider.of(_environment());
+
   /// After the stores: sessions live in the same encrypted database.
   ///
   /// [credentials] and [externalLibrary] are for tests, which have neither a
@@ -43,11 +52,13 @@ abstract final class Llm {
     Map<String, String> Function()? environment,
   }) async {
     if (credentials != null) _credentials = credentials;
+    if (environment != null) _environment = environment;
+    _all = SystemCredentials(_credentials, () => _environment());
     _rt ??= await FlPiLlm.start(
       store: SqlitePiSessionStore.instance,
-      credentials: _credentials,
+      credentials: _all,
       externalLibrary: externalLibrary,
-      environment: environment,
+      environment: () => SystemProvider.forBuiltins(_environment()),
       logger: (level, msg) => switch (level) {
         'error' => Loggers.app.warning('[llm] $msg'),
         'warn' => Loggers.app.info('[llm] $msg'),
@@ -69,7 +80,7 @@ abstract final class Llm {
   static Future<void> applyCustomProviders() async {
     if (_rt == null) return;
     try {
-      await rt.setCustomProviders(LlmStores.llm.customProviders.get() ?? const []);
+      await rt.setCustomProviders([...?LlmStores.llm.customProviders.get(), ?system]);
     } catch (e, s) {
       Loggers.app.warning('Apply custom providers', e, s);
     }
@@ -83,7 +94,7 @@ abstract final class Llm {
   }
 
   static Future<void> _reloadAuth() async {
-    final stored = (await _credentials.list()).toSet();
+    final stored = (await _all.list()).toSet();
     var sources = const <String, String>{};
     try {
       sources = await rt.authSources();

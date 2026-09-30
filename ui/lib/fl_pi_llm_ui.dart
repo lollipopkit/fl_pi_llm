@@ -14,6 +14,7 @@ export 'generated/l10n/llm_l10n.dart';
 export 'src/config.dart';
 export 'src/core/chats.dart';
 export 'src/core/credentials.dart';
+export 'src/core/system_provider.dart';
 export 'src/core/llm.dart';
 export 'src/core/session_store.dart';
 export 'src/res/l10n.dart';
