@@ -34,30 +34,34 @@ Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) asy
       builder: (ctx) => Dialog(
         clipBehavior: Clip.antiAlias,
         shape: const RoundedRectangleBorder(borderRadius: CardX.borderRadius),
-        child: SizedBox(width: 500, height: 580, child: _ModelSheet(current: current)),
+        child: SizedBox(
+          width: 500,
+          height: 580,
+          child: ColoredBox(color: context.theme.colorScheme.surfaceContainerHigh, child: _ModelSheet(current: current)),
+        ),
       ),
     );
   }
   return showModalBottomSheet<LlmModelRef>(
     context: context,
+    // Over the app's nav bar rather than above it, when opened from a tab
+    // with a navigator of its own.
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
-    showDragHandle: false,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(17))),
-    builder: (ctx) => SizedBox(
-      height: MediaQuery.sizeOf(ctx).height * 0.78,
-      child: _ModelSheet(current: current, compact: true),
-    ),
+    // The theme's sheet — its colour, corners and handle — as the app's other
+    // tall sheets are. A colour of its own here covered the corners, which a
+    // sheet does not clip to.
+    showDragHandle: true,
+    builder: (_) => FractionallySizedBox(heightFactor: 0.82, child: _ModelSheet(current: current)),
   );
 }
 
 class _ModelSheet extends StatefulWidget {
-  const _ModelSheet({required this.current, this.compact = false});
+  const _ModelSheet({required this.current});
 
   final LlmModelRef? current;
 
-  /// On a phone: a grip on top.
-  final bool compact;
 
   @override
   State<_ModelSheet> createState() => _ModelSheetState();
@@ -74,86 +78,71 @@ class _ModelSheetState extends State<_ModelSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.theme.colorScheme;
-    return ColoredBox(
-      color: scheme.surfaceContainerHigh,
-      child: ListenableBuilder(
-        listenable: Listenable.merge([Llm.providers, Llm.configured, LlmStores.llm.favoriteModels.listenable()]),
-        builder: (context, _) {
-          final models = Llm.usableModels;
-          final favs = LlmStores.llm.favoriteModels.get().toSet();
-          final q = _query.text.trim().toLowerCase();
-          final shown = [
-            for (final m in models)
-              if (q.isEmpty || m.id.toLowerCase().contains(q) || m.name.toLowerCase().contains(q)) m,
-          ];
-          final byProvider = <String, List<LlmModelInfo>>{};
-          for (final m in shown) {
-            if (favs.contains(m.ref.toString())) continue;
-            (byProvider[m.provider] ??= []).add(m);
-          }
-          final favorites = [for (final m in shown) if (favs.contains(m.ref.toString())) m];
-          final providers = models.map((m) => m.provider).toSet().length;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (widget.compact)
-                Padding(
-                  padding: const EdgeInsets.only(top: 11),
-                  child: Center(
-                    child: Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(color: scheme.outline, borderRadius: BorderRadius.circular(2)),
+    return ListenableBuilder(
+      listenable: Listenable.merge([Llm.providers, Llm.configured, LlmStores.llm.favoriteModels.listenable()]),
+      builder: (context, _) {
+        final models = Llm.usableModels;
+        final favs = LlmStores.llm.favoriteModels.get().toSet();
+        final q = _query.text.trim().toLowerCase();
+        final shown = [
+          for (final m in models)
+            if (q.isEmpty || m.id.toLowerCase().contains(q) || m.name.toLowerCase().contains(q)) m,
+        ];
+        final byProvider = <String, List<LlmModelInfo>>{};
+        for (final m in shown) {
+          if (favs.contains(m.ref.toString())) continue;
+          (byProvider[m.provider] ??= []).add(m);
+        }
+        final favorites = [for (final m in shown) if (favs.contains(m.ref.toString())) m];
+        final providers = models.map((m) => m.provider).toSet().length;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(13, 13, 13, 7),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Expanded(
+                          child: Text(llmL10n.model, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                        ),
+                        Text(
+                          llmL10n.usableModelsFmt(models.length, providers),
+                          style: UIs.text12Grey.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(13, 13, 13, 7),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Expanded(
-                            child: Text(llmL10n.model, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
-                          ),
-                          Text(
-                            llmL10n.usableModelsFmt(models.length, providers),
-                            style: UIs.text12Grey.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    Input(
-                      controller: _query,
-                      hint: llmL10n.searchModels,
-                      icon: Icons.search,
-                      autoFocus: isDesktop,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 9),
+                  Input(
+                    controller: _query,
+                    hint: llmL10n.searchModels,
+                    icon: Icons.search,
+                    autoFocus: isDesktop,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(7, 0, 7, 13),
-                  children: [
-                    if (favorites.isNotEmpty) ..._group(llmL10n.favorite, favorites, favs),
-                    for (final MapEntry(key: pid, value: list) in byProvider.entries)
-                      ..._group(Llm.provider(pid)?.name ?? pid, list, favs),
-                  ],
-                ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(7, 0, 7, 13),
+                children: [
+                  if (favorites.isNotEmpty) ..._group(llmL10n.favorite, favorites, favs),
+                  for (final MapEntry(key: pid, value: list) in byProvider.entries)
+                    ..._group(Llm.provider(pid)?.name ?? pid, list, favs),
+                ],
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 
