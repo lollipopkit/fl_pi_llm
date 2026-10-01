@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:code_assets/code_assets.dart';
 import 'package:flutter_rust_bridge_hooks/flutter_rust_bridge_hooks.dart';
 
 import 'bindgen_environment.dart';
+import 'c_build_environment.dart';
 import 'deployment_target.dart';
 import 'rust_build_environment.dart';
 
@@ -19,6 +21,12 @@ void main(List<String> args) async {
           packageRoot: Directory.fromUri(input.packageRoot).path,
           isWindows: Platform.isWindows,
         ),
+        if (input.config.buildCodeAssets)
+          ...reproducibleCEnvironment(
+            environment: Platform.environment,
+            outputDirectory: Directory.fromUri(input.outputDirectory).path,
+            targetOS: input.config.code.targetOS,
+          ),
         // Only ever non-empty for iOS and Android, the two targets
         // `rquickjs-sys` ships no bindings for. See its own file.
         ...bindgenCrossCompileEnvironment(input),
