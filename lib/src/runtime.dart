@@ -81,6 +81,10 @@ final class FlPiLlm {
   final _toolCancels = <String, LlmCancelToken>{};
   String? _fatal;
 
+  /// Set by [dispose]. A host call or a response body still in flight then
+  /// ends against an engine that is gone, and its answer has nowhere to go.
+  var _disposed = false;
+
   void _start() {
     _engine = LlmEngine();
     _sub = _engine.start().listen(_onMessage, onError: (Object e) => _die('$e'));
@@ -248,6 +252,7 @@ final class FlPiLlm {
 
   /// Stops the runtime. Every session ends with it.
   Future<void> dispose() async {
+    _disposed = true;
     for (final r in _requests.values) {
       r.abort();
     }
@@ -272,6 +277,7 @@ final class FlPiLlm {
   Future<Object?> _request(String method, Map<String, Object?> payload) {
     final fatal = _fatal;
     if (fatal != null) return Future.error(LlmException(fatal));
+    if (_disposed) return Future.error(const LlmException('Runtime disposed'));
     final id = _nextReq++;
     final c = Completer<Object?>();
     _pending[id] = c;
@@ -343,7 +349,7 @@ final class FlPiLlm {
           unawaited(body.cancel());
           // The body will never end on its own now, and a `read` may be
           // waiting on it.
-          _engine.endBody(streamId: id, error: 'aborted');
+          _endBody(id, 'aborted');
         }
       case 'tool.cancel':
         _toolCancels.remove('${p['sessionId']}/${p['toolCallId']}')?.cancel();
@@ -375,11 +381,17 @@ final class FlPiLlm {
     }
   }
 
-  void _answer(int callId, Object? value) =>
-      _engine.answer(callId: callId, payload: jsonEncode(value));
+  void _answer(int callId, Object? value) {
+    if (!_disposed) _engine.answer(callId: callId, payload: jsonEncode(value));
+  }
 
-  void _answerError(int callId, String error) =>
-      _engine.answer(callId: callId, payload: '', error: error);
+  void _answerError(int callId, String error) {
+    if (!_disposed) _engine.answer(callId: callId, payload: '', error: error);
+  }
+
+  void _endBody(int streamId, [String? error]) {
+    if (!_disposed) _engine.endBody(streamId: streamId, error: error);
+  }
 
   /// Headers that describe the body as it came off the wire. [HttpClient]
   /// hands over the decompressed body, so these would describe something else.
@@ -429,16 +441,18 @@ final class FlPiLlm {
         'streamId': callId,
       });
       _bodies[callId] = res.listen(
-        (chunk) => _engine.pushBody(streamId: callId, chunk: chunk),
+        (chunk) {
+          if (!_disposed) _engine.pushBody(streamId: callId, chunk: chunk);
+        },
         onDone: () {
           _requests.remove(callId);
           _bodies.remove(callId);
-          _engine.endBody(streamId: callId);
+          _endBody(callId);
         },
         onError: (Object e) {
           _requests.remove(callId);
           _bodies.remove(callId);
-          _engine.endBody(streamId: callId, error: '$e');
+          _endBody(callId, '$e');
         },
         cancelOnError: true,
       );

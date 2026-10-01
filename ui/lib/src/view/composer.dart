@@ -389,7 +389,7 @@ class _ThinkingChipState extends State<_ThinkingChip> {
         for (final l in ThinkingLevel.values)
           ContextMenuAction(
             text: _label(l.name),
-            icon: l.name == level ? Icons.check : null,
+            checked: l.name == level,
             onTap: () async {
               await Chats.setThinkingLevel(l);
               if (mounted) setState(() {});
