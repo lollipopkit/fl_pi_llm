@@ -89,6 +89,20 @@ final class SettingsGroup extends StatelessWidget {
   /// Under the card: the group's actions.
   final Widget? footer;
 
+  /// Cards in [header] and [footer] — a field is one — as wide as the rows'
+  /// card between them. That card has no margin; a field kept the theme's,
+  /// and stood inset from it by the sides. The top and bottom stay, as the gap
+  /// between fields.
+  static Widget _aligned(BuildContext context, Widget child) {
+    final theme = CardTheme.of(context);
+    // `Card`'s own default when the theme has none.
+    final margin = (theme.margin ?? const EdgeInsets.all(4)).resolve(Directionality.of(context));
+    return CardTheme(
+      data: theme.copyWith(margin: EdgeInsets.only(top: margin.top, bottom: margin.bottom)),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final line = Container(height: Hairline.thickness, color: Hairline.color(context));
@@ -96,13 +110,13 @@ final class SettingsGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (title case final title?) GroupTitle(title),
-        ?header,
+        if (header case final header?) _aligned(context, header),
         if (rows.isNotEmpty)
           CardX(
             margin: EdgeInsets.zero,
             child: Column(mainAxisSize: MainAxisSize.min, children: rows.joinWith(line, false)),
           ),
-        ?footer,
+        if (footer case final footer?) _aligned(context, footer),
       ].joinWith(UIs.height7),
     );
   }

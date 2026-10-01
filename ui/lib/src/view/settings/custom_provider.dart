@@ -214,6 +214,8 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
           ].join(' · '),
           onBack: _back,
           onRefresh: _api.listsModels ? _list : null,
+          onDelete: _existing ? _delete : null,
+          onSave: _save,
         ),
       children: [
         SettingsGroup(
@@ -223,16 +225,17 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
             children: [
               Input(controller: _name, label: libL10n.name, autoFocus: !_existing && _name.text.isEmpty),
               Input(controller: _url, label: libL10n.apiEndpoint, hint: 'https://api.example.com/v1'),
-              DropdownButtonFormField<LlmApi>(
-                initialValue: _api,
-                decoration: InputDecoration(labelText: libL10n.apiProtocol, border: InputBorder.none),
-                items: [for (final a in LlmApi.values) DropdownMenuItem(value: a, child: Text(a.wire))],
+              InputDropdown<LlmApi>(
+                value: _api,
+                label: libL10n.apiProtocol,
+                items: LlmApi.values,
+                itemText: (a) => a.wire,
                 onChanged: (v) {
-                  if (v == null || v == _api) return;
+                  if (v == _api) return;
                   setState(() => _api = v);
                   _list();
                 },
-              ).paddingSymmetric(horizontal: 13),
+              ),
               // Only for an address that needs it: https, and this device,
               // are let through anyway.
               ListenableBuilder(
@@ -295,18 +298,6 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 13),
                     child: Text(_api.listsModels ? llmL10n.modelsListedTip : llmL10n.modelsRequired, style: UIs.text12Grey),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (_existing)
-                        Btn.text(
-                          text: libL10n.delete,
-                          textStyle: TextStyle(color: context.theme.colorScheme.error),
-                          onTap: _delete,
-                        ),
-                      Btn.text(text: libL10n.save, onTap: _save),
-                    ],
                   ),
                 ],
               ),

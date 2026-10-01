@@ -167,6 +167,8 @@ class _McpServerPageState extends State<McpServerPage> {
                   await McpTools.retryConnection(_saved!);
                   Chats.reconfigureSoon();
                 },
+          onDelete: _saved == null ? null : _delete,
+          onSave: _save,
         ),
         children: [
           SettingsGroup(
@@ -184,18 +186,6 @@ class _McpServerPageState extends State<McpServerPage> {
             if (McpAuth.canCarrySecrets(_saved!)) _buildSignIn(id),
             _buildTools(id),
           ],
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (_saved != null)
-                Btn.text(
-                  text: libL10n.delete,
-                  textStyle: TextStyle(color: context.theme.colorScheme.error),
-                  onTap: _delete,
-                ),
-              Btn.text(text: libL10n.save, onTap: _save),
-            ],
-          ),
         ],
       ),
     );

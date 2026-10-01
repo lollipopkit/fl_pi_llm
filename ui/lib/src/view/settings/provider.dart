@@ -103,6 +103,9 @@ class _ProviderPageState extends State<ProviderPage> {
           subtitle: [_id, ?(models.firstOrNull?.json['api'] as String?), llmL10n.modelsCountFmt(models.length)].join(' · '),
           onBack: _back,
           onRefresh: _refresh,
+          onDelete: _stored ? _deleteKey : null,
+          deleteText: llmL10n.deleteKey,
+          onSave: _save,
         ),
         children: [
           SettingsGroup(
@@ -138,18 +141,6 @@ class _ProviderPageState extends State<ProviderPage> {
                   onTap: () => setState(() => _allModels = true),
                 ),
             ],
-            footer: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (_stored)
-                  Btn.text(
-                    text: llmL10n.deleteKey,
-                    textStyle: TextStyle(color: context.theme.colorScheme.error),
-                    onTap: _deleteKey,
-                  ),
-                Btn.text(text: libL10n.save, onTap: _save),
-              ],
-            ),
           ),
         ],
       );
@@ -179,7 +170,6 @@ class DetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (embedded) return SectionList(header: _header((h) => h), children: children);
-    final refresh = header().onRefresh;
     return Scaffold(
       appBar: CustomAppBar(
         title: _header(
@@ -193,7 +183,8 @@ class DetailPage extends StatelessWidget {
           ),
         ),
         actions: [
-          if (refresh != null) IconButton(icon: const Icon(Icons.refresh), tooltip: llmL10n.refreshModels, onPressed: refresh),
+          for (final a in header().actions(context))
+            IconButton(icon: Icon(a.icon, color: a.color), tooltip: a.text, onPressed: a.onTap),
         ],
       ),
       body: SafeArea(top: false, child: SectionList(children: children)),
@@ -201,15 +192,37 @@ class DetailPage extends StatelessWidget {
   }
 }
 
-/// The title row of a provider's page: back, its name and what it is, and a
-/// refresh of its models.
+/// The title row of a provider's page: back, its name and what it is, and
+/// what can be done to it — refresh its models, delete, save.
 class ProviderHeader extends StatelessWidget {
-  const ProviderHeader({super.key, required this.title, required this.subtitle, this.onBack, this.onRefresh});
+  const ProviderHeader({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.onBack,
+    this.onRefresh,
+    this.onDelete,
+    this.deleteText,
+    this.onSave,
+  });
 
   final String title;
   final String subtitle;
   final VoidCallback? onBack;
   final VoidCallback? onRefresh;
+  final VoidCallback? onDelete;
+
+  /// What [onDelete] removes, when that is not the page's subject — a key.
+  final String? deleteText;
+  final VoidCallback? onSave;
+
+  /// The buttons at the end, as [DetailPage] draws them in either place.
+  List<({IconData icon, String text, VoidCallback onTap, Color? color})> actions(BuildContext context) => [
+    if (onRefresh case final f?) (icon: Icons.refresh, text: llmL10n.refreshModels, onTap: f, color: null),
+    if (onDelete case final f?)
+      (icon: Icons.delete_outline, text: deleteText ?? libL10n.delete, onTap: f, color: context.theme.colorScheme.error),
+    if (onSave case final f?) (icon: Icons.save_outlined, text: libL10n.save, onTap: f, color: null),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -234,8 +247,8 @@ class ProviderHeader extends StatelessWidget {
             ),
           ),
         ),
-        if (onRefresh != null)
-          Btn.icon(icon: const Icon(Icons.refresh, size: 18), text: llmL10n.refreshModels, onTap: onRefresh),
+        for (final a in actions(context))
+          Btn.icon(icon: Icon(a.icon, size: 18, color: a.color), text: a.text, onTap: a.onTap),
       ].joinWith(const SizedBox(width: 7)),
     );
   }
