@@ -32,18 +32,23 @@ class _ProviderPageState extends State<ProviderPage> {
   var _stored = false;
   var _allModels = false;
 
+  /// The stored credential read into the form. A save waits for it: one
+  /// before it lands replaced the stored variables with what the empty field
+  /// held.
+  late final Future<void> _loaded;
+
   /// Shown before "N more".
   static const _shownModels = 5;
 
   @override
   void initState() {
     super.initState();
-    Llm.readCredential(_id).then((c) {
+    _loaded = Llm.readCredential(_id).then((c) {
       if (!mounted || c == null) return;
       setState(() => _stored = true);
       _key.text = c.key ?? '';
       _env.text = c.env?.entries.map((e) => '${e.key}=${e.value}').join('\n') ?? '';
-    });
+    }, onError: (Object e, StackTrace s) => Loggers.app.warning('Read credential', e, s));
   }
 
   @override
@@ -56,6 +61,8 @@ class _ProviderPageState extends State<ProviderPage> {
   void _back() => widget.onBack != null ? widget.onBack!() : context.pop();
 
   Future<void> _save() async {
+    await _loaded;
+    if (!mounted) return;
     final key = _key.text.trim();
     if (key.isEmpty) {
       Toast.show(libL10n.empty);

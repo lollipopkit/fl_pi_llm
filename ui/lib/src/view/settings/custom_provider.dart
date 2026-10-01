@@ -45,6 +45,10 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
   /// The stored credential's `env`, kept as it is.
   Map<String, String>? _env;
 
+  /// The stored credential read into the form. A save waits for it: one
+  /// before it lands wrote an empty key and dropped [_env].
+  Future<void> _loaded = Future.value();
+
   /// What the endpoint lists: null before the first answer.
   final _listed = nvn<List<LlmModelInfo>>();
   final _listing = false.vn;
@@ -60,11 +64,11 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     }
     _allowInsecure.addListener(_list);
     if (_existing) {
-      Llm.readCredential(_id).then((c) {
+      _loaded = Llm.readCredential(_id).then((c) {
         if (!mounted || c == null) return;
         _env = c.env;
         _key.text = c.key ?? '';
-      });
+      }, onError: (Object e, StackTrace s) => Loggers.app.warning('Read credential', e, s));
     }
     _list();
   }
@@ -138,6 +142,8 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
   }
 
   Future<void> _save() async {
+    await _loaded;
+    if (!mounted) return;
     final name = _name.text.trim();
     if (name.isEmpty || !_urlValid) {
       Toast.show(libL10n.fail);
