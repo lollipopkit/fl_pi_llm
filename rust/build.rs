@@ -15,6 +15,13 @@ const BUNDLE: &str = "js/fl_pi_llm.js";
 
 fn main() {
     println!("cargo:rerun-if-changed={BUNDLE}");
+    // Room for Flutter to rewrite the dylib's install name to where it copies
+    // it: the linker leaves only what the build-time path needs, and
+    // `install_name_tool` fails on a longer one (a checkout in a deeper
+    // directory than the Cargo target dir).
+    if std::env::var("CARGO_CFG_TARGET_VENDOR").as_deref() == Ok("apple") {
+        println!("cargo:rustc-cdylib-link-arg=-Wl,-headerpad_max_install_names");
+    }
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("fl_pi_llm.qbc");
     if std::env::var("CARGO_CFG_TARGET_POINTER_WIDTH").as_deref() != Ok("64") {
         std::fs::write(&out, []).unwrap();
