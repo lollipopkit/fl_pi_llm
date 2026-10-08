@@ -37,7 +37,7 @@ class ChatMarkdown extends StatelessWidget {
     final base = muted
         ? TextStyle(fontSize: 13, height: 1.55, color: UIs.textGrey.color)
         : const TextStyle(fontSize: 14, height: 1.6);
-    return MarkdownBody(
+    final body = MarkdownBody(
       data: data,
       builders: {
         'code': CodeElementBuilder(onCopy: forCapture ? null : Pfs.copy, isForCapture: forCapture),
@@ -53,8 +53,12 @@ class ChatMarkdown extends StatelessWidget {
       ),
       extensionSet: MarkdownUtils.extensionSet,
       onTapLink: MarkdownUtils.onLinkTap,
-      selectable: isDesktop && !forCapture,
     );
+    // One area for the whole body rather than `selectable`, which made each
+    // paragraph a `SelectableText` of its own: a selection could not cross
+    // from one paragraph or a code block into the next. On every platform: a
+    // phone has the same text to copy part of.
+    return forCapture ? body : SelectionArea(child: body);
   }
 }
 

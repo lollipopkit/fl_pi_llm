@@ -1,6 +1,6 @@
 import 'package:fl_lib/fl_lib.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:highlight/highlight.dart' show Node, highlight;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
@@ -47,14 +47,7 @@ class _CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final view = HighlightView(
-      code,
-      language: language.isEmpty ? 'plaintext' : language,
-      theme: theme,
-      textStyle: _textStyle,
-      tabSize: 4,
-      padding: EdgeInsets.zero,
-    );
+    final view = Text.rich(_highlighted(code.replaceAll('\t', '    '), language, theme));
     final body = LlmUi.softWrap.listenVal((wrap) {
       if (wrap) return view;
       return SingleChildScrollView(scrollDirection: Axis.horizontal, child: view);
@@ -88,6 +81,23 @@ class _CodeBlock extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [code] as highlighted spans, in [Text.rich] rather than `HighlightView`'s
+/// bare `RichText`, which a `SelectionArea` cannot select. A language the
+/// highlighter does not know is shown plain.
+TextSpan _highlighted(String code, String language, Map<String, TextStyle> theme) {
+  final style = _textStyle.copyWith(color: theme['root']?.color);
+  final List<Node>? nodes;
+  try {
+    nodes = highlight.parse(code, language: language.isEmpty ? 'plaintext' : language).nodes;
+  } catch (_) {
+    return TextSpan(text: code, style: style);
+  }
+  TextSpan span(Node node) => node.value != null
+      ? TextSpan(text: node.value, style: theme[node.className])
+      : TextSpan(style: theme[node.className], children: [for (final child in node.children ?? const <Node>[]) span(child)]);
+  return TextSpan(style: style, children: [for (final node in nodes ?? const <Node>[]) span(node)]);
 }
 
 const _darkTheme = {

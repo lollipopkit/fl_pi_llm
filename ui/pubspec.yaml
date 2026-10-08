@@ -23,7 +23,7 @@ dependencies:
       ref: main
   dio: ^5.4.2+1
   file_picker: ^12.3.0
-  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
   flutter_markdown_plus: ^1.0.12
   flutter_markdown_plus_latex: ^1.0.5
   html: ^0.15.7
