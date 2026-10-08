@@ -5,12 +5,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'llm_l10n_az.dart';
 import 'llm_l10n_de.dart';
 import 'llm_l10n_en.dart';
 import 'llm_l10n_es.dart';
 import 'llm_l10n_fr.dart';
 import 'llm_l10n_id.dart';
+import 'llm_l10n_it.dart';
 import 'llm_l10n_ja.dart';
+import 'llm_l10n_ko.dart';
 import 'llm_l10n_nl.dart';
 import 'llm_l10n_pt.dart';
 import 'llm_l10n_ru.dart';
@@ -104,12 +107,15 @@ abstract class LlmLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('az'),
     Locale('de'),
     Locale('en'),
     Locale('es'),
     Locale('fr'),
     Locale('id'),
+    Locale('it'),
     Locale('ja'),
+    Locale('ko'),
     Locale('nl'),
     Locale('pt'),
     Locale('ru'),
@@ -827,12 +833,15 @@ class _LlmLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => <String>[
+    'az',
     'de',
     'en',
     'es',
     'fr',
     'id',
+    'it',
     'ja',
+    'ko',
     'nl',
     'pt',
     'ru',
@@ -860,6 +869,8 @@ LlmLocalizations lookupLlmLocalizations(Locale locale) {
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'az':
+      return LlmLocalizationsAz();
     case 'de':
       return LlmLocalizationsDe();
     case 'en':
@@ -870,8 +881,12 @@ LlmLocalizations lookupLlmLocalizations(Locale locale) {
       return LlmLocalizationsFr();
     case 'id':
       return LlmLocalizationsId();
+    case 'it':
+      return LlmLocalizationsIt();
     case 'ja':
       return LlmLocalizationsJa();
+    case 'ko':
+      return LlmLocalizationsKo();
     case 'nl':
       return LlmLocalizationsNl();
     case 'pt':

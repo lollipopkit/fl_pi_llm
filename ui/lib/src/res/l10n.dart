@@ -7,5 +7,9 @@ import 'package:flutter/widgets.dart';
 LlmLocalizations llmL10n = LlmLocalizationsEn();
 
 extension LlmL10nX on BuildContext {
-  void setLlmL10n() => llmL10n = LlmLocalizations.of(this);
+  /// English when the app's locale is one this package has no strings for:
+  /// [LlmLocalizations.of] would throw there.
+  void setLlmL10n() => llmL10n =
+      Localizations.of<LlmLocalizations>(this, LlmLocalizations) ??
+      LlmLocalizationsEn();
 }
