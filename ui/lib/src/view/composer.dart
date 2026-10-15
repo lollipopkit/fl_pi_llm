@@ -243,46 +243,53 @@ class ComposerBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.theme.colorScheme;
-    return Material(
-      color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(17),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(9, 7, 9, 5),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ?top,
-            Focus(
-              canRequestFocus: false,
-              skipTraversal: true,
-              onKeyEvent: isDesktop ? _onKey : null,
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                enabled: enabled,
-                minLines: 1,
-                maxLines: 8,
-                style: const TextStyle(fontSize: 14, height: 20 / 14),
-                textInputAction: isDesktop ? TextInputAction.newline : TextInputAction.send,
-                onSubmitted: isDesktop ? null : (_) => onSubmit(),
-                decoration: bareInputDecoration(
-                  hintText: hint,
-                  hintStyle: UIs.textGrey.copyWith(fontSize: 14, height: 20 / 14),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
+    // The box is the field's tap region: its buttons keep the keyboard up,
+    // and a tap anywhere else puts it away.
+    return TextFieldTapRegion(
+      child: Material(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(17),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(9, 7, 9, 5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ?top,
+              Focus(
+                canRequestFocus: false,
+                skipTraversal: true,
+                onKeyEvent: isDesktop ? _onKey : null,
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  enabled: enabled,
+                  minLines: 1,
+                  maxLines: 8,
+                  style: const TextStyle(fontSize: 14, height: 20 / 14),
+                  textInputAction: isDesktop ? TextInputAction.newline : TextInputAction.send,
+                  onSubmitted: isDesktop ? null : (_) => onSubmit(),
+                  // Flutter's default only does this for a mouse; on a phone the
+                  // keyboard stayed up over the chat, the history and the rest.
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  decoration: bareInputDecoration(
+                    hintText: hint,
+                    hintStyle: UIs.textGrey.copyWith(fontSize: 14, height: 20 / 14),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                // Its own row: a Flexible beside a Spacer would split the free
-                // space with it, and what the chip leaves of its half would
-                // end up after the button.
-                Expanded(child: Row(children: actions.joinWith(const SizedBox(width: 1)))),
-                button,
-              ],
-            ),
-          ],
+              Row(
+                children: [
+                  // Its own row: a Flexible beside a Spacer would split the free
+                  // space with it, and what the chip leaves of its half would
+                  // end up after the button.
+                  Expanded(child: Row(children: actions.joinWith(const SizedBox(width: 1)))),
+                  button,
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

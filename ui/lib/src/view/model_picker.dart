@@ -42,18 +42,10 @@ Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) asy
       ),
     );
   }
-  return showModalBottomSheet<LlmModelRef>(
-    context: context,
-    // Over the app's nav bar rather than above it, when opened from a tab
-    // with a navigator of its own.
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    // The theme's sheet — its colour, corners and handle — as the app's other
-    // tall sheets are. A colour of its own here covered the corners, which a
-    // sheet does not clip to.
-    showDragHandle: true,
-    builder: (_) => FractionallySizedBox(heightFactor: 0.82, child: _ModelSheet(current: current)),
+  return showResizableSheet<LlmModelRef>(
+    context,
+    heightFactor: 0.82,
+    builder: (_) => _ModelSheet(current: current),
   );
 }
 
