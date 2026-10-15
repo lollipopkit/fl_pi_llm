@@ -44,7 +44,6 @@ Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) asy
   }
   return showResizableSheet<LlmModelRef>(
     context,
-    heightFactor: 0.82,
     builder: (_) => _ModelSheet(current: current),
   );
 }
