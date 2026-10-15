@@ -9,6 +9,7 @@
 //! request (`Authorization: Bearer …`). Signing in through a browser (OAuth)
 //! is the app's.
 
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -29,6 +30,9 @@ const LIST_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_BODY: usize = 16 << 20;
 /// Tools listed of one server, at most: pages are followed this far.
 const MAX_TOOLS: usize = 256;
+/// Pages followed of one listing, at most: a server whose pages carry no
+/// tools would otherwise be asked for the next one forever.
+const MAX_PAGES: usize = 64;
 
 /// One MCP server: where it is, and the headers sent with each request.
 #[derive(Debug, Clone)]
@@ -112,11 +116,13 @@ impl McpClient {
         Ok(info)
     }
 
-    /// Every tool the server lists, its pages followed.
+    /// Every tool the server lists, its pages followed — up to [MAX_PAGES],
+    /// and not to a page already read.
     pub async fn list_tools(&self) -> Result<Vec<McpTool>, String> {
         let mut tools = Vec::new();
         let mut cursor: Option<String> = None;
-        loop {
+        let mut read = HashSet::new();
+        for _ in 0..MAX_PAGES {
             let params = match &cursor {
                 Some(c) => json!({ "cursor": c }),
                 None => json!({}),
@@ -124,11 +130,13 @@ impl McpClient {
             let page = self.request("tools/list", params, LIST_TIMEOUT, &Cancel::new()).await?;
             tools.extend(page["tools"].as_array().into_iter().flatten().filter_map(McpTool::from_json));
             cursor = page["nextCursor"].as_str().filter(|c| !c.is_empty()).map(String::from);
-            if cursor.is_none() || tools.len() >= MAX_TOOLS {
-                tools.truncate(MAX_TOOLS);
-                return Ok(tools);
+            match &cursor {
+                Some(c) if tools.len() < MAX_TOOLS && read.insert(c.clone()) => {}
+                _ => break,
             }
         }
+        tools.truncate(MAX_TOOLS);
+        Ok(tools)
     }
 
     /// Calls [tool] with [args]: its answer as pi content, or why it failed
@@ -346,16 +354,24 @@ mod tests {
         seen: Mutex<Vec<Seen>>,
         events: bool,
         forget_once: Mutex<bool>,
+        /// Pages without tools that never end: a new cursor each (true), or
+        /// the same one (false).
+        endless: Mutex<Option<bool>>,
     }
 
     impl Fake {
         fn new(events: bool) -> Arc<Self> {
-            Arc::new(Self { seen: Mutex::default(), events, forget_once: Mutex::new(false) })
+            Arc::new(Self { seen: Mutex::default(), events, forget_once: Mutex::new(false), endless: Mutex::default() })
         }
 
         fn answer(&self, msg: &Value) -> Option<Value> {
             let id = msg.get("id")?.clone();
+            let endless = *self.endless.lock().unwrap();
             let result = match msg["method"].as_str()? {
+                "tools/list" if endless.is_some() => {
+                    let pages = self.seen.lock().unwrap().len();
+                    json!({ "tools": [], "nextCursor": if endless == Some(true) { format!("p{pages}") } else { "again".into() } })
+                }
                 "initialize" => json!({
                     "protocolVersion": "2025-03-26",
                     "capabilities": { "tools": {} },
@@ -478,5 +494,24 @@ mod tests {
         assert_eq!(client.list_tools().await.unwrap().len(), 2);
         let methods: Vec<String> = fake.seen.lock().unwrap().iter().map(|(_, m)| m["method"].as_str().unwrap().to_string()).collect();
         assert_eq!(methods[2..5], ["tools/list", "initialize", "notifications/initialized"]);
+    }
+
+    async fn endless(new_cursors: bool) -> usize {
+        let fake = Fake::new(false);
+        let client = McpClient::connect(fake.clone(), config()).await.unwrap();
+        *fake.endless.lock().unwrap() = Some(new_cursors);
+        assert!(client.list_tools().await.unwrap().is_empty());
+        let seen = fake.seen.lock().unwrap();
+        seen.iter().filter(|(_, m)| m["method"] == "tools/list").count()
+    }
+
+    #[tokio::test]
+    async fn a_cursor_already_read_ends_the_listing() {
+        assert_eq!(endless(false).await, 2);
+    }
+
+    #[tokio::test]
+    async fn pages_without_end_stop_at_the_bound() {
+        assert_eq!(endless(true).await, MAX_PAGES);
     }
 }
