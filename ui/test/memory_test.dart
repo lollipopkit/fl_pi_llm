@@ -29,7 +29,7 @@ void main() {
     });
 
     test('never leave it, nor reach the store bookkeeping', () {
-      for (final p in ['../x', '/memories/../x', 'a/./b', r'a\b', '__lkpt_lastUpdateTs', 'a/_x', 'a‮b']) {
+      for (final p in ['../x', '/memories/../x', 'a/./b', r'a\b', '__lkpt_lastUpdateTs', 'a/_x', 'a\u202Eb']) {
         expect(() => MemoryStore.keyOf(p), throwsA(isA<MemoryError>()), reason: p);
       }
     });

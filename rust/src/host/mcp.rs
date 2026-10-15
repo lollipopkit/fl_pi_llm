@@ -337,10 +337,13 @@ mod tests {
     use super::super::FetchResponse;
     use super::*;
 
+    /// A request as the fake saw it: its headers and its body.
+    type Seen = (Vec<(String, String)>, Value);
+
     /// An MCP server in memory: answers JSON or an event stream, keeps a
     /// session, and forgets it once when told to.
     struct Fake {
-        seen: Mutex<Vec<(Vec<(String, String)>, Value)>>,
+        seen: Mutex<Vec<Seen>>,
         events: bool,
         forget_once: Mutex<bool>,
     }
