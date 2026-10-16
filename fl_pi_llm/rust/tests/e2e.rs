@@ -609,6 +609,32 @@ fn a_legacy_session_with_a_cycle_moves_over() {
     assert_eq!(said, ["a", "b", "c", "d", "e"], "nothing is lost");
 }
 
+/// An entry the chat does not keep, at the root, still holds its branches
+/// apart without writing any of them twice.
+#[test]
+fn a_legacy_root_the_chat_does_not_keep_keeps_its_branches() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let msg = |id: &str, parent: &str, seq: u32| format!("{}\n", json!({"kind":"entry","id":id,"parentId":parent,"type":"message","seq":seq,"timestamp":seq,
+        "message":{"role":"user","content":[{"type":"text","text":id}],"timestamp":seq}}));
+    let root = format!("{}\n", json!({"kind":"entry","id":"r","parentId":null,"type":"model_change","seq":0,"timestamp":0}));
+    // `a2` and `a3` share `a`: before, each wrote `a` again.
+    let (legacy, _) = legacy_store(vec![root, msg("a", "r", 1), msg("a2", "a", 2), msg("a3", "a", 3), msg("b", "r", 4)]);
+    let mut h = Harness::with_store(temp_dir(), legacy);
+    h.register(&url);
+    open(&mut h, "chat-1", model(&url), json!({}));
+    let tree = h.ok("session.tree", json!({"sessionId":"chat-1"}));
+    let mut said: Vec<String> = tree["entries"].as_array().unwrap().iter()
+        .map(|e| e["message"]["content"][0]["text"].as_str().unwrap().to_string()).collect();
+    said.sort();
+    assert_eq!(said, ["a", "a2", "a3", "b"], "nothing written twice");
+    // `b`, the newest, is where it stands; `a` is its other version.
+    let page = h.ok("session.page", json!({"sessionId":"chat-1"}));
+    let first = &page["entries"][0];
+    assert_eq!(first["message"]["content"][0]["text"], "b");
+    let versions: Vec<_> = first["versions"].as_array().unwrap().iter().map(|v| v["message"]["content"][0]["text"].clone()).collect();
+    assert_eq!(versions, [json!("a"), json!("b")]);
+}
+
 /// A move cut short leaves the old session; the next open starts it over.
 #[test]
 fn a_legacy_move_cut_short_starts_over() {

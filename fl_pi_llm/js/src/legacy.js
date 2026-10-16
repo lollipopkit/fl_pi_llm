@@ -155,7 +155,7 @@ function draft(e, mapped) {
         kind: 'fl.compaction',
         data: { summary, timestamp, ...(e.tokensBefore != null ? { tokensBefore: e.tokensBefore } : {}) },
         model: [{ role: 'user', content: [{ type: 'text', text: summary }], timestamp }],
-        head: kept != null && mapped.has(kept) ? mapped.get(kept).newId : 'self',
+        head: (kept == null ? undefined : mapped.get(kept)?.newId) ?? 'self',
       };
     }
     default:
@@ -188,7 +188,7 @@ export async function migrate(harness, file, BG) {
   }
   const leaves = [...entries.keys()].filter((id) => !children.has(id)).sort((a, b) => entries.get(a).seq - entries.get(b).seq);
 
-  /** old id -> {newId, conv, timestamp, role} */
+  /** old id -> {newId, conv, timestamp, role}; `newId` null before a conversation's first entry */
   const mapped = new Map();
   /** conversation id -> the old id of its last entry */
   const lastOf = new Map();
@@ -217,22 +217,24 @@ export async function migrate(harness, file, BG) {
     } else {
       const at = mapped.get(path[i - 1]);
       // A branch ends where another goes on: continue that conversation
-      // when this one is its own tip, fork it otherwise.
+      // when this one is its own tip, fork it otherwise — before anything
+      // was written, by starting another.
       conv = lastOf.get(at.conv) === path[i - 1]
         ? await harness.conversation(at.conv, BG)
-        : await (await harness.conversation(at.conv, BG)).fork(at.newId, { ownership: { kind: 'ownerless' } }, BG);
+        : at.newId == null
+          ? await harness.createConversation({ ownership: { kind: 'ownerless' } }, BG)
+          : await (await harness.conversation(at.conv, BG)).fork(at.newId, { ownership: { kind: 'ownerless' } }, BG);
     }
     for (; i < path.length; i++) {
       const id = path[i];
       const e = await readEntry(file.path, entries.get(id));
       const entry = e && draft(e, mapped);
       if (!entry) {
-        // Nothing the chat keeps; what follows hangs off what came before.
-        const prev = i > 0 ? mapped.get(path[i - 1]) : undefined;
-        if (prev) {
-          mapped.set(id, prev);
-          if (lastOf.get(prev.conv) === path[i - 1]) lastOf.set(prev.conv, id);
-        }
+        // Nothing the chat keeps; what follows hangs off what came before,
+        // or off the start of this conversation.
+        const prev = i > 0 ? mapped.get(path[i - 1]) : { newId: null, conv: conv.id };
+        mapped.set(id, prev);
+        if (i === 0 || lastOf.get(prev.conv) === path[i - 1]) lastOf.set(prev.conv, id);
         continue;
       }
       const settled = await (await conv.submit({ type: 'write', entry }, BG)).wait(BG);
@@ -259,7 +261,8 @@ export async function migrate(harness, file, BG) {
   } else if (tip != null && mapped.has(tip)) {
     const m = mapped.get(tip);
     current = m.conv;
-    if (lastOf.get(m.conv) !== tip) newTip = m.newId;
+    // On an entry nothing was written for, before the conversation's first.
+    if (lastOf.get(m.conv) !== tip) newTip = m.newId ?? -1;
   } else if (leaves.length) {
     const m = mapped.get(leaves[leaves.length - 1]);
     if (m) current = m.conv;

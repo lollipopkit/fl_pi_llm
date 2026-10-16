@@ -97,4 +97,11 @@ jobs:
       - name: Generated l10n is current
         run: flutter gen-l10n && git diff --exit-code -- lib/generated
       - run: flutter analyze --fatal-infos
+      # The memory, skills and MCP tests call the library `cargo build` leaves
+      # in `fl_pi_llm/rust/target/debug`.
+      - run: rustup show active-toolchain || rustup toolchain install
+        working-directory: fl_pi_llm/rust
+      - run: cargo build
+        working-directory: fl_pi_llm/rust
+      - run: flutter test
 
