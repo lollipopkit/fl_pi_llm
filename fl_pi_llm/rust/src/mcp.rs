@@ -169,6 +169,100 @@ pub fn call_result(tool: &str, res: &Value) -> Result<(Vec<Value>, Value), Strin
     Ok((content, res.get("structuredContent").cloned().unwrap_or(Value::Null)))
 }
 
+/// The most tools the servers give the model as its own. Past it the model
+/// finds them with [`SEARCH_TOOL`] and calls them with [`CALL_TOOL`], so a
+/// server with many tools does not fill every request with their schemas.
+pub const DIRECT_TOOLS_MAX: usize = 24;
+pub const SEARCH_TOOL: &str = "mcp_search";
+pub const CALL_TOOL: &str = "mcp_call";
+/// The most matches one search answers.
+const SEARCH_LIMIT: usize = 8;
+/// What a match carries of a tool's description.
+const SEARCH_DESCRIPTION: usize = 600;
+
+/// A connected server's tool, as a search sees it.
+pub struct Listed<'a> {
+    pub server_id: &'a str,
+    pub server: &'a str,
+    pub tool: &'a McpTool,
+}
+
+/// [`SEARCH_TOOL`]'s description and parameters, naming [servers]
+/// (`(id, name)` each).
+pub fn search_def(servers: &[(String, String)]) -> (String, Value) {
+    let named: Vec<String> = servers.iter().map(|(id, name)| format!("{name} ({id})")).collect();
+    let description = format!(
+        "Finds tools of the connected MCP servers: {}. Answers each match's server, tool, what it does and its \
+         arguments' JSON Schema; then call one with {CALL_TOOL}. Search before calling: a tool is called by the \
+         names a search gave.",
+        named.join(", ")
+    );
+    let parameters = json!({
+        "type": "object",
+        "properties": {
+            "query": { "type": "string", "description": "Words for what the tool should do; empty lists the server's tools." },
+            "server": { "type": "string", "description": "Only this server's tools, by its id." },
+        },
+        "required": ["query"],
+    });
+    (description, parameters)
+}
+
+/// [`CALL_TOOL`]'s description and parameters.
+pub fn call_def() -> (String, Value) {
+    let description = format!("Calls a tool of a connected MCP server, as {SEARCH_TOOL} named it.");
+    let parameters = json!({
+        "type": "object",
+        "properties": {
+            "server": { "type": "string", "description": "The server's id, from the search." },
+            "tool": { "type": "string", "description": "The tool's name, from the search." },
+            "arguments": { "type": "object", "description": "Its arguments, as its schema asks." },
+        },
+        "required": ["server", "tool"],
+    });
+    (description, parameters)
+}
+
+/// The tools among [tools] that [query] asks for, best first: its words in
+/// a tool's name count most, then in its title, then in its description.
+/// An empty query lists them all. [server] keeps one server's, by id.
+pub fn search(tools: &[Listed<'_>], query: &str, server: Option<&str>) -> Value {
+    let words: Vec<String> =
+        query.to_lowercase().split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).map(String::from).collect();
+    let mut scored: Vec<(usize, usize, &Listed<'_>)> = tools
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| server.is_none_or(|s| s == t.server_id))
+        .filter_map(|(i, t)| {
+            let name = t.tool.name.to_lowercase();
+            let title = t.tool.title.as_deref().unwrap_or_default().to_lowercase();
+            let about = format!("{} {}", t.tool.description.as_deref().unwrap_or_default(), t.server).to_lowercase();
+            let score: usize = words
+                .iter()
+                .map(|w| if name.contains(w.as_str()) { 3 } else if title.contains(w.as_str()) { 2 } else { usize::from(about.contains(w.as_str())) })
+                .sum();
+            (words.is_empty() || score > 0).then_some((score, i, t))
+        })
+        .collect();
+    scored.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    let matches: Vec<Value> = scored
+        .iter()
+        .take(SEARCH_LIMIT)
+        .map(|(_, _, t)| {
+            json!({
+                "server": t.server_id,
+                "serverName": t.server,
+                "tool": t.tool.name,
+                "title": t.tool.title,
+                "description": t.tool.description.as_deref().map(|d| cap(d, SEARCH_DESCRIPTION)),
+                "readOnly": t.tool.read_only,
+                "inputSchema": t.tool.input_schema,
+            })
+        })
+        .collect();
+    json!({ "matches": matches, "more": scored.len() > SEARCH_LIMIT })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,6 +281,26 @@ mod tests {
         let long = tool_name("mcp0a1b2c3d", &"x".repeat(80));
         assert_eq!(long.len(), 55 + 1 + 8);
         assert_eq!(tool_name("mcp0", "é"), "mcp0___");
+    }
+
+    #[test]
+    fn tools_are_found_by_what_they_do() {
+        let tool = |name: &str, about: &str| McpTool::from_json(&json!({ "name": name, "description": about })).unwrap();
+        let (lights, album, albums) = (tool("turn_on", "Turns a light on"), tool("list_albums", "Lists the photo albums"), tool("x", "Albums"));
+        let tools = [
+            Listed { server_id: "mcpa", server: "Home", tool: &lights },
+            Listed { server_id: "mcpb", server: "Photos", tool: &album },
+            Listed { server_id: "mcpb", server: "Photos", tool: &albums },
+        ];
+        let names = |v: Value| v["matches"].as_array().unwrap().iter().map(|m| m["tool"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+        // In the name counts more than in the description.
+        assert_eq!(names(search(&tools, "albums", None)), ["list_albums", "x"]);
+        assert_eq!(names(search(&tools, "light", None)), ["turn_on"]);
+        assert_eq!(names(search(&tools, "", Some("mcpb"))), ["list_albums", "x"]);
+        assert_eq!(names(search(&tools, "albums", Some("mcpa"))), Vec::<String>::new());
+        let first = &search(&tools, "photo", None)["matches"][0];
+        assert_eq!((first["server"].as_str(), first["inputSchema"].clone()), (Some("mcpb"), json!({ "type": "object" })));
+        assert!(search_def(&[("mcpa".into(), "Home".into())]).0.contains("Home (mcpa)"));
     }
 
     #[test]
