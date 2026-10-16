@@ -118,12 +118,31 @@ const canChat = (listed, meta) => {
 
 const METADATA_URL = 'https://ormc.lollipopkit.com/models-data.json';
 const PRICE_SCALE = 1_000_000;
-
+/**
+ * How long a listing waits for the metadata, which only describes what the
+ * endpoint listed: a host that cannot reach it lists by ids instead.
+ */
+const METADATA_TIMEOUT_MS = 5000;
+/** After a failed download, how long listings go without one. */
+const METADATA_RETRY_MS = 10 * 60 * 1000;
 
 let metadataIndex;
+let metadataRetryAt = 0;
 async function metadata(signal) {
   if (metadataIndex) return metadataIndex;
-  const res = await fetch(METADATA_URL, { signal });
+  if (Date.now() < metadataRetryAt) throw new Error('metadata: failed recently');
+  try {
+    metadataIndex = await downloadMetadata(signal);
+  } catch (e) {
+    if (!signal?.aborted) metadataRetryAt = Date.now() + METADATA_RETRY_MS;
+    throw e;
+  }
+  return metadataIndex;
+}
+
+async function downloadMetadata(signal) {
+  const timeout = AbortSignal.timeout(METADATA_TIMEOUT_MS);
+  const res = await fetch(METADATA_URL, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   if (!res.ok) throw new Error(`metadata: HTTP ${res.status}`);
   const body = await res.json();
   const list = Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
@@ -139,8 +158,7 @@ async function metadata(signal) {
   }
   const byBase = new Map();
   for (const [k, v] of buckets) if (v.length === 1) byBase.set(k, v[0]);
-  metadataIndex = { byId, byNorm, byBase };
-  return metadataIndex;
+  return { byId, byNorm, byBase };
 }
 
 const norm = (id) => id.trim().toLowerCase();
