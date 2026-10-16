@@ -201,7 +201,8 @@ fn chats_dir(root: &Path) -> PathBuf {
 /// The databases the engine has open, by handle.
 pub struct Chats {
     dir: Option<PathBuf>,
-    open: HashMap<u32, Connection>,
+    /// By handle, with the chat each is of.
+    open: HashMap<u32, (String, Connection)>,
     next: u32,
     cache: Option<Connection>,
 }
@@ -224,7 +225,7 @@ impl Chats {
         let conn = open(&self.dir()?, id)?;
         let h = self.next;
         self.next = self.next.wrapping_add(1).max(1);
-        self.open.insert(h, conn);
+        self.open.insert(h, (id.to_string(), conn));
         Ok(h)
     }
 
@@ -233,14 +234,18 @@ impl Chats {
     }
 
     pub fn get(&self, h: u32) -> Result<&Connection, String> {
-        self.open.get(&h).ok_or_else(|| format!("chat database {h} is not open"))
+        self.open.get(&h).map(|(_, c)| c).ok_or_else(|| format!("chat database {h} is not open"))
     }
 
     pub fn list(&self) -> Result<Vec<StoredChat>, String> {
         list(&self.dir()?)
     }
 
+    /// Refused while a handle to it is open: the file would go from under it.
     pub fn remove(&self, id: &str) -> Result<(), String> {
+        if self.open.values().any(|(open, _)| open == id) {
+            return Err(format!("chat {id} is open"));
+        }
         remove(&self.dir()?, id)
     }
 
@@ -326,6 +331,19 @@ mod tests {
 
         remove(&dir, "c/1").unwrap();
         assert_eq!(list(&dir).unwrap().len(), 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_open_chat_is_not_removed() {
+        let root = temp_dir("open");
+        let mut chats = Chats::new(Some(root.clone()));
+        let h = chats.open("c").unwrap();
+        assert_eq!(chats.remove("c").unwrap_err(), "chat c is open");
+        assert_eq!(chats.list().unwrap().len(), 1);
+        chats.close(h);
+        chats.remove("c").unwrap();
+        assert!(chats.list().unwrap().is_empty());
         let _ = std::fs::remove_dir_all(&root);
     }
 
