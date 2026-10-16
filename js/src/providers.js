@@ -12,16 +12,14 @@
 //   auth.write  {providerId, credential}
 //   auth.delete {providerId}
 //
-// Model lists fetched from the network are cached through the host's store
-// (see fs.js), under /models/.
+// Model lists fetched from the network are cached beside the chats
+// (`__host.cache*`, see db.js), under `models/<provider>`.
 import { createProvider } from '@earendil-works/pi-ai';
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy';
 import { googleGenerativeAIApi } from '@earendil-works/pi-ai/api/google-generative-ai.lazy';
 import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
 import { openAIResponsesApi } from '@earendil-works/pi-ai/api/openai-responses.lazy';
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
-
-import { hostFileSystem } from './fs.js';
 
 const host = globalThis.__host;
 const call = async (name, payload) => JSON.parse(await host.call(name, JSON.stringify(payload)));
@@ -57,12 +55,12 @@ const customSpecs = new Map();
 export const customIds = { has: (id) => customSpecs.has(id) };
 
 const modelsStore = {
-  path: (id) => `/models/${encodeURIComponent(id)}.json`,
+  key: (id) => `models/${id}`,
   async read(id) {
-    const r = await hostFileSystem.readTextFile(this.path(id));
-    if (!r.ok) return undefined;
+    const text = host.cacheGet(this.key(id));
+    if (text == null) return undefined;
     let entry;
-    try { entry = JSON.parse(r.value); } catch { return undefined; }
+    try { entry = JSON.parse(text); } catch { return undefined; }
     // A custom provider's list belongs to the endpoint it was fetched from:
     // its models carry that baseUrl and headers.
     const spec = customSpecs.get(id);
@@ -71,10 +69,10 @@ const modelsStore = {
   },
   async write(id, entry) {
     const spec = customSpecs.get(id);
-    await hostFileSystem.writeFile(this.path(id), JSON.stringify(spec ? { ...entry, endpoint: endpointKey(spec) } : entry));
+    host.cacheSet(this.key(id), JSON.stringify(spec ? { ...entry, endpoint: endpointKey(spec) } : entry));
   },
   async delete(id) {
-    await hostFileSystem.remove(this.path(id), { force: true });
+    host.cacheSet(this.key(id), null);
   },
 };
 

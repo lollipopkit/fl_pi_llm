@@ -2,18 +2,28 @@
 // (fl_pi_llm on pi-agent-core 0.87, `/sessions/<cwd>/<created>_<id>.jsonl`).
 //
 // Such a session is a tree of entries in one file, with the branch tip the
-// harness last stood on. It is moved into a chat's pi-durable storage once,
-// the first time the chat is opened: every root-to-leaf path becomes a
-// conversation, forked from the one it shares the longest prefix with, so
-// the versions an edit or a regeneration left stay where they were. The old
-// file is deleted once the chat holds everything it said.
-
-import { hostFileSystem as fs } from './fs.js';
+// harness last stood on. It is moved into a chat's storage once: every
+// root-to-leaf path becomes a conversation, forked from the one it shares the
+// longest prefix with, so the versions an edit or a regeneration left stay
+// where they were. The old file is deleted once the chat holds everything it
+// said.
+//
+// A file may be far larger than the heap, so it is never read whole: the
+// host hands it over a few chunks at a time (`legacy.read`), a first pass
+// keeps only the shape of the tree and where each entry is, and the second
+// reads each entry again as it is written.
+//
+//   legacy.list   {}                       -> {files: [{path, size, mtimeMs}]}
+//   legacy.read   {path, after, maxChars}  -> {chunks: [[seq, text], ...]}
+//                 the chunks after `after`, in order, at least one when any
+//                 are left; none at the end
+//   legacy.remove {path}
 
 const host = globalThis.__host;
 const call = async (name, payload) => JSON.parse(await host.call(name, JSON.stringify(payload)));
 
-export const LEGACY_ROOT = '/sessions';
+/** About how much of a file one `legacy.read` brings. */
+const READ_CHARS = 1 << 20;
 
 /** pi named a session `<created>_<id>.jsonl`, the id URI-encoded. */
 export function legacyIdOf(path) {
@@ -31,7 +41,7 @@ export function legacyIdOf(path) {
 
 /** Every legacy session file still waiting to be moved, by chat id. */
 export async function legacyFiles() {
-  const { files } = await call('fs.list', { dir: LEGACY_ROOT });
+  const { files } = await call('legacy.list', {});
   const out = new Map();
   for (const f of files) {
     const id = legacyIdOf(f.path);
@@ -40,31 +50,90 @@ export async function legacyFiles() {
   return out;
 }
 
-/** The parts of a legacy file a chat needs: its entries, tip and name. */
-export function parseLegacy(text) {
-  const entries = new Map();
-  let tip;
-  let name = null;
-  for (const line of text.split('\n')) {
-    if (!line.trim()) continue;
-    let value;
-    try {
-      value = JSON.parse(line);
-    } catch {
-      continue; // A torn last line: what came before it is whole.
-    }
-    for (const w of Array.isArray(value) ? value : [value]) {
-      if (w == null || typeof w !== 'object') continue;
-      if (w.kind === 'entry' || (w.kind === undefined && typeof w.id === 'string' && typeof w.type === 'string' && w.type !== 'session')) {
-        entries.set(w.id, w);
-      } else if (w.kind === 'value' && w.namespace === 'pi.branch.tip' && w.key === 'main') {
-        tip = w.op === 'delete' ? null : w.value;
-      } else if (w.kind === 'value' && w.namespace === 'pi.session.name') {
-        name = w.op === 'delete' ? null : (w.value ?? null);
+export const removeLegacy = (file) => call('legacy.remove', { path: file.path });
+
+/**
+ * Every line of [path] with where it starts — `[seq, offset]`, the chunk and
+ * the character in it — from the chunk after [after]. Stops after the first
+ * line when [one].
+ */
+async function* lines(path, after = -1, offset = 0, one = false) {
+  let carry = '';
+  let at = null;
+  for (;;) {
+    const { chunks } = await call('legacy.read', { path, after, maxChars: one ? 1 : READ_CHARS });
+    if (!chunks.length) break;
+    for (const [seq, text] of chunks) {
+      let start = offset;
+      offset = 0;
+      after = seq;
+      for (;;) {
+        at ??= [seq, start];
+        const nl = text.indexOf('\n', start);
+        if (nl < 0) {
+          carry += text.slice(start);
+          break;
+        }
+        yield { text: carry + text.slice(start, nl), at };
+        if (one) return;
+        carry = '';
+        at = null;
+        start = nl + 1;
       }
     }
   }
+  // A torn last line: what came before it is whole.
+  if (carry !== '') {
+    try {
+      JSON.parse(carry);
+      yield { text: carry, at };
+    } catch { /* dropped */ }
+  }
+}
+
+/** The writes of one line, or none when it is not JSON. */
+function writesOf(text) {
+  if (!text.trim()) return [];
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  return Array.isArray(value) ? value : [value];
+}
+
+const isEntry = (w) => w != null && typeof w === 'object' &&
+  (w.kind === 'entry' || (w.kind === undefined && typeof w.id === 'string' && typeof w.type === 'string' && w.type !== 'session'));
+
+/**
+ * The shape of the tree in [path]: each entry's parent, seq and where it is,
+ * without its content; and the tip and name.
+ */
+export async function scanLegacy(path) {
+  /** id -> {parentId, seq, at: [chunk, offset], index} */
+  const entries = new Map();
+  let tip;
+  let name = null;
+  for await (const line of lines(path)) {
+    writesOf(line.text).forEach((w, index) => {
+      if (isEntry(w)) {
+        entries.set(w.id, { parentId: w.parentId ?? null, seq: w.seq ?? 0, at: line.at, index });
+      } else if (w?.kind === 'value' && w.namespace === 'pi.branch.tip' && w.key === 'main') {
+        tip = w.op === 'delete' ? null : w.value;
+      } else if (w?.kind === 'value' && w.namespace === 'pi.session.name') {
+        name = w.op === 'delete' ? null : (w.value ?? null);
+      }
+    });
+  }
   return { entries, tip, name };
+}
+
+/** The entry [ref] points at, read again from [path]. */
+async function readEntry(path, ref) {
+  const [seq, offset] = ref.at;
+  for await (const line of lines(path, seq - 1, offset, true)) return writesOf(line.text)[ref.index];
+  return undefined;
 }
 
 const millis = (t) => (typeof t === 'number' ? t : Date.parse(t) || Date.now());
@@ -99,7 +168,7 @@ function firstKept(e, mapped) {
   const first = e.retainedTail?.[0];
   if (!first) return null;
   for (const [oldId, m] of mapped) {
-    if (m.message?.timestamp === first.timestamp && m.message?.role === first.role) return oldId;
+    if (m.timestamp === first.timestamp && m.role === first.role) return oldId;
   }
   return null;
 }
@@ -109,19 +178,17 @@ function firstKept(e, mapped) {
  * the conversation and tip the chat should open on, and its name.
  */
 export async function migrate(harness, file, BG) {
-  const { text } = await call('fs.read', { path: file.path });
-  if (text == null) return null;
-  const { entries, tip, name } = parseLegacy(text);
+  const { entries, tip, name } = await scanLegacy(file.path);
 
   const children = new Map();
-  for (const e of entries.values()) {
-    const p = e.parentId ?? null;
+  for (const [id, e] of entries) {
+    const p = e.parentId;
     if (!children.has(p)) children.set(p, []);
-    children.get(p).push(e);
+    children.get(p).push(id);
   }
-  const leaves = [...entries.values()].filter((e) => !children.has(e.id)).sort((a, b) => a.seq - b.seq);
+  const leaves = [...entries.keys()].filter((id) => !children.has(id)).sort((a, b) => entries.get(a).seq - entries.get(b).seq);
 
-  /** old id -> {newId, conv, message} */
+  /** old id -> {newId, conv, timestamp, role} */
   const mapped = new Map();
   /** conversation id -> the old id of its last entry */
   const lastOf = new Map();
@@ -129,29 +196,42 @@ export async function migrate(harness, file, BG) {
 
   for (const leaf of leaves) {
     const path = [];
-    for (let e = leaf; e; e = e.parentId != null ? entries.get(e.parentId) : undefined) path.unshift(e);
+    for (let id = leaf; id != null; id = entries.get(id)?.parentId ?? null) {
+      if (!entries.has(id)) break;
+      path.unshift(id);
+    }
     let i = 0;
-    while (i < path.length && mapped.has(path[i].id)) i++;
+    while (i < path.length && mapped.has(path[i])) i++;
+    if (i === path.length) continue;
     let conv;
     if (i === 0) {
       conv = root ? await harness.createConversation({ ownership: { kind: 'ownerless' } }, BG) : await harness.root(BG);
       root ??= conv;
     } else {
-      const at = mapped.get(path[i - 1].id);
+      const at = mapped.get(path[i - 1]);
       // A branch ends where another goes on: continue that conversation
       // when this one is its own tip, fork it otherwise.
-      conv = lastOf.get(at.conv) === path[i - 1].id
+      conv = lastOf.get(at.conv) === path[i - 1]
         ? await harness.conversation(at.conv, BG)
         : await (await harness.conversation(at.conv, BG)).fork(at.newId, { ownership: { kind: 'ownerless' } }, BG);
     }
     for (; i < path.length; i++) {
-      const e = path[i];
-      const entry = draft(e, mapped);
-      if (!entry) continue;
+      const id = path[i];
+      const e = await readEntry(file.path, entries.get(id));
+      const entry = e && draft(e, mapped);
+      if (!entry) {
+        // Nothing the chat keeps; what follows hangs off what came before.
+        const prev = i > 0 ? mapped.get(path[i - 1]) : undefined;
+        if (prev) {
+          mapped.set(id, prev);
+          if (lastOf.get(prev.conv) === path[i - 1]) lastOf.set(prev.conv, id);
+        }
+        continue;
+      }
       const settled = await (await conv.submit({ type: 'write', entry }, BG)).wait(BG);
-      if (settled.status !== 'done') throw new Error(`Could not move entry ${e.id}: ${settled.reason}`);
-      mapped.set(e.id, { newId: settled.entry, conv: conv.id, message: e.message });
-      lastOf.set(conv.id, e.id);
+      if (settled.status !== 'done') throw new Error(`Could not move entry ${id}: ${settled.reason}`);
+      mapped.set(id, { newId: settled.entry, conv: conv.id, timestamp: e.message?.timestamp, role: e.message?.role });
+      lastOf.set(conv.id, id);
     }
   }
   root ??= await harness.root(BG);
@@ -165,8 +245,8 @@ export async function migrate(harness, file, BG) {
     current = m.conv;
     if (lastOf.get(m.conv) !== tip) newTip = m.newId;
   } else if (leaves.length) {
-    const m = mapped.get(leaves[leaves.length - 1].id);
+    const m = mapped.get(leaves[leaves.length - 1]);
     if (m) current = m.conv;
   }
-  return { current, tip: newTip, name, remove: () => fs.remove(file.path, { force: true }, BG) };
+  return { current, tip: newTip, name };
 }

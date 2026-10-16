@@ -3,6 +3,7 @@
 
 #[cfg(feature = "frb")]
 pub mod api;
+pub mod db;
 pub mod engine;
 pub mod mcp;
 pub mod memory;

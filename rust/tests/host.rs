@@ -1,6 +1,6 @@
 //! The Rust host end to end: a session over a mock OpenAI-compatible server,
 //! HTTP by `ReqwestFetch`, a tool and an approval answered in Rust, the
-//! session kept by a `DirectoryStore` and reopened by a fresh runtime.
+//! session kept under a directory and reopened by a fresh runtime.
 
 #![cfg(feature = "reqwest")]
 
@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use fl_pi_llm::host::{
-    Approval, Approver, BoxFuture, Cancel, Config, Credentials, DirectoryStore, OpenSession, ReqwestFetch, Runtime, Tool,
+    Approval, Approver, BoxFuture, Cancel, Config, Credentials, OpenSession, ReqwestFetch, Runtime, Tool,
     ToolCall, ToolDef, ToolResult,
 };
 use serde_json::{json, Value};
@@ -72,7 +72,7 @@ impl Approver for Asked {
 fn runtime(dir: &std::path::Path) -> Runtime {
     let client = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none()).build().unwrap();
     Runtime::start(Config {
-        store: Arc::new(DirectoryStore::new(dir)),
+        dir: dir.to_path_buf(),
         credentials: Arc::new(Key),
         fetch: Arc::new(ReqwestFetch::new(client)),
         logger: None,

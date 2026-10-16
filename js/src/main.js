@@ -10,8 +10,8 @@
 //   __host.notify(name, payloadJson)                             fire and forget
 //   __host.emit(payloadJson)                                     an event for Dart
 //
-// A chat is a pi-durable Harness over a storage of its own (`/chats/<id>/`,
-// through `fs.js`), opened while the chat is. Its conversations are the
+// A chat is a pi-durable Harness over a storage of its own (a SQLite file,
+// through `db.js`), opened while the chat is. Its conversations are the
 // chat's versions: an edit or a regeneration forks the conversation at the
 // entry it goes back to, so every version stays, sharing what came before.
 // The chat stands on one conversation, `current`, and may stand on an
@@ -36,9 +36,9 @@ import {
   ToolTask,
   watchEvents,
 } from '@earendil-works/pi-durable';
-import { JsonlStorage } from '@earendil-works/pi-durable/storage/jsonl';
-import { hostFileSystem } from './fs.js';
-import { legacyFiles, migrate } from './legacy.js';
+import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
+import { listChats, openChat, removeChat } from './db.js';
+import { legacyFiles, migrate, removeLegacy } from './legacy.js';
 import { CUSTOM_APIS, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
 const host = globalThis.__host;
@@ -51,11 +51,6 @@ const PI_VERSION = '1.1.0';
 
 // ---------------------------------------------------------------------------
 // Storage
-
-const CHATS = '/chats';
-const META = '/meta';
-const chatDir = (id) => `${CHATS}/${encodeURIComponent(id)}`;
-const metaPath = (id) => `${META}/${encodeURIComponent(id)}.json`;
 
 /**
  * pi-durable names a model by `{provider, modelId}` and looks it up again for
@@ -88,24 +83,43 @@ const ChatDoc = defineDoc({
 });
 
 /** Every chat in storage, by id, with when it was made and last written. */
-async function storedChats() {
-  const { files } = await hostCall('fs.list', { dir: CHATS });
-  const out = new Map();
-  for (const f of files) {
-    const rest = f.path.slice(CHATS.length + 1);
-    const slash = rest.indexOf('/');
-    if (slash < 0) continue;
-    const id = decodeURIComponent(rest.slice(0, slash));
-    const prev = out.get(id);
-    out.set(id, { id, modifiedAt: Math.max(prev?.modifiedAt ?? 0, f.mtimeMs), firstAt: Math.min(prev?.firstAt ?? Infinity, f.mtimeMs) });
+const storedChats = () => new Map(listChats().map((c) => [c.id, c]));
+
+/**
+ * Moves chat [id] out of a session from before pi-durable, if one is left
+ * (TODO: remove with legacy.js). The chat's file is made again from it: a
+ * move cut short leaves the old session, and is started over.
+ */
+const migrating = new Map();
+function migrateLegacy(id, file) {
+  let m = migrating.get(id);
+  if (!m) {
+    m = (async () => {
+      removeChat(id);
+      const harness = await Harness.open(await SqliteStorage.open(openChat(id)), {
+        models: harnessModels,
+        registry: createRegistry(),
+      }, BG);
+      try {
+        const moved = await migrate(harness, file, BG);
+        await setPlace(harness, moved.current, moved.tip, moved.name);
+      } finally {
+        await harness.close(BG);
+      }
+      await removeLegacy(file);
+    })().finally(() => migrating.delete(id));
+    migrating.set(id, m);
   }
-  for (const c of out.values()) {
-    const { text } = await hostCall('fs.read', { path: metaPath(c.id) });
-    let createdAt;
-    try { createdAt = text ? JSON.parse(text).createdAt : undefined; } catch { /* rewritten below */ }
-    c.createdAt = Number.isFinite(createdAt) ? createdAt : c.firstAt;
-  }
-  return out;
+  return m;
+}
+
+async function setPlace(harness, current, tip, name) {
+  await harness.commit(async (tx) => {
+    const doc = await tx.doc(ChatDoc);
+    doc.current = current;
+    doc.tip = tip;
+    doc.name = name;
+  }, BG);
 }
 
 // ---------------------------------------------------------------------------
@@ -257,8 +271,12 @@ class Session {
     this.approval = !!p.approval;
     this.compaction = { ...DEFAULT_COMPACTION, ...(p.compaction ?? {}) };
 
-    const fresh = !(await storedChats()).has(this.id);
-    this.storage = await JsonlStorage.open(chatDir(this.id), hostFileSystem, BG);
+    // TODO: remove with legacy.js.
+    const legacy = (await legacyFiles()).get(this.id);
+    if (legacy) await migrateLegacy(this.id, legacy);
+
+    this.db = openChat(this.id);
+    this.storage = await SqliteStorage.open(this.db);
     const session = this;
     this.registry = createRegistry();
     this.#installTools(p.tools ?? []);
@@ -269,19 +287,6 @@ class Session {
         get compaction() { return session.compaction; },
       },
     }, BG);
-
-    if (fresh) {
-      await hostCall('fs.write', { path: metaPath(this.id), text: JSON.stringify({ createdAt: Date.now() }) });
-      // TODO: remove with legacy.js.
-      const legacy = (await legacyFiles()).get(this.id);
-      if (legacy) {
-        const moved = await migrate(this.harness, legacy, BG);
-        if (moved) {
-          await this.#setPlace(moved.current, moved.tip, moved.name);
-          await moved.remove();
-        }
-      }
-    }
 
     const place = await this.harness.snapshot(ChatDoc, BG);
     this.current = place?.current != null
@@ -324,12 +329,7 @@ class Session {
   }
 
   async #setPlace(current, tip, name = this.name) {
-    await this.harness.commit(async (tx) => {
-      const doc = await tx.doc(ChatDoc);
-      doc.current = current;
-      doc.tip = tip;
-      doc.name = name;
-    }, BG);
+    await setPlace(this.harness, current, tip, name);
   }
 
   /** Forwards the current conversation's events, in the host's shape. */
@@ -571,9 +571,7 @@ class Session {
    */
   async exportPi(cwd) {
     const iso = (ms) => new Date(ms || Date.now()).toISOString();
-    const { text } = await hostCall('fs.read', { path: metaPath(this.id) });
-    let createdAt;
-    try { createdAt = text ? JSON.parse(text).createdAt : undefined; } catch { /* the first entry's time below */ }
+    const createdAt = (await this.db.get('SELECT created_at FROM fl_chat'))?.created_at;
     const tree = await this.tree();
     const tip = (await this.branch()).at(-1);
     const lines = [{ type: 'session', version: 3, id: this.id, timestamp: iso(createdAt ?? tree[0]?.timestamp), cwd }];
@@ -626,7 +624,9 @@ class Session {
   async close() {
     await this.stream?.stop?.();
     this.stream = undefined;
-    await this.harness?.close(BG);
+    // The harness closes its storage; one that never opened leaves it to us.
+    if (this.harness) await this.harness.close(BG);
+    else await this.storage?.close(BG);
   }
 }
 
@@ -678,7 +678,7 @@ const methods = {
 
   /** Every stored session, newest first; legacy ones not moved yet too. */
   'sessions.list': async () => {
-    const chats = await storedChats();
+    const chats = storedChats();
     // TODO: remove with legacy.js.
     for (const [id, f] of await legacyFiles()) {
       if (!chats.has(id)) chats.set(id, { id, createdAt: f.mtimeMs, modifiedAt: f.mtimeMs });
@@ -688,14 +688,32 @@ const methods = {
       .map((c) => ({ id: c.id, createdAt: c.createdAt, modifiedAt: c.modifiedAt, name: null }));
   },
 
+  /**
+   * Moves every session from before pi-durable that is left, one at a time
+   * (TODO: remove with legacy.js). Returns those that could not be moved,
+   * by id, with why; they stay, and opening one tries again.
+   */
+  'sessions.migrate': async () => {
+    const failed = {};
+    for (const [id, file] of await legacyFiles()) {
+      if (sessions.has(id)) continue;
+      try {
+        await migrateLegacy(id, file);
+      } catch (e) {
+        failed[id] = errorText(e);
+      }
+    }
+    return { failed };
+  },
+
   /** Deletes a stored session. It must not be open. */
   'sessions.delete': async (p) => {
     if (sessions.has(p.sessionId)) throw new Error(`Session is open: ${p.sessionId}`);
-    await hostCall('fs.remove', { path: chatDir(p.sessionId), recursive: true });
-    await hostCall('fs.remove', { path: metaPath(p.sessionId), recursive: false });
     // TODO: remove with legacy.js.
+    await migrating.get(p.sessionId)?.catch(() => {});
+    removeChat(p.sessionId);
     const legacy = (await legacyFiles()).get(p.sessionId);
-    if (legacy) await hostCall('fs.remove', { path: legacy.path, recursive: false });
+    if (legacy) await removeLegacy(legacy);
     return null;
   },
 

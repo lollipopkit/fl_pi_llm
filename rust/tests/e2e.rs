@@ -61,59 +61,53 @@ fn do_fetch(engine: Arc<Engine>, call_id: u64, payload: &str, body: Option<Vec<u
     });
 }
 
-/// The host's session store: whole files by path, as `js/src/fs.js` expects.
-type Files = Arc<Mutex<std::collections::BTreeMap<String, (String, u64)>>>;
+/// Sessions from before pi-durable, as the host keeps them: appended chunks
+/// by path. TODO: remove with `js/src/legacy.js`.
+type Legacy = Arc<Mutex<std::collections::BTreeMap<String, Vec<String>>>>;
 
 fn now_ms() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
-fn fs_call(files: &Files, name: &str, p: &Value) -> Value {
-    let mut f = files.lock().unwrap();
-    let path = p["path"].as_str().unwrap_or_default().to_string();
+fn legacy_call(legacy: &Legacy, name: &str, p: &Value) -> Value {
+    let mut l = legacy.lock().unwrap();
+    let path = p["path"].as_str().unwrap_or_default();
     match name {
-        "fs.read" => {
-            let text = f.get(&path).map(|(t, _)| match p["maxLines"].as_u64() {
-                Some(n) => t.split_inclusive('\n').take(n as usize).collect::<String>(),
-                None => t.clone(),
-            });
-            json!({ "text": text })
-        }
-        "fs.write" => { f.insert(path, (p["text"].as_str().unwrap().to_string(), now_ms())); Value::Null }
-        "fs.append" => {
-            let e = f.entry(path).or_insert((String::new(), 0));
-            e.0.push_str(p["text"].as_str().unwrap());
-            e.1 = now_ms();
-            Value::Null
-        }
-        "fs.rename" => {
-            let v = f.remove(p["from"].as_str().unwrap()).unwrap();
-            f.insert(p["to"].as_str().unwrap().to_string(), v);
-            Value::Null
-        }
-        "fs.remove" => {
-            let prefix = format!("{path}/");
-            f.retain(|k, _| k != &path && !k.starts_with(&prefix));
-            Value::Null
-        }
-        "fs.stat" => match f.get(&path) {
-            Some((t, m)) => json!({ "size": t.len(), "mtimeMs": m }),
-            None => Value::Null,
-        },
-        "fs.list" => {
-            let dir = p["dir"].as_str().unwrap();
-            let prefix = if dir == "/" { "/".to_string() } else { format!("{dir}/") };
-            let files: Vec<Value> = f.iter().filter(|(k, _)| k.starts_with(&prefix))
-                .map(|(k, (t, m))| json!({ "path": k, "size": t.len(), "mtimeMs": m })).collect();
+        "legacy.list" => {
+            let files: Vec<Value> = l.iter()
+                .map(|(k, c)| json!({ "path": k, "size": c.iter().map(String::len).sum::<usize>(), "mtimeMs": now_ms() })).collect();
             json!({ "files": files })
         }
-        other => panic!("unknown fs call {other}"),
+        "legacy.read" => {
+            let after = p["after"].as_i64().unwrap();
+            let max = p["maxChars"].as_u64().unwrap() as usize;
+            let mut out = vec![];
+            let mut n = 0;
+            for (seq, text) in l.get(path).into_iter().flatten().enumerate().skip((after + 1) as usize) {
+                if !out.is_empty() && n + text.len() > max { break; }
+                n += text.len();
+                out.push(json!([seq, text]));
+            }
+            json!({ "chunks": out })
+        }
+        "legacy.remove" => { l.remove(path); Value::Null }
+        other => panic!("unknown legacy call {other}"),
     }
+}
+
+/// A directory of its own for each engine's chats.
+fn temp_dir() -> std::path::PathBuf {
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let d = std::env::temp_dir().join(format!("fl_pi_llm_e2e_{}_{n}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    d
 }
 
 struct Harness {
     engine: Arc<Engine>,
-    files: Files,
+    dir: std::path::PathBuf,
+    legacy: Legacy,
     rx: Receiver<Outbound>,
     next_req: u64,
     events: Vec<(Instant, Value)>,
@@ -124,15 +118,15 @@ struct Harness {
 
 impl Harness {
     fn new() -> Self {
-        Self::with_files(Files::default())
+        Self::with_store(temp_dir(), Legacy::default())
     }
 
     /// A fresh engine over an existing store, as after a relaunch.
-    fn with_files(files: Files) -> Self {
+    fn with_store(dir: std::path::PathBuf, legacy: Legacy) -> Self {
         let (tx, rx) = mpsc::channel();
         let tx = Mutex::new(tx);
-        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); })).unwrap();
-        Self { engine: Arc::new(engine), files, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false }
+        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(dir.clone())).unwrap();
+        Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false }
     }
 
     /// An engine with the mock server registered as the custom provider `mock`.
@@ -203,9 +197,9 @@ impl Harness {
                     "auth.list" => {
                         self.engine.send(Inbound::Answer { call_id, result: Ok(json!([{"providerId":"mock","type":"api_key"}]).to_string()) });
                     }
-                    n if n.starts_with("fs.") => {
+                    n if n.starts_with("legacy.") => {
                         let p: Value = serde_json::from_str(&payload).unwrap();
-                        let v = fs_call(&self.files, n, &p);
+                        let v = legacy_call(&self.legacy, n, &p);
                         self.engine.send(Inbound::Answer { call_id, result: Ok(v.to_string()) });
                     }
                     other => panic!("unexpected host call {other}"),
@@ -288,15 +282,15 @@ fn prompt_streams_calls_tools_and_waits_for_approval() {
 #[test]
 fn a_session_survives_a_relaunch() {
     let (url, _) = mock_server(Duration::from_millis(1));
-    let files = {
+    let dir = {
         let mut h = Harness::mocked(&url);
         open(&mut h, "keep", model(&url), json!({}));
         h.ok("session.prompt", json!({"sessionId":"keep","text":"hi"}));
         h.ok("session.close", json!({"sessionId":"keep"}));
-        h.files.clone()
+        h.dir.clone()
     };
     // A new engine over the same store: the conversation is still there.
-    let mut h = Harness::with_files(files);
+    let mut h = Harness::with_store(dir, Legacy::default());
     h.register(&url);
     let list = h.ok("sessions.list", json!({}));
     assert_eq!(list[0]["id"], "keep");
@@ -416,13 +410,19 @@ fn the_catalog_is_pi_ais_and_custom_providers_join_it() {
 /// TODO: remove with `js/src/legacy.js`.
 const LEGACY: &str = include_str!("fixtures/legacy-0.87.1.jsonl");
 
+/// [LEGACY] as the host keeps it: [chunks] of it, each one append.
+fn legacy_store(chunks: Vec<String>) -> (Legacy, String) {
+    let old = "/sessions/----/2026-10-12T13-14-14-726Z_chat-1.jsonl".to_string();
+    let legacy = Legacy::default();
+    legacy.lock().unwrap().insert(old.clone(), chunks);
+    (legacy, old)
+}
+
 #[test]
 fn a_legacy_session_moves_over_with_its_versions() {
     let (url, _) = mock_server(Duration::from_millis(1));
-    let files = Files::default();
-    let old = "/sessions/----/2026-10-12T13-14-14-726Z_chat-1.jsonl".to_string();
-    files.lock().unwrap().insert(old.clone(), (LEGACY.to_string(), now_ms()));
-    let mut h = Harness::with_files(files.clone());
+    let (legacy, old) = legacy_store(LEGACY.split_inclusive('\n').map(String::from).collect());
+    let mut h = Harness::with_store(temp_dir(), legacy.clone());
     h.register(&url);
 
     let listed = h.ok("sessions.list", json!({}));
@@ -450,12 +450,56 @@ fn a_legacy_session_moves_over_with_its_versions() {
     assert!(tree["entries"].as_array().unwrap().iter().all(|e| e["parentId"].is_null() || ids.contains(&e["parentId"])));
 
     // The old file is gone; the chat goes on where it was.
-    assert!(!files.lock().unwrap().contains_key(&old));
+    assert!(!legacy.lock().unwrap().contains_key(&old));
     h.ok("session.prompt", json!({"sessionId":"chat-1","text":"after"}));
     assert_eq!(h.roles("chat-1").len(), 10);
     h.ok("session.close", json!({"sessionId":"chat-1"}));
     let listed = h.ok("sessions.list", json!({}));
     assert_eq!(listed.as_array().unwrap().len(), 1);
+}
+
+/// Chunks need not end where lines do: a file rewritten whole is one chunk,
+/// and a torn append leaves a line across two.
+#[test]
+fn a_legacy_session_moves_over_whatever_its_chunks() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let whole = vec![LEGACY.to_string()];
+    let bytes: Vec<char> = LEGACY.chars().collect();
+    let torn: Vec<String> = bytes.chunks(97).map(|c| c.iter().collect()).collect();
+    for chunks in [whole, torn] {
+        let (legacy, old) = legacy_store(chunks);
+        let mut h = Harness::with_store(temp_dir(), legacy.clone());
+        h.register(&url);
+        h.ok("sessions.migrate", json!({}));
+        assert!(!legacy.lock().unwrap().contains_key(&old));
+        let v = open(&mut h, "chat-1", model(&url), json!({}));
+        assert_eq!(v["name"], "Named");
+        assert_eq!(
+            h.roles("chat-1"),
+            ["user", "assistant", "toolResult", "assistant", "user", "assistant", "custom", "compaction"],
+        );
+    }
+}
+
+/// A move cut short leaves the old session; the next open starts it over.
+#[test]
+fn a_legacy_move_cut_short_starts_over() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let (legacy, old) = legacy_store(LEGACY.split_inclusive('\n').map(String::from).collect());
+    let dir = temp_dir();
+    // What a move killed halfway leaves: the chat's file, and the old session.
+    {
+        let mut h = Harness::with_store(dir.clone(), Legacy::default());
+        h.register(&url);
+        open(&mut h, "chat-1", model(&url), json!({}));
+        h.ok("session.prompt", json!({"sessionId":"chat-1","text":"half"}));
+        h.ok("session.close", json!({"sessionId":"chat-1"}));
+    }
+    let mut h = Harness::with_store(dir, legacy.clone());
+    h.register(&url);
+    open(&mut h, "chat-1", model(&url), json!({}));
+    assert!(!legacy.lock().unwrap().contains_key(&old));
+    assert_eq!(h.roles("chat-1").len(), 8, "{:?}", h.roles("chat-1"));
 }
 
 /// What `pi` reads: the session as a v3 file, every version kept, the one the

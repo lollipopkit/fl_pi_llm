@@ -8,6 +8,12 @@ pub mod mcp;
 pub mod memory;
 pub mod skills;
 
+/// The chats kept under [dir] where [needle] was said by the user or the
+/// model, ignoring case. Off the engine, beside it.
+pub fn search_chats(dir: String, needle: String) -> anyhow::Result<Vec<String>> {
+    crate::db::search(std::path::Path::new(&dir), &needle).map_err(anyhow::Error::msg)
+}
+
 use flutter_rust_bridge::frb;
 
 use crate::engine::{Engine, Inbound, Outbound};
@@ -69,12 +75,16 @@ impl LlmEngine {
         Self { inner: OnceLock::new() }
     }
 
-    /// Starts the runtime. Everything it says arrives on [sink], in order.
+    /// Starts the runtime, keeping chats under [dir]. Everything it says
+    /// arrives on [sink], in order.
     #[frb(sync)]
-    pub fn start(&self, sink: StreamSink<HostMessage>) -> anyhow::Result<()> {
-        let engine = Engine::spawn(std::sync::Arc::new(move |o: Outbound| {
-            let _ = sink.add(o.into());
-        }))?;
+    pub fn start(&self, dir: String, sink: StreamSink<HostMessage>) -> anyhow::Result<()> {
+        let engine = Engine::spawn(
+            std::sync::Arc::new(move |o: Outbound| {
+                let _ = sink.add(o.into());
+            }),
+            Some(dir.into()),
+        )?;
         self.inner.set(engine).map_err(|_| anyhow::anyhow!("already started"))
     }
 

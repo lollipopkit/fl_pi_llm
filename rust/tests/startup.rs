@@ -10,7 +10,7 @@ fn startup_time() {
     let t = Instant::now();
     let (tx, rx) = mpsc::channel();
     let tx = Mutex::new(tx);
-    let e = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); })).unwrap();
+    let e = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), None).unwrap();
     e.send(Inbound::Request { req_id: 1, method: "runtime.info".into(), payload: "{}".into() });
     loop {
         if let Outbound::Result { .. } = rx.recv().unwrap() { break; }

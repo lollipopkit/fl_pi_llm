@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
                     default_rust_auto_opaque = RustAutoOpaqueMoi,
                 );
                 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-                pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1694453731;
+                pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -354002051;
             
 
 // Section: executor
@@ -139,6 +139,7 @@ let decode_indices_ = flutter_rust_bridge::for_generated::lockable_compute_decod
             let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
             let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_that = <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LlmEngine>>>::sse_decode(&mut deserializer);
+let api_dir = <String>::sse_decode(&mut deserializer);
 let api_sink = <StreamSink<crate::api::HostMessage,flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(&mut deserializer);deserializer.end();
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || {
                     let mut api_that_guard = None;
@@ -150,7 +151,7 @@ let decode_indices_ = flutter_rust_bridge::for_generated::lockable_compute_decod
             }
         }
         let api_that_guard = api_that_guard.unwrap();
- let output_ok = crate::api::LlmEngine::start(&*api_that_guard, api_sink)?;   std::result::Result::Ok(output_ok)
+ let output_ok = crate::api::LlmEngine::start(&*api_that_guard, api_dir, api_sink)?;   std::result::Result::Ok(output_ok)
                 })()) })
             }fn wire__crate__api__mcp__mcp_call_result_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
                 FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "mcp_call_result", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
@@ -231,6 +232,16 @@ let api_args = <String>::sse_decode(&mut deserializer);deserializer.end();
                 transform_result_sse::<_, ()>((move || {
                      let output_ok = Ok::<_, ()>(crate::api::memory::memory_tools())?;   std::result::Result::Ok(output_ok)
                 })()) })
+            }fn wire__crate__api__search_chats_impl(port_: flutter_rust_bridge::for_generated::MessagePort,ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32)  {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec,_,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "search_chats", port: Some(port_), mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_dir = <String>::sse_decode(&mut deserializer);
+let api_needle = <String>::sse_decode(&mut deserializer);deserializer.end(); move |context|  {
+                    transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move ||  {
+                         let output_ok = crate::api::search_chats(api_dir, api_needle)?;   std::result::Result::Ok(output_ok)
+                    })())
+                } })
             }fn wire__crate__api__skills__skill_dir_name_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
                 FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "skill_dir_name", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
             let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
@@ -454,7 +465,7 @@ return crate::api::HostMessage{kind: var_kind, id: var_id, name: var_name, paylo
                 )  {
                     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
                     match func_id {
-                        
+                        16 => wire__crate__api__search_chats_impl(port, ptr, rust_vec_len, data_len),
                         _ => unreachable!(),
                     }
                 }
@@ -482,16 +493,16 @@ return crate::api::HostMessage{kind: var_kind, id: var_id, name: var_name, paylo
 13 => wire__crate__api__memory__memory_prompt_impl(ptr, rust_vec_len, data_len),
 14 => wire__crate__api__memory__memory_run_impl(ptr, rust_vec_len, data_len),
 15 => wire__crate__api__memory__memory_tools_impl(ptr, rust_vec_len, data_len),
-16 => wire__crate__api__skills__skill_dir_name_impl(ptr, rust_vec_len, data_len),
-17 => wire__crate__api__skills__skill_files_impl(ptr, rust_vec_len, data_len),
-18 => wire__crate__api__skills__skill_find_impl(ptr, rust_vec_len, data_len),
-19 => wire__crate__api__skills__skill_is_md_impl(ptr, rust_vec_len, data_len),
-20 => wire__crate__api__skills__skill_parse_impl(ptr, rust_vec_len, data_len),
-21 => wire__crate__api__skills__skill_prompt_impl(ptr, rust_vec_len, data_len),
-22 => wire__crate__api__skills__skill_read_impl(ptr, rust_vec_len, data_len),
-23 => wire__crate__api__skills__skill_run_impl(ptr, rust_vec_len, data_len),
-24 => wire__crate__api__skills__skill_source_parse_impl(ptr, rust_vec_len, data_len),
-25 => wire__crate__api__skills__skill_tool_impl(ptr, rust_vec_len, data_len),
+17 => wire__crate__api__skills__skill_dir_name_impl(ptr, rust_vec_len, data_len),
+18 => wire__crate__api__skills__skill_files_impl(ptr, rust_vec_len, data_len),
+19 => wire__crate__api__skills__skill_find_impl(ptr, rust_vec_len, data_len),
+20 => wire__crate__api__skills__skill_is_md_impl(ptr, rust_vec_len, data_len),
+21 => wire__crate__api__skills__skill_parse_impl(ptr, rust_vec_len, data_len),
+22 => wire__crate__api__skills__skill_prompt_impl(ptr, rust_vec_len, data_len),
+23 => wire__crate__api__skills__skill_read_impl(ptr, rust_vec_len, data_len),
+24 => wire__crate__api__skills__skill_run_impl(ptr, rust_vec_len, data_len),
+25 => wire__crate__api__skills__skill_source_parse_impl(ptr, rust_vec_len, data_len),
+26 => wire__crate__api__skills__skill_tool_impl(ptr, rust_vec_len, data_len),
                         _ => unreachable!(),
                     }
                 }

@@ -1,5 +1,5 @@
 //! pi for a Rust program: the host half that `lib/src/runtime.dart` is for
-//! Dart. The network ([`Fetch`]), the session files ([`SessionStore`]), the
+//! Dart. The network ([`Fetch`]), where chats are kept ([`Config::dir`]), the
 //! credentials ([`Credentials`]), the tools ([`Tool`]) and the approval of a
 //! tool call ([`Approver`]) are the program's; the agent loop is pi's, the
 //! same bundle the apps run, so a session written here is one an app can
@@ -15,7 +15,6 @@ mod fetch;
 pub mod mcp;
 pub mod memory;
 pub mod skills;
-mod store;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -29,7 +28,6 @@ use tokio::sync::{mpsc, oneshot, Notify};
 pub use fetch::{fetch_allowed, Fetch, FetchRequest, FetchResponse};
 #[cfg(feature = "reqwest")]
 pub use fetch::ReqwestFetch;
-pub use store::{DirectoryStore, MemoryStore, SessionStore, StoreResult, StoredFile};
 
 use crate::engine::{Engine, Inbound, Outbound};
 
@@ -188,7 +186,8 @@ pub type Logger = Arc<dyn Fn(&str, &str) + Send + Sync>;
 
 /// What a runtime is started with.
 pub struct Config {
-    pub store: Arc<dyn SessionStore>,
+    /// Where chats are kept: a SQLite file each, created on first use.
+    pub dir: std::path::PathBuf,
     pub credentials: Arc<dyn Credentials>,
     pub fetch: Arc<dyn Fetch>,
     pub logger: Option<Logger>,
@@ -238,9 +237,13 @@ impl Runtime {
             next_stream: AtomicU64::new(1),
             fatal: Mutex::new(None),
         });
-        let engine = Engine::spawn(Arc::new(move |o| {
-            let _ = tx.send(o);
-        }))
+        let dir = inner.config.dir.clone();
+        let engine = Engine::spawn(
+            Arc::new(move |o| {
+                let _ = tx.send(o);
+            }),
+            Some(dir),
+        )
         .map_err(|e| Error(format!("starting the engine: {e}")))?;
         *inner.engine.lock().unwrap() = Some(Arc::new(engine));
         tokio::spawn(pump(Arc::downgrade(&inner), rx));
@@ -274,6 +277,17 @@ impl Runtime {
     /// Deletes a stored session. It must not be open.
     pub async fn delete_session(&self, id: &str) -> Result<()> {
         self.request("sessions.delete", json!({ "sessionId": id })).await.map(drop)
+    }
+
+    /// The sessions where `needle` was said by the user or the model,
+    /// ignoring case.
+    pub async fn search(&self, needle: &str) -> Result<Vec<String>> {
+        let dir = self.0.config.dir.clone();
+        let needle = needle.to_string();
+        tokio::task::spawn_blocking(move || crate::db::search(&dir, &needle))
+            .await
+            .map_err(|e| Error(e.to_string()))?
+            .map_err(Error)
     }
 
     /// Closes the session `id` wherever its [`Session`] handle is: for a
@@ -634,12 +648,14 @@ async fn host_call(inner: &Arc<Inner>, call_id: u64, name: &str, payload: &str, 
         "fetch" => fetch(inner, call_id, p, body).await,
         "tool" => Ok(run_tool(inner, p).await),
         "approve" => Ok(approve(inner, p).await),
-        n if n.starts_with("fs.") => fs(&*inner.config.store, n, p).await,
         n if n.starts_with("auth.") => auth(&*inner.config.credentials, n, p).await,
         // A key from the environment is how pi-ai finds one under Node. A
         // Rust host hands keys over through its credentials, never its
         // environment, which would reach every provider asking for it.
         "env.get" => Ok(Value::Null),
+        // Sessions from before pi-durable were the apps'; a Rust host has
+        // none to move. TODO: remove with `js/src/legacy.js`.
+        "legacy.list" => Ok(json!({ "files": [] })),
         other => Err(format!("Unknown host call: {other}")),
     }
 }
@@ -731,39 +747,6 @@ async fn approve(inner: &Arc<Inner>, p: Value) -> Value {
         Approval::Allow => json!({ "block": false }),
         Approval::Deny(reason) => json!({ "block": true, "reason": reason }),
     }
-}
-
-async fn fs(store: &dyn SessionStore, op: &str, p: Value) -> std::result::Result<Value, String> {
-    let path = p["path"].as_str().unwrap_or_default();
-    let text = || p["text"].as_str().unwrap_or_default().to_string();
-    Ok(match op {
-        "fs.read" => json!({ "text": store.read(path, p["maxLines"].as_u64().map(|n| n as usize)).await? }),
-        "fs.write" => {
-            store.write(path, text()).await?;
-            Value::Null
-        }
-        "fs.append" => {
-            store.append(path, text()).await?;
-            Value::Null
-        }
-        "fs.rename" => {
-            store.rename(p["from"].as_str().unwrap_or_default(), p["to"].as_str().unwrap_or_default()).await?;
-            Value::Null
-        }
-        "fs.remove" => {
-            store.remove(path, p["recursive"] == true).await?;
-            Value::Null
-        }
-        "fs.stat" => match store.stat(path).await? {
-            Some(f) => json!({ "size": f.size, "mtimeMs": f.mtime_ms }),
-            None => Value::Null,
-        },
-        "fs.list" => {
-            let files = store.list(p["dir"].as_str().unwrap_or("/")).await?;
-            json!({ "files": files.iter().map(StoredFile::to_json).collect::<Vec<_>>() })
-        }
-        other => return Err(format!("Unknown store call: {other}")),
-    })
 }
 
 async fn auth(c: &dyn Credentials, op: &str, p: Value) -> std::result::Result<Value, String> {
