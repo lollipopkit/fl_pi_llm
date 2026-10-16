@@ -2,7 +2,7 @@
 
 Chats, tools and the provider settings on [fl_pi_llm](..), for Flutter apps built on [fl_lib](https://github.com/lollipopkit/fl_lib). Shared by GPT Box and Server Box.
 
-- **Core**: `Llm` (runtime, provider catalog, keys in the keychain), `Chats`/`OpenChat` (open, send, edit, regenerate, retry, versions, search, trash, titles), `SqlitePiSessionStore` (pi's sessions in fl_lib's SQLite), `PiSessionLog.union` (joining diverged logs, for sync).
+- **Core**: `Llm` (runtime, provider catalog, keys in the keychain), `Chats`/`OpenChat` (open, send, edit, regenerate, retry, versions, search, trash, titles), `SqliteLegacySessions` (sessions from before pi-durable, read from fl_lib's SQLite to move them; TODO: remove).
 - **Stores** (`LlmStores`): `chats`, `llm`, `tool`, `memory` in fl_lib's SQLite; the app backs them up.
 - **Tools**: web fetch, chat search/read, file memory (`memory_*`), MCP servers.
 - **Views**: `LlmConversation` (a chat's thread), `Composer`, `ThreadBlockView`/`ChatMarkdown`, `pickModel`, `ProvidersPage`/`ProviderPage`/`CustomProviderPage`, `ToolsPage`, `MemoryPage`, and the `SectionList`/`SettingsGroup`/`SettingsRow` they are laid out with.

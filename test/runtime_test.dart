@@ -135,18 +135,56 @@ LlmTool timeTool(List<LlmToolCall> calls) => LlmTool(
 List<String> roles(List<LlmEntry> entries) =>
     [for (final e in entries) e.type == 'message' ? e.message!.role : e.type];
 
+/// A directory of its own, deleted after the test file.
+String tempDir() {
+  final d = Directory.systemTemp.createTempSync('fl_pi_llm');
+  addTearDown(() => d.deleteSync(recursive: true));
+  return d.path;
+}
+
+/// Sessions from before pi-durable, as appended chunks by path.
+final class MemoryLegacySessions implements LlmLegacySessions {
+  MemoryLegacySessions(this.files);
+
+  final Map<String, List<String>> files;
+
+  @override
+  Future<List<StoredFile>> list() async => [
+    for (final MapEntry(:key, :value) in files.entries) StoredFile(key, value.join().length, DateTime.now()),
+  ];
+
+  @override
+  Future<List<(int, String)>> read(String path, {required int after, required int maxChars}) async {
+    final out = <(int, String)>[];
+    var n = 0;
+    final chunks = files[path] ?? const [];
+    for (var seq = after + 1; seq < chunks.length; seq++) {
+      if (out.isNotEmpty && n + chunks[seq].length > maxChars) break;
+      n += chunks[seq].length;
+      out.add((seq, chunks[seq]));
+    }
+    return out;
+  }
+
+  @override
+  Future<void> remove(String path) async => files.remove(path);
+}
+
 void main() {
   late FlPiLlm llm;
   late MockServer server;
-  final store = MemorySessionStore();
+  late String dir;
   final credentials = MemoryCredentials({'mock': LlmCredential.apiKey('sk-test')});
 
   setUpAll(() async => llm = await FlPiLlm.start(
-    store: store,
+    directory: dir = Directory.systemTemp.createTempSync('fl_pi_llm').path,
     credentials: credentials,
     externalLibrary: testLibrary(),
   ));
-  tearDownAll(() => llm.dispose());
+  tearDownAll(() async {
+    await llm.dispose();
+    Directory(dir).deleteSync(recursive: true);
+  });
   setUp(() async {
     server = await MockServer.start();
     await llm.setCustomProviders([mockProvider(server)]);
@@ -217,9 +255,19 @@ void main() {
     expect((await llm.sessions()).map((i) => i.id), isNot(contains('kept')));
   });
 
+  test('sessions are searched by what was said in them', () async {
+    final s = await llm.openSession(id: 'searched', model: mock);
+    await s.prompt('Where is the NEEDLE?');
+    expect(await llm.searchSessions('needle'), contains('searched'));
+    expect(await llm.searchSessions('12:00'), contains('searched'), reason: "the model's answer counts");
+    expect(await llm.searchSessions('get_time'), isNot(contains('searched')), reason: 'a tool call is not text');
+    await s.close();
+    await llm.deleteSession('searched');
+  });
+
   test("a built-in provider's key can come from the environment", () async {
     final rt = await FlPiLlm.start(
-      store: MemorySessionStore(),
+      directory: tempDir(),
       credentials: MemoryCredentials({'anthropic': LlmCredential.apiKey('sk-stored')}),
       environment: () => {'OPENAI_API_KEY': 'sk-env', 'ANTHROPIC_API_KEY': 'sk-env-too', 'GEMINI_API_KEY': ''},
     );
@@ -232,23 +280,21 @@ void main() {
   });
 
   test('with no environment, only stored keys count', () async {
-    final rt = await FlPiLlm.start(store: MemorySessionStore(), credentials: MemoryCredentials({}), environment: () => {});
+    final rt = await FlPiLlm.start(directory: tempDir(), credentials: MemoryCredentials({}), environment: () => {});
     addTearDown(rt.dispose);
     expect(await rt.authSources(), isEmpty);
   });
 
   test('a session outlives the runtime', () async {
-    final dir = await Directory.systemTemp.createTemp('fl_pi_llm');
-    addTearDown(() => dir.delete(recursive: true));
-    final disk = DirectorySessionStore(dir);
-    // A second runtime over its own store, as after a relaunch.
-    var rt = await FlPiLlm.start(store: disk, credentials: credentials);
+    final disk = tempDir();
+    // A second runtime over its own directory, as after a relaunch.
+    var rt = await FlPiLlm.start(directory: disk, credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     var s = await rt.openSession(id: 'relaunch', model: mock);
     await s.prompt('remember me');
     await rt.dispose();
 
-    rt = await FlPiLlm.start(store: disk, credentials: credentials);
+    rt = await FlPiLlm.start(directory: disk, credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     s = await rt.openSession(id: 'relaunch', model: mock);
     final entries = await s.entries();
@@ -256,10 +302,30 @@ void main() {
     await rt.dispose();
   });
 
+  // TODO: remove with LlmLegacySessions.
+  test('a session from before pi-durable moves over, a few chunks at a time', () async {
+    final log = File('rust/tests/fixtures/legacy-0.87.1.jsonl').readAsStringSync();
+    const path = '/sessions/----/2026-10-12T13-14-14-726Z_chat-1.jsonl';
+    final legacy = MemoryLegacySessions({
+      path: [for (var i = 0; i < log.length; i += 97) log.substring(i, (i + 97).clamp(0, log.length))],
+    });
+    final rt = await FlPiLlm.start(directory: tempDir(), legacy: legacy, credentials: credentials);
+    addTearDown(rt.dispose);
+    await rt.setCustomProviders([mockProvider(server)]);
+    expect((await rt.sessions()).map((i) => i.id), ['chat-1'], reason: 'listed before it is moved');
+
+    expect(await rt.migrateLegacy(), isEmpty);
+    expect(legacy.files, isEmpty);
+    final s = await rt.openSession(id: 'chat-1', model: mock);
+    expect(s.name, 'Named');
+    expect(roles(await s.entries()), ['user', 'assistant', 'toolResult', 'assistant', 'user', 'assistant', 'custom', 'compaction']);
+    await s.close();
+  });
+
   test('an answer that comes after dispose goes nowhere', () async {
     // A host call — here an approval — still waiting when the runtime is
     // disposed answered into an engine that was already freed.
-    final rt = await FlPiLlm.start(store: MemorySessionStore(), credentials: credentials);
+    final rt = await FlPiLlm.start(directory: tempDir(), credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     final asked = Completer<void>();
     final disposed = Completer<void>();

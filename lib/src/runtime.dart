@@ -23,9 +23,10 @@ typedef LlmLogger = void Function(String level, String message);
 ///
 /// One per app is enough — sessions are cheap and share it. HTTP goes through
 /// [HttpClient], so the platform's proxy and certificate settings apply.
-/// Sessions are kept in the [PiSessionStore] the runtime is started with.
+/// Sessions are kept under the directory the runtime is started with, a
+/// SQLite file each.
 final class FlPiLlm {
-  FlPiLlm._(this._http, this._log, this._store, this._credentials, this._environment);
+  FlPiLlm._(this._http, this._log, this._directory, this._legacy, this._credentials, this._environment);
 
   static Future<void>? _libInit;
 
@@ -34,7 +35,13 @@ final class FlPiLlm {
   static Future<void> loadLibrary({ExternalLibrary? externalLibrary}) =>
       _libInit ??= RustLib.init(externalLibrary: externalLibrary);
 
-  /// Starts a runtime.
+  /// Starts a runtime keeping its sessions under [directory], created when
+  /// it does not exist. A session is queried there, never loaded whole, so
+  /// one may grow as long as the disk allows.
+  ///
+  /// [legacy] holds the sessions written before pi-durable, if the app has
+  /// any; each moves into [directory] the first time it is opened, or with
+  /// [migrateLegacy]. TODO: remove with [LlmLegacySessions].
   ///
   /// [httpClient] is used for every request the models make; one is created
   /// when omitted and closed by [dispose].
@@ -43,7 +50,8 @@ final class FlPiLlm {
   /// loading does not find it — `dart test` puts it in `.dart_tool/lib/`. Only
   /// the first call's value counts.
   static Future<FlPiLlm> start({
-    required PiSessionStore store,
+    required String directory,
+    LlmLegacySessions? legacy,
     required LlmCredentials credentials,
     HttpClient? httpClient,
     LlmLogger? logger,
@@ -54,7 +62,8 @@ final class FlPiLlm {
     final rt = FlPiLlm._(
       httpClient ?? HttpClient(),
       logger,
-      store,
+      directory,
+      legacy,
       credentials,
       environment ?? () => Platform.environment,
     );
@@ -65,7 +74,8 @@ final class FlPiLlm {
 
   final HttpClient _http;
   final LlmLogger? _log;
-  final PiSessionStore _store;
+  final String _directory;
+  final LlmLegacySessions? _legacy;
   final LlmCredentials _credentials;
 
   /// Where a provider without a stored credential finds its key, as pi-ai
@@ -92,7 +102,7 @@ final class FlPiLlm {
 
   void _start() {
     _engine = LlmEngine();
-    _sub = _engine.start().listen(_onMessage, onError: (Object e) => _die('$e'));
+    _sub = _engine.start(dir: _directory).listen(_onMessage, onError: (Object e) => _die('$e'));
   }
 
   /// Versions of what is running, and the APIs it can speak.
@@ -190,6 +200,19 @@ final class FlPiLlm {
 
   /// Deletes a stored session. Close it first.
   Future<void> deleteSession(String id) => _request('sessions.delete', {'sessionId': id});
+
+  /// The sessions where [needle] was said by the user or the model, ignoring
+  /// case. Run beside the engine, off this isolate; a session not moved from
+  /// before pi-durable yet is not searched.
+  Future<List<String>> searchSessions(String needle) => searchChats(dir: _directory, needle: needle);
+
+  /// Moves every session from before pi-durable that is left. Returns those
+  /// that could not be moved, by id, with why; opening one tries again.
+  /// TODO: remove with [LlmLegacySessions].
+  Future<Map<String, String>> migrateLegacy() async {
+    final v = await _request('sessions.migrate', const {}) as Map;
+    return ((v['failed'] as Map?) ?? const {}).cast<String, String>();
+  }
 
   /// Opens the session [id], creating it when there is none.
   ///
@@ -371,8 +394,8 @@ final class FlPiLlm {
           _answer(callId, await _runTool(p));
         case 'approve':
           _answer(callId, await _approve(p));
-        case final fs when fs.startsWith('fs.'):
-          _answer(callId, await _fs(fs, p));
+        case final legacy when legacy.startsWith('legacy.'):
+          _answer(callId, await _legacyCall(legacy, p));
         case final auth when auth.startsWith('auth.'):
           _answer(callId, await _auth(auth, p));
         case 'env.get':
@@ -486,28 +509,25 @@ final class FlPiLlm {
     return null;
   }
 
-  Future<Object?> _fs(String op, Map<String, Object?> p) async {
-    final path = p['path'] as String?;
+  /// TODO: remove with [LlmLegacySessions].
+  Future<Object?> _legacyCall(String op, Map<String, Object?> p) async {
+    final legacy = _legacy;
     switch (op) {
-      case 'fs.read':
-        return {'text': await _store.read(path!, maxLines: p['maxLines'] as int?)};
-      case 'fs.write':
-        await _store.write(path!, p['text'] as String);
-      case 'fs.append':
-        await _store.append(path!, p['text'] as String);
-      case 'fs.rename':
-        await _store.rename(p['from'] as String, p['to'] as String);
-      case 'fs.remove':
-        await _store.remove(path!, recursive: p['recursive'] == true);
-      case 'fs.stat':
-        final f = await _store.stat(path!);
-        return f == null ? null : {'size': f.size, 'mtimeMs': f.modified.millisecondsSinceEpoch};
-      case 'fs.list':
-        return {'files': [for (final f in await _store.list(p['dir'] as String)) f.toJson()]};
+      case 'legacy.list':
+        return {'files': [for (final f in await legacy?.list() ?? const <StoredFile>[]) f.toJson()]};
+      case 'legacy.read':
+        final chunks = await legacy?.read(
+          p['path'] as String,
+          after: p['after'] as int,
+          maxChars: p['maxChars'] as int,
+        );
+        return {'chunks': [for (final (seq, text) in chunks ?? const <(int, String)>[]) [seq, text]]};
+      case 'legacy.remove':
+        await legacy?.remove(p['path'] as String);
+        return null;
       default:
-        throw LlmException('Unknown store call: $op');
+        throw LlmException('Unknown legacy call: $op');
     }
-    return null;
   }
 
   Future<Map<String, Object?>> _runTool(Map<String, Object?> p) async {

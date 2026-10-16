@@ -28,9 +28,9 @@ Background: [flutter_server_box#1468](https://github.com/lollipopkit/flutter_ser
 ```dart
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 
-// Where sessions live. Implement PiSessionStore over the app's own
-// (encrypted) storage, or use DirectorySessionStore / MemorySessionStore.
-final llm = await FlPiLlm.start(store: myStore);
+// Where sessions live: a SQLite file each, queried rather than loaded, so a
+// session may grow as long as the disk allows. Unencrypted.
+final llm = await FlPiLlm.start(directory: '$supportDir/agent', credentials: myKeys);
 
 final session = await llm.openSession(
   id: 'chat-1', // created when it does not exist, reopened when it does
@@ -75,10 +75,9 @@ like a chat title.
 The same runtime without Dart: `fl_pi_llm::host` (features `host`, and
 `reqwest` for `ReqwestFetch`; `default-features = false` drops the Dart
 bridge). The program answers what the Dart side answers — the network
-(`Fetch`), the session files (`SessionStore`: `DirectoryStore`,
-`MemoryStore`), credentials, tools and approvals — and gets sessions in the
-same format, so one written by a Rust host opens in an app and the other way
-round. Server Box's monitor agent runs it to keep its Agent sessions on the
+(`Fetch`), where sessions are kept (`Config::dir`), credentials, tools and
+approvals — and gets sessions in the same format, so one written by a Rust
+host opens in an app and the other way round. Server Box's monitor agent runs it to keep its Agent sessions on the
 server.
 
 It also has what the apps give a session: the memory (`host::memory`), MCP
@@ -96,9 +95,9 @@ fetch and install skills themselves.
 
 | Path | What |
 |---|---|
-| `js/` | The Web platform layer QuickJS lacks (`src/web.js`), pi's filesystem over the host's store (`src/fs.js`) and the host API (`src/main.js`). Built into `rust/js/fl_pi_llm.js`, which `rust/build.rs` compiles to QuickJS bytecode. |
-| `rust/` | The runtime: a QuickJS context on its own thread, its timers and job queue, the bridge to Dart (`api`, feature `frb`) and the Rust host (`host`). |
-| `lib/` | The Dart API. HTTP is done here, with `HttpClient`; sessions are stored through `PiSessionStore`. |
+| `js/` | The Web platform layer QuickJS lacks (`src/web.js`), pi-durable's SQLite storage over the engine's databases (`src/db.js`) and the host API (`src/main.js`). Built into `rust/js/fl_pi_llm.js`, which `rust/build.rs` compiles to QuickJS bytecode. |
+| `rust/` | The runtime: a QuickJS context on its own thread, its timers and job queue, the sessions' SQLite files (`db`), the bridge to Dart (`api`, feature `frb`) and the Rust host (`host`). |
+| `lib/` | The Dart API. HTTP is done here, with `HttpClient`; sessions are stored by the engine, under the directory `FlPiLlm.start` is given. |
 | `hook/` | The build hook that compiles `rust/`. No CocoaPods, no Gradle plugin, works with SwiftPM. |
 
 Apps need a Rust toolchain (`rust/rust-toolchain.toml` names the version) and

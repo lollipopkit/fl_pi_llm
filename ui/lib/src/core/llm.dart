@@ -7,6 +7,7 @@ import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
 abstract final class Llm {
@@ -39,14 +40,17 @@ abstract final class Llm {
   /// The provider the environment describes (`OPENAI_BASE_URL`), if it does.
   static LlmCustomProvider? get system => SystemProvider.of(_environment());
 
-  /// After the stores: sessions live in the same encrypted database.
+  /// After the stores: sessions from before pi-durable are moved out of the
+  /// encrypted database into [directory] — by default `agent/` in the app's
+  /// support directory, a SQLite file per chat.
   ///
-  /// [credentials] and [externalLibrary] are for tests, which have neither a
-  /// keychain nor an app bundle.
+  /// [directory], [credentials] and [externalLibrary] are for tests, which
+  /// have neither a keychain nor an app bundle.
   ///
   /// [environment] replaces the process's, where [FlPiLlm] reads a provider's
   /// key when none is stored.
   static Future<void> init({
+    String? directory,
     LlmCredentials? credentials,
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
@@ -54,8 +58,10 @@ abstract final class Llm {
     if (credentials != null) _credentials = credentials;
     if (environment != null) _environment = environment;
     _all = SystemCredentials(_credentials, () => _environment());
+    final started = _rt == null;
     _rt ??= await FlPiLlm.start(
-      store: SqlitePiSessionStore.instance,
+      directory: directory ?? '${(await getApplicationSupportDirectory()).path}/agent',
+      legacy: const SqliteLegacySessions(),
       credentials: _all,
       externalLibrary: externalLibrary,
       environment: () => SystemProvider.forBuiltins(_environment()),
@@ -66,6 +72,15 @@ abstract final class Llm {
       },
     );
     await applyCustomProviders();
+    // TODO: remove with SqliteLegacySessions. In the background: a chat
+    // opened meanwhile is moved first, and waited for.
+    if (started) {
+      unawaited(rt.migrateLegacy().then((failed) {
+        for (final MapEntry(:key, :value) in failed.entries) {
+          Loggers.app.warning('Move chat $key out of the old store: $value');
+        }
+      }, onError: (Object e, StackTrace s) => Loggers.app.warning('Move chats out of the old store', e, s)));
+    }
     // Once a day at most, in the background: marks the skills whose source
     // changed, and installs nothing.
     unawaited(Skills.check().then<void>((_) {}, onError: (Object e, StackTrace s) => Loggers.app.warning('Check skills', e, s)));
@@ -127,13 +142,8 @@ abstract final class Llm {
   }
 
   /// Ids of chats whose session mentions [needle].
-  static Future<Set<String>> sessionsContaining(String needle) async {
-    final chats = [for (final m in LlmStores.chat.all(anyScope: true)) m.id];
-    return {
-      for (final path in await SqlitePiSessionStore.instance.search(needle))
-        ?SqlitePiSessionStore.chatIdOf(path, chats),
-    };
-  }
+  static Future<Set<String>> sessionsContaining(String needle) async =>
+      (await rt.searchSessions(needle)).toSet();
 
   static LlmModelInfo? info(LlmModelRef? ref) {
     if (ref == null) return null;
