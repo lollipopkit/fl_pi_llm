@@ -206,26 +206,29 @@ function outputLimit(listed, contextWindow) {
  * APIs have only `models`.
  */
 export function setCustomProviders(specs) {
+  // All checked first: a bad one leaves the providers as they were.
+  const checked = specs.map((spec) => {
+    if (!spec.id) throw new Error('A custom provider needs an id');
+    return normalize(spec);
+  });
   for (const id of customSpecs.keys()) {
     if (specs.some((s) => s.id === id)) continue;
     models.deleteProvider(id);
     modelsStore.delete(id).catch(() => {});
   }
   customSpecs.clear();
-  for (const spec of specs) {
-    if (!spec.id) throw new Error('A custom provider needs an id');
-    const s = normalize(spec);
+  for (const s of checked) {
     const { baseUrl } = s;
-    const api = CUSTOM_APIS[spec.api];
-    const fixed = (spec.models ?? []).map((m) => toModel(s, { ...m, id: m.id }, undefined));
+    const api = CUSTOM_APIS[s.api];
+    const fixed = (s.models ?? []).map((m) => toModel(s, { ...m, id: m.id }, undefined));
     models.setProvider(createProvider({
-      id: spec.id,
-      name: spec.name ?? spec.id,
+      id: s.id,
+      name: s.name ?? s.id,
       baseUrl,
-      ...(spec.headers ? { headers: spec.headers } : {}),
+      ...(s.headers ? { headers: s.headers } : {}),
       auth: {
         apiKey: {
-          name: spec.name ?? spec.id,
+          name: s.name ?? s.id,
           resolve: async ({ credential }) => ({
             auth: credential?.key ? { apiKey: credential.key } : {},
             ...(credential?.env ? { env: credential.env } : {}),
@@ -233,10 +236,10 @@ export function setCustomProviders(specs) {
         },
       },
       models: fixed,
-      ...(LISTING_APIS.has(spec.api) ? { fetchModels: ({ credential, signal }) => listModels(s, credential, signal) } : {}),
+      ...(LISTING_APIS.has(s.api) ? { fetchModels: ({ credential, signal }) => listModels(s, credential, signal) } : {}),
       api: api(),
     }));
-    customSpecs.set(spec.id, s);
+    customSpecs.set(s.id, s);
   }
 }
 

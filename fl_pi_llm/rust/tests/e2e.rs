@@ -502,6 +502,18 @@ fn the_catalog_is_pi_ais_and_custom_providers_join_it() {
     assert!(openai["models"].as_array().unwrap().iter().all(|m| m["contextWindow"].as_u64().unwrap() > 0));
 }
 
+/// A rejected update leaves the custom providers as they were.
+#[test]
+fn a_bad_custom_provider_changes_nothing() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let mut h = Harness::mocked(&url);
+    let v = h.request("providers.setCustom", json!({"providers":[{"id":"other","api":"openai-completions","baseUrl":url},{"id":"bad","api":"nope","baseUrl":url}]}));
+    assert_eq!(v["ok"], false, "{v}");
+    let providers = h.ok("providers.list", json!({}));
+    let ids: Vec<&str> = providers.as_array().unwrap().iter().map(|p| p["id"].as_str().unwrap()).collect();
+    assert!(ids.contains(&"mock") && !ids.contains(&"other"), "{ids:?}");
+}
+
 /// A session pi-agent-core 0.87.1 wrote: "q1" with a tool call, "q2", then
 /// "q2" edited into "q2 edited", a custom entry, a compaction, and a name.
 /// TODO: remove with `js/src/legacy.js`.
