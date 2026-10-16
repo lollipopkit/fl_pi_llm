@@ -596,12 +596,17 @@ fn a_legacy_session_with_a_cycle_moves_over() {
     let (url, _) = mock_server(Duration::from_millis(1));
     let msg = |id: &str, parent: &str| format!("{}\n", json!({"kind":"entry","id":id,"parentId":parent,"type":"message","seq":1,"timestamp":1,
         "message":{"role":"user","content":[{"type":"text","text":id}],"timestamp":1}}));
-    let (legacy, old) = legacy_store(vec![msg("a", "b"), msg("b", "a"), msg("c", "a")]);
+    // `c` hangs off the cycle `a`/`b`; `d`/`e` is a cycle nothing hangs off.
+    let (legacy, old) = legacy_store(vec![msg("a", "b"), msg("b", "a"), msg("c", "a"), msg("d", "e"), msg("e", "d")]);
     let mut h = Harness::with_store(temp_dir(), legacy.clone());
     h.register(&url);
     open(&mut h, "chat-1", model(&url), json!({}));
     assert!(!legacy.lock().unwrap().contains_key(&old));
-    assert!(!h.roles("chat-1").is_empty());
+    let tree = h.ok("session.tree", json!({"sessionId":"chat-1"}));
+    let mut said: Vec<String> = tree["entries"].as_array().unwrap().iter()
+        .map(|e| e["message"]["content"][0]["text"].as_str().unwrap().to_string()).collect();
+    said.sort();
+    assert_eq!(said, ["a", "b", "c", "d", "e"], "nothing is lost");
 }
 
 /// A move cut short leaves the old session; the next open starts it over.

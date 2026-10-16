@@ -193,19 +193,23 @@ export async function migrate(harness, file, BG) {
   /** conversation id -> the old id of its last entry */
   const lastOf = new Map();
   let root;
+  /** Every entry some path has gone through. */
+  const visited = new Set();
 
-  for (const leaf of leaves) {
+  /** Moves the path from the root to [leaf]. */
+  async function place(leaf) {
     const path = [];
     // A broken file may link back on itself: a path visits an entry once.
     const seen = new Set();
     for (let id = leaf; id != null; id = entries.get(id)?.parentId ?? null) {
       if (!entries.has(id) || seen.has(id)) break;
       seen.add(id);
+      visited.add(id);
       path.unshift(id);
     }
     let i = 0;
     while (i < path.length && mapped.has(path[i])) i++;
-    if (i === path.length) continue;
+    if (i === path.length) return;
     let conv;
     if (i === 0) {
       conv = root ? await harness.createConversation({ ownership: { kind: 'ownerless' } }, BG) : await harness.root(BG);
@@ -236,6 +240,15 @@ export async function migrate(harness, file, BG) {
       mapped.set(id, { newId: settled.entry, conv: conv.id, timestamp: e.message?.timestamp, role: e.message?.role });
       lastOf.set(conv.id, id);
     }
+  }
+
+  for (const leaf of leaves) await place(leaf);
+  // A cycle with no leaf off it is reached by no path: started from its
+  // newest entry instead of being lost.
+  for (;;) {
+    const left = [...entries.keys()].filter((id) => !visited.has(id));
+    if (!left.length) break;
+    await place(left.reduce((a, b) => (entries.get(b).seq > entries.get(a).seq ? b : a)));
   }
   root ??= await harness.root(BG);
 
