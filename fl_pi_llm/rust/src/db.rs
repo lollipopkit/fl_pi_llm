@@ -223,8 +223,12 @@ impl Chats {
 
     pub fn open(&mut self, id: &str) -> Result<u32, String> {
         let conn = open(&self.dir()?, id)?;
-        let h = self.next;
-        self.next = self.next.wrapping_add(1).max(1);
+        let mut h = self.next;
+        // Wrapped around: past the handles still open.
+        while self.open.contains_key(&h) {
+            h = h.wrapping_add(1).max(1);
+        }
+        self.next = h.wrapping_add(1).max(1);
         self.open.insert(h, (id.to_string(), conn));
         Ok(h)
     }

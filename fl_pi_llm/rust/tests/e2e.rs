@@ -339,6 +339,8 @@ fn the_branch_is_read_in_pages_with_its_versions() {
     h.ok("session.navigate", json!({"sessionId":"p","targetId":q3["parentId"]}));
     h.ok("session.prompt", json!({"sessionId":"p","text":"q3 again"}));
 
+    let none = h.ok("session.page", json!({"sessionId":"p","limit":0}));
+    assert_eq!(none, json!({"entries":[],"more":true}), "a limit of none is none");
     let page = h.ok("session.page", json!({"sessionId":"p","limit":2}));
     let entries = page["entries"].as_array().unwrap();
     assert_eq!(page["more"], true);
@@ -574,6 +576,20 @@ fn a_legacy_session_moves_over_whatever_its_chunks() {
             ["user", "assistant", "toolResult", "assistant", "user", "assistant", "custom", "compaction"],
         );
     }
+}
+
+/// A broken file whose entries link back on themselves still moves over.
+#[test]
+fn a_legacy_session_with_a_cycle_moves_over() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let msg = |id: &str, parent: &str| format!("{}\n", json!({"kind":"entry","id":id,"parentId":parent,"type":"message","seq":1,"timestamp":1,
+        "message":{"role":"user","content":[{"type":"text","text":id}],"timestamp":1}}));
+    let (legacy, old) = legacy_store(vec![msg("a", "b"), msg("b", "a"), msg("c", "a")]);
+    let mut h = Harness::with_store(temp_dir(), legacy.clone());
+    h.register(&url);
+    open(&mut h, "chat-1", model(&url), json!({}));
+    assert!(!legacy.lock().unwrap().contains_key(&old));
+    assert!(!h.roles("chat-1").is_empty());
 }
 
 /// A move cut short leaves the old session; the next open starts it over.

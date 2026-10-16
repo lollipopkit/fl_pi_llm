@@ -196,8 +196,11 @@ export async function migrate(harness, file, BG) {
 
   for (const leaf of leaves) {
     const path = [];
+    // A broken file may link back on itself: a path visits an entry once.
+    const seen = new Set();
     for (let id = leaf; id != null; id = entries.get(id)?.parentId ?? null) {
-      if (!entries.has(id)) break;
+      if (!entries.has(id) || seen.has(id)) break;
+      seen.add(id);
       path.unshift(id);
     }
     let i = 0;

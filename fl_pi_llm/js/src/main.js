@@ -433,6 +433,7 @@ class Session {
     const ids = await this.#branchIds();
     const end = before == null ? ids.length : ids.indexOf(Number(before));
     if (end < 0) throw new Error(`No entry ${before} on the branch`);
+    if (!(limit > 0)) return { entries: [], more: end > 0 };
     let start = Math.max(0, end - limit);
     while (start > 0 && !this.shape.entries.get(ids[start]).user) start--;
     const entries = await this.#hostEntries(ids.slice(start, end));
