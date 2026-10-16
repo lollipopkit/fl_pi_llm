@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm/legacy.dart';
 import 'package:test/test.dart';
 
 /// An OpenAI chat-completions server that streams. A request offering tools
@@ -302,14 +303,14 @@ void main() {
     await rt.dispose();
   });
 
-  // TODO: remove with LlmLegacySessions.
+  // TODO: remove with package:fl_pi_llm/legacy.dart.
   test('a session from before pi-durable moves over, a few chunks at a time', () async {
     final log = File('rust/tests/fixtures/legacy-0.87.1.jsonl').readAsStringSync();
     const path = '/sessions/----/2026-10-12T13-14-14-726Z_chat-1.jsonl';
     final legacy = MemoryLegacySessions({
       path: [for (var i = 0; i < log.length; i += 97) log.substring(i, (i + 97).clamp(0, log.length))],
     });
-    final rt = await FlPiLlm.start(directory: tempDir(), legacy: legacy, credentials: credentials);
+    final rt = await FlPiLlm.start(directory: tempDir(), credentials: credentials)..legacySessions = legacy;
     addTearDown(rt.dispose);
     await rt.setCustomProviders([mockProvider(server)]);
     expect((await rt.sessions()).map((i) => i.id), ['chat-1'], reason: 'listed before it is moved');

@@ -11,5 +11,4 @@ export 'src/memory.dart';
 export 'src/model.dart';
 export 'src/runtime.dart' show FlPiLlm, LlmLogger, LlmSession;
 export 'src/skills.dart';
-export 'src/store.dart';
 export 'src/tool.dart';

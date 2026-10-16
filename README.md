@@ -70,6 +70,10 @@ tree, reachable by `entry(id)`. A run a crash interrupted is reported by
 `FlPiLlm.complete` does a single completion outside any session, for things
 like a chat title.
 
+An app that kept sessions with fl_pi_llm before 0.1.0 moves them in with
+`package:fl_pi_llm/legacy.dart`: set `legacySessions` right after `start`,
+then `migrateLegacy()`.
+
 ### From Rust
 
 The same runtime without Dart: `fl_pi_llm::host` (features `host`, and

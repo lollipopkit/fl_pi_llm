@@ -1,0 +1,17 @@
+# What `.gitignore` keeps out, which a `.pubignore` replaces.
+.dart_tool/
+pubspec.lock
+rust/target/
+js/node_modules/
+js/meta.json
+.DS_Store
+build/
+pubspec_overrides.yaml
+
+# A package of its own: fl_pi_llm_ui.
+ui/
+# Repository upkeep.
+.github/
+scripts/
+CLA.md
+CLA_zh.md

@@ -1,5 +1,5 @@
 import 'package:fl_lib/fl_lib.dart';
-import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm/legacy.dart';
 
 /// The sessions fl_pi_llm kept in the app's encrypted SQLite database before
 /// pi-durable, read once to move each into its chat.

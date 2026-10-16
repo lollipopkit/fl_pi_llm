@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm/legacy.dart';
 import 'package:fl_pi_llm_ui/src/core/credentials.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
@@ -61,7 +62,6 @@ abstract final class Llm {
     final started = _rt == null;
     _rt ??= await FlPiLlm.start(
       directory: directory ?? '${(await getApplicationSupportDirectory()).path}/agent',
-      legacy: const SqliteLegacySessions(),
       credentials: _all,
       externalLibrary: externalLibrary,
       environment: () => SystemProvider.forBuiltins(_environment()),
@@ -71,9 +71,10 @@ abstract final class Llm {
         _ => Loggers.app.fine('[llm] $msg'),
       },
     );
+    // TODO: remove with SqliteLegacySessions. Before any chat opens; then
+    // in the background, a chat opened meanwhile moved first and waited for.
+    if (started) rt.legacySessions = const SqliteLegacySessions();
     await applyCustomProviders();
-    // TODO: remove with SqliteLegacySessions. In the background: a chat
-    // opened meanwhile is moved first, and waited for.
     if (started) {
       unawaited(rt.migrateLegacy().then((failed) {
         for (final MapEntry(:key, :value) in failed.entries) {
