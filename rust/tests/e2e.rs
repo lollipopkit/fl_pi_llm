@@ -294,8 +294,8 @@ fn a_session_survives_a_relaunch() {
     h.register(&url);
     let list = h.ok("sessions.list", json!({}));
     assert_eq!(list[0]["id"], "keep");
-    let v = open(&mut h, "keep", model(&url), json!({}));
-    assert_eq!(v["entries"].as_array().unwrap().len(), 2, "{v}");
+    open(&mut h, "keep", model(&url), json!({}));
+    assert_eq!(h.roles("keep"), ["user", "assistant"]);
     h.ok("session.prompt", json!({"sessionId":"keep","text":"again"}));
     assert_eq!(h.roles("keep"), ["user", "assistant", "user", "assistant"]);
     h.ok("session.close", json!({"sessionId":"keep"}));
@@ -320,6 +320,100 @@ fn navigating_back_branches_instead_of_overwriting() {
     let tree = h.ok("session.tree", json!({"sessionId":"b"}));
     assert!(tree["entries"].as_array().unwrap().iter().any(|e| e["id"] == first_user.as_str()));
     assert_eq!(tree["entries"].as_array().unwrap().iter().filter(|e| e["type"] == "message").count(), 4);
+}
+
+/// A chat is read a page at a time, newest first, each page starting at a
+/// user message; the versions of a message come with it.
+#[test]
+fn the_branch_is_read_in_pages_with_its_versions() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let mut h = Harness::mocked(&url);
+    open(&mut h, "p", model(&url), json!({}));
+    for i in 0..4 {
+        h.ok("session.prompt", json!({"sessionId":"p","text":format!("q{i}")}));
+    }
+    // Ask "q3" again: a second version of it.
+    let all = h.ok("session.entries", json!({"sessionId":"p"}))["entries"].as_array().unwrap().clone();
+    assert_eq!(all.len(), 8);
+    let q3 = all[6].clone();
+    h.ok("session.navigate", json!({"sessionId":"p","targetId":q3["parentId"]}));
+    h.ok("session.prompt", json!({"sessionId":"p","text":"q3 again"}));
+
+    let page = h.ok("session.page", json!({"sessionId":"p","limit":2}));
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(page["more"], true);
+    assert_eq!(entries.len(), 2, "{page}");
+    assert_eq!(entries[0]["message"]["content"][0]["text"], "q3 again");
+    let versions: Vec<_> = entries[0]["versions"].as_array().unwrap().iter().map(|v| v["message"]["content"][0]["text"].clone()).collect();
+    assert_eq!(versions, [json!("q3"), json!("q3 again")]);
+
+    // Three asked for; four given, back to the user message the reply answers.
+    let earlier = h.ok("session.page", json!({"sessionId":"p","limit":3,"before":entries[0]["id"]}));
+    let earlier = earlier["entries"].as_array().unwrap().clone();
+    assert_eq!(earlier.len(), 4);
+    assert_eq!(earlier[0]["message"]["content"][0]["text"], "q1");
+    assert_eq!(earlier[3]["id"], entries[0]["parentId"], "the pages join");
+    assert!(earlier[0]["versions"].is_null(), "one version is no versions");
+
+    // Back to the first version, and its reply with it.
+    h.ok("session.switchTo", json!({"sessionId":"p","entryId":q3["id"]}));
+    let branch = h.ok("session.entries", json!({"sessionId":"p"}))["entries"].as_array().unwrap().clone();
+    assert_eq!(branch.len(), 8);
+    assert_eq!(branch[6]["id"], q3["id"]);
+    assert_eq!(branch[7]["message"]["role"], "assistant");
+    // The other version is still one entry away.
+    let found = h.ok("session.entry", json!({"sessionId":"p","entryId":entries[0]["id"]}));
+    assert_eq!(found["entry"]["message"]["content"][0]["text"], "q3 again");
+}
+
+/// flutter_server_box#1718: a session from before pi-durable larger than
+/// the engine's whole heap moves over, opens, and reads a page at a time.
+/// Compacted every 50 turns, as a long chat is. Heavy: some 600 MB.
+#[test]
+#[ignore = "heavy: cargo test --release --test e2e -- --ignored a_session_larger"]
+fn a_session_larger_than_the_heap_still_opens() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let big = "x".repeat(1 << 20);
+    let mut chunks = vec![];
+    let mut parent = Value::Null;
+    for i in 0..600u32 {
+        let id = format!("e{i}");
+        let entry = if i % 50 == 49 {
+            json!({"kind":"entry","id":id,"parentId":parent,"type":"compaction","summary":format!("summary {i}"),"seq":i,"timestamp":i})
+        } else {
+            json!({"kind":"entry","id":id,"parentId":parent,"type":"message","seq":i,"timestamp":i,
+                "message":{"role":"user","content":[{"type":"text","text":format!("{i} {big}")}],"timestamp":i}})
+        };
+        chunks.push(format!("{entry}\n"));
+        parent = json!(id);
+    }
+    chunks.push(format!("{}\n", json!({"kind":"value","op":"set","seq":600,"namespace":"pi.branch.tip","key":"main","value":parent})));
+    let (legacy, old) = legacy_store(chunks);
+
+    let dir = temp_dir();
+    let mut h = Harness::with_store(dir.clone(), legacy.clone());
+    h.register(&url);
+    open(&mut h, "chat-1", model(&url), json!({}));
+    assert!(!legacy.lock().unwrap().contains_key(&old));
+    let size: u64 = std::fs::read_dir(dir.join("chats")).unwrap().map(|e| e.unwrap().metadata().unwrap().len()).sum();
+    assert!(size > 550 << 20, "{size}");
+
+    let page = h.ok("session.page", json!({"sessionId":"chat-1","limit":3}));
+    assert_eq!(page["more"], true);
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(entries.last().unwrap()["summary"], "summary 599");
+    let earlier = h.ok("session.page", json!({"sessionId":"chat-1","limit":3,"before":entries[0]["id"]}));
+    assert!(!earlier["entries"].as_array().unwrap().is_empty());
+    h.ok("session.switchTo", json!({"sessionId":"chat-1","entryId":entries[0]["id"]}));
+    h.ok("session.close", json!({"sessionId":"chat-1"}));
+
+    // And again after a relaunch, from its own file.
+    let mut h = Harness::with_store(dir.clone(), Legacy::default());
+    h.register(&url);
+    open(&mut h, "chat-1", model(&url), json!({}));
+    let page = h.ok("session.page", json!({"sessionId":"chat-1","limit":3}));
+    assert_eq!(page["entries"].as_array().unwrap().last().unwrap()["summary"], "summary 599");
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
@@ -362,7 +456,8 @@ fn compaction_summarises_for_the_model_and_keeps_the_originals() {
 
     let v = h.ok("session.compact", json!({"sessionId":"c"}));
     assert_eq!(v["compaction"]["status"], "completed", "{v}");
-    let compaction = v["entries"].as_array().unwrap().iter().find(|e| e["type"] == "compaction").unwrap().clone();
+    let branch = h.ok("session.entries", json!({"sessionId":"c"}));
+    let compaction = branch["entries"].as_array().unwrap().iter().find(|e| e["type"] == "compaction").unwrap().clone();
     assert!(compaction["summary"].as_str().unwrap().starts_with("SUMMARY"), "{compaction}");
 
     // The branch still holds every message — a UI shows the whole conversation —

@@ -434,20 +434,35 @@ impl Session {
         }
     }
 
-    /// The current branch, root first.
+    /// The current branch, root first. Reads it all; see [`Session::page`].
     pub async fn entries(&self) -> Result<Vec<Value>> {
         entries(self.call("session.entries", json!({})).await?)
     }
 
-    /// Every entry, on every branch.
+    /// The last `limit` entries of the current branch before `before` (its
+    /// end: `None`), root first, from a user message on; and whether there
+    /// are more before them. A user message with more than one version
+    /// carries them as `versions`.
+    pub async fn page(&self, limit: usize, before: Option<&str>) -> Result<(Vec<Value>, bool)> {
+        let mut v = self.call("session.page", json!({ "limit": limit, "before": before })).await?;
+        let more = v["more"] == true;
+        Ok((entries(v.take())?, more))
+    }
+
+    /// Every entry, on every branch. Reads them all.
     pub async fn tree(&self) -> Result<Vec<Value>> {
         entries(self.call("session.tree", json!({})).await?)
     }
 
-    /// Moves the branch tip to `target_id` (`None`: before the first entry)
-    /// and answers the new branch. The next prompt grows a new branch there.
-    pub async fn navigate(&self, target_id: Option<&str>) -> Result<Vec<Value>> {
-        entries(self.call("session.navigate", json!({ "targetId": target_id })).await?)
+    /// Moves the branch tip to `target_id` (`None`: before the first entry).
+    /// The next prompt grows a new branch there.
+    pub async fn navigate(&self, target_id: Option<&str>) -> Result<()> {
+        self.call("session.navigate", json!({ "targetId": target_id })).await.map(drop)
+    }
+
+    /// Stands on the version `entry_id` starts: its newest leaf.
+    pub async fn switch_to(&self, entry_id: &str) -> Result<()> {
+        self.call("session.switchTo", json!({ "entryId": entry_id })).await.map(drop)
     }
 
     /// Appends an entry of the host's own kind, which the model never sees.
@@ -504,9 +519,11 @@ impl Session {
         Ok(v["text"].as_str().unwrap_or_default().to_string())
     }
 
-    /// Compacts now, whatever the thresholds say. Answers the new branch.
-    pub async fn compact(&self, instructions: Option<&str>) -> Result<Vec<Value>> {
-        entries(self.call("session.compact", json!({ "customInstructions": instructions })).await?)
+    /// Compacts now, whatever the thresholds say. Answers how it went:
+    /// `{status: completed | declined | aborted | failed, ...}`.
+    pub async fn compact(&self, instructions: Option<&str>) -> Result<Value> {
+        let mut v = self.call("session.compact", json!({ "customInstructions": instructions })).await?;
+        Ok(v["compaction"].take())
     }
 
     /// Closes the session; it stays stored.

@@ -614,10 +614,21 @@ final class LlmSession {
   /// Stops the current run. [prompt] then returns `aborted`.
   Future<void> abort() => _call('session.abort', {});
 
-  /// The current branch, root first.
+  /// The current branch, root first. Reads it all; a view reads [page]s.
   Future<List<LlmEntry>> entries() async => _entries(await _call('session.entries', {}));
 
-  /// Every entry in the session, on every branch.
+  /// The last [limit] entries of the current branch before [before] (its end
+  /// when null), root first, and whether there are [more] before them.
+  ///
+  /// A page starts at a user message, so it may hold more than [limit]: a
+  /// reply is never cut from what it answers. A user message with more than
+  /// one version carries them, [LlmEntry.versions].
+  Future<({List<LlmEntry> entries, bool more})> page({int limit = 100, String? before}) async {
+    final v = await _call('session.page', {'limit': limit, 'before': ?before});
+    return (entries: _entries(v), more: (v as Map)['more'] == true);
+  }
+
+  /// Every entry in the session, on every branch. Reads them all.
   Future<List<LlmEntry>> tree() async => _entries(await _call('session.tree', {}));
 
   /// One entry by id, on any branch — including what a compaction summarised.
@@ -626,17 +637,16 @@ final class LlmSession {
     return v == null ? null : LlmEntry((v as Map).cast<String, Object?>());
   }
 
-  /// Moves the branch tip to [targetId] — `null` for before the first entry —
-  /// and returns the new branch. The next [prompt] grows a new branch from
-  /// there; the old one stays in the [tree]. This is how a message is edited
-  /// (navigate to its parent, prompt the new text) or an answer regenerated.
-  ///
-  /// With [summarize], what is left behind is summarised into the new branch.
-  Future<List<LlmEntry>> navigate(String? targetId, {bool summarize = false}) async =>
-      _entries(await _call('session.navigate', {
-        'targetId': targetId,
-        if (summarize) 'options': {'summarize': true},
-      }));
+  /// Moves the branch tip to [targetId] — `null` for before the first entry.
+  /// The next [prompt] grows a new branch from there; the old one stays in
+  /// the [tree]. This is how a message is edited (navigate to its parent,
+  /// prompt the new text) or an answer regenerated.
+  Future<void> navigate(String? targetId) => _call('session.navigate', {'targetId': targetId});
+
+  /// Stands on the version the entry [entryId] starts — one of a message's
+  /// [LlmEntry.versions] — and the conversation that followed it: its newest
+  /// leaf.
+  Future<void> switchTo(String entryId) => _call('session.switchTo', {'entryId': entryId});
 
   /// Appends [messages] to the branch without running the model — an import,
   /// or a result the app produced itself. Returns their entry ids.
@@ -652,9 +662,8 @@ final class LlmSession {
     return v['id'] as String;
   }
 
-  /// Compacts now, whatever the thresholds say. Returns the new branch.
-  Future<List<LlmEntry>> compact({String? instructions}) async =>
-      _entries(await _call('session.compact', {'customInstructions': ?instructions}));
+  /// Compacts now, whatever the thresholds say.
+  Future<void> compact({String? instructions}) => _call('session.compact', {'customInstructions': ?instructions});
 
   Future<void> setModel(LlmModelRef model) => _call('session.setModel', {'model': model.toJson()});
 

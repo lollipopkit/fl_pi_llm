@@ -360,6 +360,29 @@ void main() {
     await s.close();
   });
 
+  test('a branch is read in pages, its versions with it', () async {
+    final s = await llm.openSession(id: 'pages', model: mock);
+    for (final q in ['q0', 'q1', 'q2']) {
+      await s.prompt(q);
+    }
+    final q2 = (await s.entries())[4];
+    await s.navigate(q2.parentId);
+    await s.prompt('q2 edited');
+
+    final last = await s.page(limit: 2);
+    expect(last.more, isTrue);
+    expect([for (final e in last.entries) e.message!.role], ['user', 'assistant']);
+    expect(last.entries.first.versions!.map((v) => v.message!.text), ['q2', 'q2 edited']);
+    final earlier = await s.page(limit: 2, before: last.entries.first.id);
+    expect(earlier.entries.first.message!.text, 'q1');
+    expect(earlier.entries.first.versions, isNull);
+
+    await s.switchTo(q2.id);
+    expect((await s.entries()).map((e) => e.message!.text).skip(4).first, 'q2');
+    expect((await s.page()).more, isFalse);
+    await s.close();
+  });
+
   test('appended messages and custom entries are part of the branch, not of the prompt', () async {
     final s = await llm.openSession(id: 'append', model: mock);
     await s.append([
@@ -415,8 +438,8 @@ void main() {
       await s.prompt('turn$i $long');
     }
     final first = (await s.entries()).first;
-    final entries = await s.compact();
-    final c = entries.firstWhere((e) => e.type == 'compaction');
+    await s.compact();
+    final c = (await s.entries()).firstWhere((e) => e.type == 'compaction');
     expect(c.summary, startsWith('SUMMARY'));
     expect((await s.entry(first.id))!.message!.text, startsWith('turn0'));
 

@@ -45,6 +45,7 @@ class _LlmConversationState extends State<LlmConversation> {
     _scroll.addListener(() {
       if (!_scroll.hasClients) return;
       _atBottom = _scroll.position.pixels >= _scroll.position.maxScrollExtent - 48;
+      if (_scroll.position.pixels <= _scroll.position.viewportDimension) _loadEarlier();
     });
     _open.then((c) {
       c.streaming.addListener(_follow);
@@ -79,6 +80,21 @@ class _LlmConversationState extends State<LlmConversation> {
     if (_atBottom && LlmUi.scrollBottom()) _jumpToEnd();
   }
 
+  /// Reads the page before what is shown, and keeps what was on screen
+  /// where it was: what is read goes above it.
+  void _loadEarlier() {
+    final chat = Chats.openOf(widget.chatId);
+    if (chat == null || !chat.hasEarlier.value) return;
+    final extent = _scroll.position.maxScrollExtent;
+    chat.loadEarlier().then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scroll.hasClients) return;
+        final p = _scroll.position;
+        p.jumpTo(p.pixels + p.maxScrollExtent - extent);
+      });
+    }, onError: (Object e) => Loggers.app.warning('Read earlier messages of ${widget.chatId}', e));
+  }
+
   void _jumpToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -101,7 +117,15 @@ class _LlmConversationState extends State<LlmConversation> {
         }
         // Not on each streamed token: that is the last block's alone.
         return ListenableBuilder(
-          listenable: Listenable.merge([chat.entries, chat.error, chat.approvals, chat.pendingInput, chat.running, chat.interrupted]),
+          listenable: Listenable.merge([
+            chat.entries,
+            chat.hasEarlier,
+            chat.error,
+            chat.approvals,
+            chat.pendingInput,
+            chat.running,
+            chat.interrupted,
+          ]),
           builder: (context, _) {
             final blocks = threadBlocks(chat.entries.value);
             final error = chat.error.value;
@@ -118,6 +142,9 @@ class _LlmConversationState extends State<LlmConversation> {
               live: chat.running.value && i == blocks.length - 1,
             );
             final items = <Widget>[
+              // Read when scrolled near: see _loadEarlier.
+              if (chat.hasEarlier.value)
+                const Center(child: SizedLoading(20, padding: 3, builder: SizedLoading.circularBuilder)),
               for (final (i, b) in blocks.indexed)
                 if (i < blocks.length - 1) view(i, b),
               // The reply being written continues the last reply, or starts

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
@@ -85,11 +86,15 @@ final class OpenChat {
     await _session.close();
   }
 
-  /// The current branch, root first.
+  /// The end of the current branch, root first: the last page read, and
+  /// those before it that [loadEarlier] read.
   final entries = <LlmEntry>[].vn;
 
-  /// Every entry on every branch, for switching between versions.
-  var tree = <LlmEntry>[];
+  /// Whether the branch goes on before [entries].
+  final hasEarlier = false.vn;
+
+  /// How much of a branch a chat shows at first, and [loadEarlier] adds.
+  static const pageSize = 60;
 
   /// While a run is going.
   final running = false.vn;
@@ -129,10 +134,28 @@ final class OpenChat {
     pendingInput.value = null;
   }
 
+  /// Reads the end of the branch again, as much of it as was shown.
   Future<void> reload() async {
-    entries.value = await session.entries();
-    tree = await session.tree();
+    final page = await session.page(limit: math.max(pageSize, entries.value.length));
+    entries.value = page.entries;
+    hasEarlier.value = page.more;
     interrupted.value = session.interrupted;
+  }
+
+  Future<void>? _loadingEarlier;
+
+  /// Reads the page before [entries]. One at a time.
+  Future<void> loadEarlier() => _loadingEarlier ??= _loadEarlier().whenComplete(() => _loadingEarlier = null);
+
+  Future<void> _loadEarlier() async {
+    final first = entries.value.firstOrNull;
+    if (first == null || !hasEarlier.value) return;
+    final page = await session.page(limit: pageSize, before: first.id);
+    // Moved meanwhile — a version switched, a run ended: what was read joins
+    // nothing.
+    if (entries.value.firstOrNull?.id != first.id) return;
+    entries.value = [...page.entries, ...entries.value];
+    hasEarlier.value = page.more;
   }
 
   void _onEvent(LlmEvent e) {
@@ -156,10 +179,7 @@ final class OpenChat {
         final entry = e.entry;
         if (entry == null) return;
         final list = entries.value;
-        if (entry.parentId == list.lastOrNull?.id) {
-          entries.value = [...list, entry];
-          tree = [...tree, entry];
-        }
+        if (entry.parentId == list.lastOrNull?.id) entries.value = [...list, entry];
         if (entry.type == 'message' && entry.message?.role == 'assistant') {
           if (_thinkStart case final start?) {
             thoughtMs[entry.id] = (_thinkEnd ?? DateTime.now()).difference(start).inMilliseconds;
@@ -173,15 +193,8 @@ final class OpenChat {
     }
   }
 
-  /// The user messages beside [entry]: its siblings in the tree, oldest
-  /// first, itself included.
-  List<LlmEntry> _siblings(LlmEntry entry) {
-    final s = [
-      for (final t in tree)
-        if (t.parentId == entry.parentId && t.type == 'message' && t.message?.role == 'user') t,
-    ]..sort((a, b) => a.seq.compareTo(b.seq));
-    return s.isEmpty ? [entry] : s;
-  }
+  /// The user messages beside [entry], oldest first, itself included.
+  List<LlmEntry> _siblings(LlmEntry entry) => entry.versions ?? [entry];
 
   /// What a user message says, text and images: siblings saying the same are
   /// one message asked again (a regeneration — pi starts every run with a
@@ -209,22 +222,6 @@ final class OpenChat {
       for (final s in _siblings(entry))
         if (_said(s) == mine) s,
     ];
-  }
-
-  /// The newest leaf under [entryId]: where switching to that version lands.
-  String _leafOf(String entryId) {
-    final children = <String, List<LlmEntry>>{};
-    for (final t in tree) {
-      final p = t.parentId;
-      if (p != null) (children[p] ??= []).add(t);
-    }
-    var cur = entryId;
-    while (true) {
-      final next = children[cur];
-      if (next == null || next.isEmpty) return cur;
-      next.sort((a, b) => b.seq.compareTo(a.seq));
-      cur = next.first.id;
-    }
   }
 
   Future<void> _dispose() async {
@@ -388,7 +385,7 @@ abstract final class Chats {
   }
 
   /// The chat's current branch as markdown.
-  static Future<String> markdownOf(String id) => borrow(id, (c) async => toMarkdown(c.entries.value));
+  static Future<String> markdownOf(String id) => borrow(id, (c) async => toMarkdown(await c.session.entries()));
 
   static String toMarkdown(List<LlmEntry> entries) {
     final sb = StringBuffer();
@@ -472,7 +469,7 @@ abstract final class Chats {
   /// followed it.
   static Future<void> switchTo(String id, LlmEntry entry) async {
     final chat = await open(id);
-    await chat.session.navigate(chat._leafOf(entry.id));
+    await chat.session.switchTo(entry.id);
     await chat.reload();
   }
 

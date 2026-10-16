@@ -86,6 +86,17 @@ extension type const LlmEntry(Map<String, Object?> json) {
 
   /// For `compaction` entries: tokens in the context before it.
   int? get tokensBefore => json['tokensBefore'] as int?;
+
+  /// For a user message read with [LlmSession.page]: every version of it —
+  /// itself, its edits, and its askings again — oldest first, when there is
+  /// more than one.
+  List<LlmEntry>? get versions => [
+    for (final v in json['versions'] as List? ?? const []) LlmEntry((v as Map).cast<String, Object?>()),
+  ].nullIfEmpty;
+}
+
+extension on List<LlmEntry> {
+  List<LlmEntry>? get nullIfEmpty => isEmpty ? null : this;
 }
 
 /// Something that happened in a session, as pi's harness reports it.

@@ -39,6 +39,7 @@ import {
 import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
 import { listChats, openChat, removeChat } from './db.js';
 import { legacyFiles, migrate, removeLegacy } from './legacy.js';
+import { ChatTree } from './tree.js';
 import { CUSTOM_APIS, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
 const host = globalThis.__host;
@@ -163,31 +164,6 @@ function hostEntry(e, parentId) {
   }
 }
 
-/** [records] in order, as host entries chained by `parentId`. */
-function hostEntries(records, parentId = null) {
-  const out = [];
-  let prev = parentId;
-  for (const r of records) {
-    const h = hostEntry(r, prev);
-    if (!h) continue;
-    out.push(h);
-    prev = h.id;
-  }
-  return out;
-}
-
-/** Every entry of [conv], inherited ones first, oldest first. */
-async function allEntries(conv) {
-  const out = [];
-  let cursor;
-  do {
-    const page = await conv.entries({ order: 'ascending' }, 500, cursor, BG);
-    out.push(...page.items);
-    cursor = page.next;
-  } while (cursor !== undefined);
-  return out;
-}
-
 /** A settled input submission as the host's run result. */
 function runResult(settled) {
   if (settled.status === 'done') return { status: 'completed', tipId: String(settled.answer) };
@@ -277,6 +253,7 @@ class Session {
 
     this.db = openChat(this.id);
     this.storage = await SqliteStorage.open(this.db);
+    this.shape = new ChatTree(this.db);
     const session = this;
     this.registry = createRegistry();
     this.#installTools(p.tools ?? []);
@@ -335,8 +312,8 @@ class Session {
   /** Forwards the current conversation's events, in the host's shape. */
   async #watch() {
     await this.stream?.stop?.();
-    const branch = await this.branch();
-    this.lastId = branch.length ? branch[branch.length - 1].id : null;
+    const last = (await this.#branchIds()).at(-1);
+    this.lastId = last == null ? null : String(last);
     this.stream = await watchEvents(this.harness, this.current.id, BG);
     this.stream.start(async (events) => {
       for (const e of events) {
@@ -427,33 +404,67 @@ class Session {
     }
   }
 
-  /** The current branch, root first. */
-  async branch() {
+  /** The ids of the current branch's shown entries, root first. */
+  async #branchIds() {
+    await this.shape.refresh();
     if (this.tip === -1) return [];
-    const entries = hostEntries(await allEntries(this.current));
-    if (this.tip == null) return entries;
-    const at = entries.findIndex((e) => e.seq === this.tip);
-    return at < 0 ? entries : entries.slice(0, at + 1);
+    return this.shape.history(this.current.id, this.tip ?? Infinity);
   }
 
-  /** Every entry of every version, each once. */
-  async tree() {
-    const convs = await this.harness.commit(async (tx) => {
-      const ids = [];
-      let cursor;
-      do {
-        const page = await tx.scanConversations({}, 500, cursor);
-        ids.push(...page.items.map((c) => c.id));
-        cursor = page.next;
-      } while (cursor !== undefined);
-      return ids;
-    }, BG);
-    const seen = new Map();
-    for (const id of convs) {
-      const conv = await this.harness.conversation(id, BG);
-      for (const e of hostEntries(await allEntries(conv))) if (!seen.has(e.id)) seen.set(e.id, e);
+  /** [ids], a run of one history, as host entries; the first after its parent. */
+  async #hostEntries(ids, parentId = ids.length ? this.shape.parentOf(ids[0]) : null) {
+    const out = [];
+    let prev = parentId == null ? null : String(parentId);
+    for (const id of ids) {
+      const h = hostEntry((await this.storage.entry(id, BG)).entry, prev);
+      out.push(h);
+      prev = h.id;
     }
-    return [...seen.values()].sort((a, b) => a.seq - b.seq);
+    return out;
+  }
+
+  /**
+   * The last [limit] entries of the current branch before [before] (its end
+   * when null), root first, and whether there are more before them. A page
+   * starts at a user message, so a reply is never cut from what it answers;
+   * each user message carries its `versions` when it has more than one.
+   */
+  async page(limit = Infinity, before = null) {
+    const ids = await this.#branchIds();
+    const end = before == null ? ids.length : ids.indexOf(Number(before));
+    if (end < 0) throw new Error(`No entry ${before} on the branch`);
+    let start = Math.max(0, end - limit);
+    while (start > 0 && !this.shape.entries.get(ids[start]).user) start--;
+    const entries = await this.#hostEntries(ids.slice(start, end));
+    for (const e of entries) {
+      if (!this.shape.entries.get(e.seq).user) continue;
+      const versions = this.shape.versions(e.seq);
+      if (versions.length < 2) continue;
+      e.versions = await Promise.all(versions.map(async (id) => hostEntry((await this.storage.entry(id, BG)).entry, e.parentId)));
+    }
+    return { entries, more: start > 0 };
+  }
+
+  /** The current branch, root first. */
+  async branch() {
+    return (await this.page()).entries;
+  }
+
+  /** Every entry of every version, each once. Reads them all. */
+  async tree() {
+    await this.shape.refresh();
+    return Promise.all(this.shape.all().map(async (id) => {
+      const p = this.shape.parentOf(id);
+      return hostEntry((await this.storage.entry(id, BG)).entry, p == null ? null : String(p));
+    }));
+  }
+
+  /** One entry by id, whichever version it is in, or null. */
+  async entry(id) {
+    await this.shape.refresh();
+    const n = Number(id);
+    if (!this.shape.entries.has(n)) return null;
+    return (await this.#hostEntries([n]))[0];
   }
 
   /**
@@ -482,48 +493,24 @@ class Session {
       this.tip = -1;
     } else {
       const id = Number(targetId);
-      const tree = await this.tree();
-      if (!tree.some((e) => e.seq === id)) throw new Error(`No entry ${targetId}`);
-      const record = await this.#record(id);
-      const owner = await this.harness.conversation(record.conversationId, BG);
-      const leaf = await this.#leafConversation(id);
-      this.current = leaf ?? owner;
-      this.tip = leaf ? null : id;
+      await this.shape.refresh();
+      const at = this.shape.entries.get(id);
+      if (!at) throw new Error(`No entry ${targetId}`);
+      const leaf = this.shape.conversationEndingAt(id);
+      this.current = await this.harness.conversation(leaf ?? at.conversationId, BG);
+      this.tip = leaf != null ? null : id;
       await this.#configure(this.current);
     }
     await this.#setPlace(this.current.id, this.tip);
     await this.#watch();
   }
 
-  async #record(id) {
-    for (const conv of await this.#conversations()) {
-      const e = (await allEntries(conv)).find((r) => r.id === id);
-      if (e) return e;
-    }
-    throw new Error(`No entry ${id}`);
-  }
-
-  /** The conversation whose last shown entry is [id], if one is. */
-  async #leafConversation(id) {
-    for (const conv of await this.#conversations()) {
-      const shown = hostEntries(await allEntries(conv));
-      if (shown.length && shown[shown.length - 1].seq === id) return conv;
-    }
-    return undefined;
-  }
-
-  async #conversations() {
-    const ids = await this.harness.commit(async (tx) => {
-      const out = [];
-      let cursor;
-      do {
-        const page = await tx.scanConversations({}, 500, cursor);
-        out.push(...page.items.map((c) => c.id));
-        cursor = page.next;
-      } while (cursor !== undefined);
-      return out;
-    }, BG);
-    return Promise.all(ids.map((id) => this.harness.conversation(id, BG)));
+  /** Stands on the newest leaf under [entryId]: the version it starts. */
+  async switchTo(entryId) {
+    await this.shape.refresh();
+    const id = Number(entryId);
+    if (!this.shape.entries.has(id)) throw new Error(`No entry ${entryId}`);
+    await this.navigate(String(this.shape.leafOf(id)));
   }
 
   /** Writes an entry the model may see, without running it. */
@@ -545,7 +532,8 @@ class Session {
     this.harness.resume();
     await this.current.waitForIdle(BG);
     this.interrupted = false;
-    const last = (await this.branch()).at(-1)?.message;
+    const lastId = (await this.#branchIds()).at(-1);
+    const last = lastId == null ? undefined : (await this.storage.entry(lastId, BG)).entry.model?.[0];
     if (last?.role === 'assistant' && last.stopReason === 'aborted') return { status: 'aborted' };
     if (last?.role === 'assistant' && last.stopReason === 'error') return { status: 'failed', error: { message: last.errorMessage ?? 'error' } };
     return { status: 'completed', tipId: this.lastId };
@@ -573,7 +561,8 @@ class Session {
     const iso = (ms) => new Date(ms || Date.now()).toISOString();
     const createdAt = (await this.db.get('SELECT created_at FROM fl_chat'))?.created_at;
     const tree = await this.tree();
-    const tip = (await this.branch()).at(-1);
+    const lastId = (await this.#branchIds()).at(-1);
+    const tip = lastId == null ? undefined : await this.entry(lastId);
     const lines = [{ type: 'session', version: 3, id: this.id, timestamp: iso(createdAt ?? tree[0]?.timestamp), cwd }];
     const v3 = (e) => {
       const base = { id: e.id, parentId: e.parentId, timestamp: iso(e.timestamp) };
@@ -726,7 +715,6 @@ const methods = {
     const s = await Session.open(p);
     sessions.set(p.sessionId, s);
     return {
-      entries: await s.branch(),
       interrupted: s.interrupted ? [{ operationId: 'run', kind: 'run' }] : [],
       name: s.name,
     };
@@ -744,16 +732,17 @@ const methods = {
     return null;
   },
 
-  /** The current branch, root first. */
+  /** The current branch, root first. Reads it all: see `session.page`. */
   'session.entries': async (p) => ({ entries: await getSession(p.sessionId).branch() }),
 
-  /** Every entry in the session, all versions. */
+  /** The last `limit` entries of the current branch before `before`: see `Session.page`. */
+  'session.page': async (p) => getSession(p.sessionId).page(p.limit ?? Infinity, p.before ?? null),
+
+  /** Every entry in the session, all versions. Reads them all. */
   'session.tree': async (p) => ({ entries: await getSession(p.sessionId).tree() }),
 
   /** One entry by id, whichever version it is in — including compacted ones. */
-  'session.entry': async (p) => ({
-    entry: (await getSession(p.sessionId).tree()).find((e) => e.id === String(p.entryId)) ?? null,
-  }),
+  'session.entry': async (p) => ({ entry: await getSession(p.sessionId).entry(p.entryId) }),
 
   /**
    * Stands on `targetId` (null: before the first entry). The next prompt then
@@ -761,9 +750,14 @@ const methods = {
    * message is edited or an answer regenerated.
    */
   'session.navigate': async (p) => {
-    const s = getSession(p.sessionId);
-    await s.navigate(p.targetId ?? null);
-    return { navigation: null, entries: await s.branch() };
+    await getSession(p.sessionId).navigate(p.targetId ?? null);
+    return null;
+  },
+
+  /** Stands on the version the entry `entryId` starts: its newest leaf. */
+  'session.switchTo': async (p) => {
+    await getSession(p.sessionId).switchTo(p.entryId);
+    return null;
   },
 
   /**
@@ -790,9 +784,7 @@ const methods = {
 
   /** Compacts now, whatever the thresholds say. */
   'session.compact': async (p) => {
-    const s = getSession(p.sessionId);
-    const compaction = await s.compact(p.customInstructions);
-    return { compaction, entries: await s.branch() };
+    return { compaction: await getSession(p.sessionId).compact(p.customInstructions) };
   },
 
   /** The chat as a session file `pi` reads: see `Session.exportPi`. */
