@@ -1,6 +1,6 @@
 # fl_pi_llm_ui
 
-Chats, tools and the provider settings on [fl_pi_llm](..), for Flutter apps built on [fl_lib](https://github.com/lollipopkit/fl_lib). Shared by GPT Box and Server Box.
+Chats, tools and the provider settings on [fl_pi_llm](../fl_pi_llm), for Flutter apps built on [fl_lib](https://github.com/lollipopkit/fl_lib). Shared by GPT Box and Server Box.
 
 - **Core**: `Llm` (runtime, provider catalog, keys in the keychain), `Chats`/`OpenChat` (open, send, edit, regenerate, retry, versions, search, trash, titles), `SqliteLegacySessions` (sessions from before pi-durable, read from fl_lib's SQLite to move them; TODO: remove).
 - **Stores** (`LlmStores`): `chats`, `llm`, `tool`, `memory` in fl_lib's SQLite; the app backs them up.
@@ -14,7 +14,7 @@ The app has fl_lib as a submodule, so it overrides this package's git one:
 ```yaml
 dependencies:
   fl_pi_llm_ui:
-    path: packages/fl_pi_llm/ui
+    path: packages/fl_pi_llm/fl_pi_llm_ui
 dependency_overrides:
   fl_lib:
     path: packages/fl_lib

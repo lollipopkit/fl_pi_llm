@@ -10,5 +10,5 @@ Future<void> loadLlmLibrary() {
       : Platform.isWindows
       ? 'fl_pi_llm.dll'
       : 'libfl_pi_llm.so';
-  return FlPiLlm.loadLibrary(externalLibrary: ExternalLibrary.open('../rust/target/debug/$name'));
+  return FlPiLlm.loadLibrary(externalLibrary: ExternalLibrary.open('../fl_pi_llm/rust/target/debug/$name'));
 }

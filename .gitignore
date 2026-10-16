@@ -1,7 +1,5 @@
 .dart_tool/
 pubspec.lock
-rust/target/
-js/node_modules/
-js/meta.json
+pubspec_overrides.yaml
 .DS_Store
 build/

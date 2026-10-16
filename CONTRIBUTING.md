@@ -7,7 +7,7 @@ Bug reports, fixes and new provider support are welcome.
 - **Small fixes:** just open the pull request.
 - **Anything that changes the API or the protocol between Dart and JS:** open
   an issue first. Both apps depend on it.
-- **Bumping pi:** pin the exact versions in `js/package.json`, rebuild the
+- **Bumping pi:** pin the exact versions in `fl_pi_llm/js/package.json`, rebuild the
   bundle, and run both test suites — pi's API is still moving.
 
 ## Contributor License Agreement
