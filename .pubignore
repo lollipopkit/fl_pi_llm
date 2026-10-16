@@ -8,8 +8,6 @@ js/meta.json
 build/
 pubspec_overrides.yaml
 
-# A package of its own: fl_pi_llm_ui.
-ui/
 # Repository upkeep.
 .github/
 scripts/
