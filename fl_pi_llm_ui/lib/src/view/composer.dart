@@ -172,9 +172,14 @@ class _ComposerState extends State<Composer> {
         );
       }),
       actions: [
-        AttachButton(onPicked: (paths) => _files.value = [..._files.value, ...paths]),
+        // The pickers outlive a composer closed while they are open.
+        AttachButton(onPicked: (paths) {
+          if (mounted) _files.value = [..._files.value, ...paths];
+        }),
         Flexible(
-          child: _ModelChip(chatId: widget.chatId, model: _model, onChanged: () => setState(() {})),
+          child: _ModelChip(chatId: widget.chatId, model: _model, onChanged: () {
+            if (mounted) setState(() {});
+          }),
         ),
         _ThinkingChip(model: _model, compact: widget.compact),
         if (widget.chatId != null) _ToolsToggle(chatId: widget.chatId!),
