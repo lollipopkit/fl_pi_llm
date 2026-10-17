@@ -498,6 +498,8 @@ void main() {
     expect(available.map((e) => e.provider).toSet(), {'mock'});
     final openai = providers.firstWhere((p) => p.id == 'openai');
     expect(openai.models.every((e) => e.contextWindow > 0), isTrue);
+    final flash = providers.firstWhere((p) => p.id == 'deepseek').models.firstWhere((e) => e.id == 'deepseek-flash');
+    expect(flash.thinkingLevels, [ThinkingLevel.off, ThinkingLevel.low, ThinkingLevel.high, ThinkingLevel.max]);
   });
 
   test('an OpenAI-compatible endpoint lists its models beside the typed ones', () async {

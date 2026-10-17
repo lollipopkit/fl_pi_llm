@@ -14,7 +14,7 @@
 //
 // Model lists fetched from the network are cached beside the chats
 // (`__host.cache*`, see db.js), under `models/<provider>`.
-import { createProvider } from '@earendil-works/pi-ai';
+import { createProvider, getSupportedThinkingLevels } from '@earendil-works/pi-ai';
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy';
 import { googleGenerativeAIApi } from '@earendil-works/pi-ai/api/google-generative-ai.lazy';
 import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
@@ -306,6 +306,7 @@ export function modelInfo(m) {
     name: m.name,
     api: m.api,
     reasoning: !!m.reasoning,
+    thinkingLevels: getSupportedThinkingLevels(m),
     input: m.input,
     contextWindow: m.contextWindow,
     maxTokens: m.maxTokens,

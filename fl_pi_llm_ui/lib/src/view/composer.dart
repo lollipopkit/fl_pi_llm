@@ -429,10 +429,11 @@ class _ThinkingChip extends StatefulWidget {
 class _ThinkingChipState extends State<_ThinkingChip> {
   @override
   Widget build(BuildContext context) {
-    if (Llm.info(widget.model)?.reasoning != true) return UIs.placeholder;
+    final info = Llm.info(widget.model);
+    if (info == null || !info.reasoning) return UIs.placeholder;
     return ComposerThinkingChip(
-      level: LlmStores.llm.thinkingLevel.get(),
-      levels: [for (final l in ThinkingLevel.values) l.name],
+      level: Chats.thinkingFor(widget.model).name,
+      levels: [for (final l in info.thinkingLevels) l.name],
       compact: widget.compact,
       onPick: (name) async {
         await Chats.setThinkingLevel(ThinkingLevel.values.byName(name));
@@ -465,7 +466,8 @@ class ComposerModelChip extends StatelessWidget {
 }
 
 /// How hard the model thinks, in a [ComposerBox]'s row: [level] among
-/// [levels], a menu of them. An icon alone when [compact].
+/// [levels], a menu of them. Highlighted with the level while it thinks;
+/// dimmed when `off`, and then an icon alone when [compact].
 class ComposerThinkingChip extends StatelessWidget {
   const ComposerThinkingChip({super.key, required this.level, required this.levels, required this.onPick, this.compact = false});
 
@@ -479,26 +481,34 @@ class ComposerThinkingChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cur = _label(level);
+    final on = level != ThinkingLevel.off.name;
+    final scheme = context.theme.colorScheme;
+    final color = on ? scheme.primary : scheme.onSurfaceVariant.withValues(alpha: 0.6);
+    final icon = Icon(on ? Icons.psychology : Icons.psychology_outlined, size: _iconSize, color: color);
     return MenuBtn(
       actions: [
         for (final l in levels)
           ContextMenuAction(text: _label(l), checked: l == level, onTap: () => onPick(l)),
       ],
-      builder: (toggle) => compact
-          ? Btn.icon(
-              icon: const Icon(Icons.psychology_outlined, size: _iconSize),
-              text: '${llmL10n.thinkingEffort}: $cur',
-              onTap: toggle,
-              padding: _btnPadding,
-            )
-          : Btn.row(
-              icon: const Icon(Icons.psychology_outlined, size: _iconSize),
-              text: cur,
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              mainAxisSize: MainAxisSize.min,
-              onTap: toggle,
-              padding: _btnPadding,
-            ),
+      builder: (toggle) {
+        final name = '${llmL10n.thinkingEffort}: $cur';
+        if (compact && !on) return Btn.icon(icon: icon, text: name, onTap: toggle, padding: _btnPadding);
+        // The level alone says little to a screen reader.
+        return Semantics(
+          label: name,
+          button: true,
+          onTap: toggle,
+          excludeSemantics: true,
+          child: Btn.row(
+            icon: icon,
+            text: cur,
+            textStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
+            mainAxisSize: MainAxisSize.min,
+            onTap: toggle,
+            padding: _btnPadding,
+          ),
+        );
+      },
     );
   }
 }
