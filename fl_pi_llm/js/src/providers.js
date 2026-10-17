@@ -212,7 +212,8 @@ const MAX_OUTPUT = 65536;
  */
 function outputLimit(listed, contextWindow) {
   const n = Number.isFinite(listed) && listed > 0 ? listed : 16384;
-  return Math.max(1024, Math.min(n, MAX_OUTPUT, Math.floor(contextWindow / 4)));
+  // The 1024 floor never outgrows a window too small for it.
+  return Math.max(1, Math.min(Math.max(1024, Math.min(n, MAX_OUTPUT)), Math.floor(contextWindow / 4)));
 }
 
 /**
