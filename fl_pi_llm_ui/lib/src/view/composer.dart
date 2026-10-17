@@ -396,10 +396,13 @@ class _ModelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Llm.providers.listenVal((_) {
-      final name = Llm.info(model)?.name ?? model?.id ?? llmL10n.model;
-      return ComposerModelChip(
-        name: name,
+    return ListenableBuilder(
+      listenable: Listenable.merge([Llm.providers, Llm.configured]),
+      builder: (context, _) => ComposerModelChip(
+        name: switch (model) {
+          final m? => Llm.modelLabel(m),
+          null => llmL10n.model,
+        },
         onTap: () async {
           final picked = await pickModel(context, current: model);
           if (picked == null) return;
@@ -411,8 +414,8 @@ class _ModelChip extends StatelessWidget {
           }
           onChanged();
         },
-      );
-    });
+      ),
+    );
   }
 }
 

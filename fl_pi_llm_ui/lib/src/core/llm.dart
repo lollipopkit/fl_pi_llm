@@ -159,6 +159,16 @@ abstract final class Llm {
 
   static LlmProviderInfo? provider(String id) => providers.value.firstWhereOrNull((p) => p.id == id);
 
+  static String providerName(String id) => provider(id)?.name ?? id;
+
+  /// [ref]'s name, led by its provider's when another usable model has the
+  /// same one.
+  static String modelLabel(LlmModelRef ref) {
+    final name = info(ref)?.name ?? ref.id;
+    final shared = usableModels.any((m) => m.ref != ref && m.name == name);
+    return shared ? '${providerName(ref.provider)} · $name' : name;
+  }
+
   /// Models whose provider has a credential, favorites first.
   static List<LlmModelInfo> get usableModels {
     final fav = LlmStores.llm.favoriteModels.get().toSet();

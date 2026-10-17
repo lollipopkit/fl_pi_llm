@@ -226,14 +226,16 @@ class _ProvidersPageState extends State<ProvidersPage> {
 }
 
 /// A model as its rows describe it: `id · 200K · thinking · image`.
-String modelSubtitle(LlmModelInfo m) {
+/// [m]'s id, context window and abilities; led by its provider's name with
+/// [provider], where nothing around it says which one.
+String modelSubtitle(LlmModelInfo m, {bool provider = false}) {
   final w = m.contextWindow;
   final ctx = w >= 1000000
       ? '${(w / 1000000).toStringAsFixed(w % 1000000 == 0 ? 0 : 1)}M'
       : w >= 1000
       ? '${(w / 1000).round()}K'
       : '$w';
-  return [m.id, ctx, if (m.reasoning) llmL10n.supportsThinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
+  return [if (provider) Llm.providerName(m.provider), m.id, ctx, if (m.reasoning) llmL10n.supportsThinking.toLowerCase(), if (m.imageInput) llmL10n.image.toLowerCase()].join(' · ');
 }
 
 /// The provider `OPENAI_BASE_URL` describes: nothing to edit here, it is the
