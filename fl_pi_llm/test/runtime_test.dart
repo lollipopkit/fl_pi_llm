@@ -42,9 +42,9 @@ class MockServer {
               {'id': 'mock'},
               // A window smaller than the 1024-token output floor.
               {'id': 'mock-2', 'context_length': 512},
-              // What the server was started with wins; a length that is no number is not one.
+              // What the server was started with wins; a length that is no whole number is not one.
               {'id': 'mock-served', 'max_model_len': 2048, 'context_length': 512},
-              {'id': 'mock-text', 'context_length': '4096'},
+              {'id': 'mock-text', 'max_model_len': 2048.5, 'context_length': '4096'},
               {'id': 'text-embedding-3-small'},
             ],
           }));

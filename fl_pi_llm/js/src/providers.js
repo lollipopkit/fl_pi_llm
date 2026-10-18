@@ -204,8 +204,8 @@ function toModel(spec, listed, meta) {
   };
 }
 
-/** [n] if it is a positive number, as a listing or the metadata may not give. */
-const count = (n) => (Number.isFinite(n) && n > 0 ? n : undefined);
+/** [n] if it is a positive whole number, as a listing or the metadata may not give. */
+const count = (n) => (Number.isSafeInteger(n) && n > 0 ? n : undefined);
 
 /** The most output asked of a custom endpoint's model per request. */
 const MAX_OUTPUT = 65536;
