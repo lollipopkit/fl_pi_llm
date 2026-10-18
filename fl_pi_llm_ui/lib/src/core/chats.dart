@@ -315,7 +315,7 @@ abstract final class Chats {
       model: model,
       systemPrompt: systemPromptFor(meta),
       tools: _toolsFor(meta),
-      thinkingLevel: _thinkingFor(model),
+      thinkingLevel: thinkingFor(model),
       compaction: LlmStores.llm.compaction.get() ? const CompactionSettings() : CompactionSettings.disabled,
       approve: _approve,
     );
@@ -606,7 +606,7 @@ abstract final class Chats {
     final c = _open[id];
     if (c != null) {
       await c.session.setModel(model);
-      await c.session.setThinkingLevel(_thinkingFor(model));
+      await c.session.setThinkingLevel(thinkingFor(model));
     }
   }
 
@@ -718,17 +718,19 @@ abstract final class Chats {
     return Tools.enabledFor(meta);
   }
 
-  static ThinkingLevel _thinkingFor(LlmModelRef model) {
-    if (Llm.info(model)?.reasoning != true) return ThinkingLevel.off;
-    return ThinkingLevel.values.firstWhereOrNull((e) => e.name == LlmStores.llm.thinkingLevel.get()) ??
-        ThinkingLevel.medium;
+  /// The level [model] thinks at: the one picked, or the nearest it takes.
+  static ThinkingLevel thinkingFor(LlmModelRef? model) {
+    final info = Llm.info(model);
+    if (info == null || !info.reasoning) return ThinkingLevel.off;
+    final picked = ThinkingLevel.values.asNameMap()[LlmStores.llm.thinkingLevel.get()] ?? ThinkingLevel.medium;
+    return info.clampThinking(picked);
   }
 
   static Future<void> setThinkingLevel(ThinkingLevel level) async {
     LlmStores.llm.thinkingLevel.set(level.name);
     for (final c in [..._open.values]) {
       final model = LlmStores.chat.fetch(c.id)?.model ?? Llm.defaultModel;
-      if (model != null) await c.session.setThinkingLevel(_thinkingFor(model));
+      if (model != null) await c.session.setThinkingLevel(thinkingFor(model));
     }
   }
 

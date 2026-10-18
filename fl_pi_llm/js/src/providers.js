@@ -14,7 +14,7 @@
 //
 // Model lists fetched from the network are cached beside the chats
 // (`__host.cache*`, see db.js), under `models/<provider>`.
-import { createProvider } from '@earendil-works/pi-ai';
+import { createProvider, getSupportedThinkingLevels } from '@earendil-works/pi-ai';
 import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy';
 import { googleGenerativeAIApi } from '@earendil-works/pi-ai/api/google-generative-ai.lazy';
 import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
@@ -223,7 +223,8 @@ const MAX_OUTPUT = 65536;
  */
 function outputLimit(listed, contextWindow) {
   const n = Number.isFinite(listed) && listed > 0 ? listed : 16384;
-  return Math.max(1024, Math.min(n, MAX_OUTPUT, Math.floor(contextWindow / 4)));
+  // The 1024 floor never outgrows a window too small for it.
+  return Math.max(1, Math.min(Math.max(1024, Math.min(n, MAX_OUTPUT)), Math.floor(contextWindow / 4)));
 }
 
 /**
@@ -317,6 +318,7 @@ export function modelInfo(m) {
     name: m.name,
     api: m.api,
     reasoning: !!m.reasoning,
+    thinkingLevels: getSupportedThinkingLevels(m),
     input: m.input,
     contextWindow: m.contextWindow,
     maxTokens: m.maxTokens,

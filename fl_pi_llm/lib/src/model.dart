@@ -66,6 +66,23 @@ final class LlmModelInfo {
 
   /// Whether it thinks before answering, and so takes a [ThinkingLevel].
   bool get reasoning => json['reasoning'] == true;
+
+  /// The levels it takes, in [ThinkingLevel] order: just [ThinkingLevel.off]
+  /// unless it [reasoning].
+  List<ThinkingLevel> get thinkingLevels {
+    if (!reasoning) return const [ThinkingLevel.off];
+    final names = ((json['thinkingLevels'] as List?) ?? const []).cast<String>();
+    final levels = ThinkingLevel.values.where((e) => names.contains(e.name)).toList();
+    return levels.isEmpty ? const [ThinkingLevel.off] : levels;
+  }
+
+  /// [level] if it takes it, else the nearest one above, else below — as
+  /// pi-ai clamps it.
+  ThinkingLevel clampThinking(ThinkingLevel level) {
+    final levels = thinkingLevels;
+    if (levels.contains(level)) return level;
+    return levels.firstWhere((e) => e.index > level.index, orElse: () => levels.last);
+  }
   bool get imageInput => (json['input'] as List?)?.contains('image') ?? false;
   int get contextWindow => json['contextWindow'] as int? ?? 0;
   int get maxTokens => json['maxTokens'] as int? ?? 0;
@@ -161,8 +178,9 @@ final class LlmCustomProvider {
   };
 }
 
-/// How much a reasoning model thinks.
-enum ThinkingLevel { off, minimal, low, medium, high, xhigh }
+/// How much a reasoning model thinks; [LlmModelInfo.thinkingLevels] are the
+/// ones a model takes.
+enum ThinkingLevel { off, minimal, low, medium, high, xhigh, max }
 
 /// When the older part of a conversation is summarised.
 ///

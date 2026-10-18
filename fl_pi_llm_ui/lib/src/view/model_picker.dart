@@ -125,9 +125,9 @@ class _ModelSheetState extends State<_ModelSheet> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(7, 0, 7, 13),
                 children: [
-                  if (favorites.isNotEmpty) ..._group(llmL10n.favorite, favorites, favs),
+                  if (favorites.isNotEmpty) ..._group(llmL10n.favorite, favorites, withProvider: true),
                   for (final MapEntry(key: pid, value: list) in byProvider.entries)
-                    ..._group(Llm.provider(pid)?.name ?? pid, list, favs),
+                    ..._group(Llm.providerName(pid), list),
                 ],
               ),
             ),
@@ -137,12 +137,13 @@ class _ModelSheetState extends State<_ModelSheet> {
     );
   }
 
-  List<Widget> _group(String title, List<LlmModelInfo> models, Set<String> favs) => [
+  /// [withProvider] where the [title] is not the models' provider.
+  List<Widget> _group(String title, List<LlmModelInfo> models, {bool withProvider = false}) => [
     GroupTitle(title, padding: const EdgeInsets.fromLTRB(10, 13, 10, 5)),
-    for (final m in models) _row(m),
+    for (final m in models) _row(m, withProvider: withProvider),
   ];
 
-  Widget _row(LlmModelInfo m) {
+  Widget _row(LlmModelInfo m, {required bool withProvider}) {
     final scheme = context.theme.colorScheme;
     final sel = m.ref == widget.current;
     return Material(
@@ -171,7 +172,7 @@ class _ModelSheetState extends State<_ModelSheet> {
                       ),
                     ),
                     Text(
-                      modelSubtitle(m),
+                      modelSubtitle(m, provider: withProvider),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: UIs.text12Grey.copyWith(height: 16 / 12),

@@ -40,7 +40,8 @@ class MockServer {
           ..write(jsonEncode({
             'data': [
               {'id': 'mock'},
-              {'id': 'mock-2'},
+              // A window smaller than the 1024-token output floor.
+              {'id': 'mock-2', 'context_length': 512},
               {'id': 'text-embedding-3-small'},
             ],
           }));
@@ -493,11 +494,16 @@ void main() {
     final m = providers.firstWhere((p) => p.id == 'mock');
     expect(m.custom, isTrue);
     expect(m.models.map((e) => e.id), ['mock', 'mock-2'], reason: 'embeddings cannot chat');
+    final tiny = m.models.last;
+    expect(tiny.contextWindow, 512);
+    expect(tiny.maxTokens, 128, reason: 'a quarter of the window, never past it');
     expect(server.authHeaders.last, 'Bearer sk-test');
     final available = await llm.availableModels();
     expect(available.map((e) => e.provider).toSet(), {'mock'});
     final openai = providers.firstWhere((p) => p.id == 'openai');
     expect(openai.models.every((e) => e.contextWindow > 0), isTrue);
+    final flash = providers.firstWhere((p) => p.id == 'deepseek').models.firstWhere((e) => e.id == 'deepseek-flash');
+    expect(flash.thinkingLevels, [ThinkingLevel.off, ThinkingLevel.low, ThinkingLevel.high, ThinkingLevel.max]);
   });
 
   test('an OpenAI-compatible endpoint lists its models beside the typed ones', () async {
