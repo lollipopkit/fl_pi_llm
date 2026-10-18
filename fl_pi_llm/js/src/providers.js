@@ -175,7 +175,11 @@ function findMetadata(id, index) {
 function toModel(spec, listed, meta) {
   const src = meta ?? listed;
   const params = src.supported_parameters;
-  const contextWindow = servedContext(listed) ?? src.top_provider?.context_length ?? src.context_length ?? 128000;
+  // The model server's own (vLLM and SGLang: `max_model_len`) wins over the
+  // metadata: that is what the model can take, and a server started with less
+  // refuses every request that asks for more than it has.
+  const contextWindow = count(listed.max_model_len) ?? count(src.top_provider?.context_length)
+    ?? count(src.context_length) ?? 128000;
   return {
     id: listed.id,
     name: meta?.name ?? listed.name ?? basename(listed.id),
@@ -200,16 +204,8 @@ function toModel(spec, listed, meta) {
   };
 }
 
-/**
- * The context a model server was started with, as it lists it (vLLM and
- * SGLang: `max_model_len`). It wins over the metadata: that is what the model
- * can take, and a server started with less refuses every request that asks
- * for more than it has.
- */
-function servedContext(listed) {
-  const n = listed.max_model_len;
-  return Number.isFinite(n) && n > 0 ? n : undefined;
-}
+/** [n] if it is a positive number, as a listing or the metadata may not give. */
+const count = (n) => (Number.isFinite(n) && n > 0 ? n : undefined);
 
 /** The most output asked of a custom endpoint's model per request. */
 const MAX_OUTPUT = 65536;
@@ -222,7 +218,7 @@ const MAX_OUTPUT = 65536;
  * answer, so a limit near the window leaves none for the conversation.
  */
 function outputLimit(listed, contextWindow) {
-  const n = Number.isFinite(listed) && listed > 0 ? listed : 16384;
+  const n = count(listed) ?? 16384;
   // The 1024 floor never outgrows a window too small for it.
   return Math.max(1, Math.min(Math.max(1024, Math.min(n, MAX_OUTPUT)), Math.floor(contextWindow / 4)));
 }
