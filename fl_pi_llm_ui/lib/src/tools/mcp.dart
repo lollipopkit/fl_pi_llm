@@ -74,6 +74,8 @@ abstract final class McpTools {
     final attempt = s.connecting = Object();
     changes.notify();
     await _close(s);
+    // A newer connect took over while this one closed the old transport.
+    if (!identical(s.connecting, attempt)) return;
     s.secret = McpAuth.canCarrySecrets(url) ? McpSecrets.read(id) : const McpSecret();
     // A fresh transport each time: a closed one cannot be started again.
     final transport = StreamableHttpClientTransport(
@@ -185,6 +187,8 @@ abstract final class McpTools {
         tools.addAll(r.tools);
         cursor = r.nextCursor;
       } while (cursor != null);
+      // Reconnected meanwhile: the new connection lists its own.
+      if (!identical(s.client, client)) return;
       final id = nameFor(s.url), label = s.label;
       s
         ..tools = tools
@@ -193,6 +197,7 @@ abstract final class McpTools {
             if (LlmMcp.tool(id, label, t.toJson()) case final def?) (t, def),
         ];
     } catch (e, st) {
+      if (!identical(s.client, client)) return;
       Loggers.app.warning('MCP ${s.label}: list tools', e, st);
       s
         ..tools = const []

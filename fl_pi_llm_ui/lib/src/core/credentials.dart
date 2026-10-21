@@ -74,12 +74,20 @@ abstract final class ChatKey {
 
   static Future<Uint8List> read() async {
     final existing = await SecureStore.storage.read(key: _key);
-    if (existing != null) return base64Url.decode(existing);
+    if (existing != null) return _decode(existing);
     final random = Random.secure();
     await SecureStore.storage.write(key: _key, value: base64UrlEncode([for (var i = 0; i < 32; i++) random.nextInt(256)]));
     // Read back: a write that did not land would leave chats nothing can open.
     final confirmed = await SecureStore.storage.read(key: _key);
     if (confirmed == null) throw StateError('Failed to keep the chat key');
-    return base64Url.decode(confirmed);
+    return _decode(confirmed);
+  }
+
+  /// Never replaced when unreadable: the chats encrypted with it would be
+  /// lost with it.
+  static Uint8List _decode(String stored) {
+    final key = base64Url.decode(stored);
+    if (key.length != 32) throw StateError('The chat key in the keychain is ${key.length} bytes, not 32');
+    return key;
   }
 }
