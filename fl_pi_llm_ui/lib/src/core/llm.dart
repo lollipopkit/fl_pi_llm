@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
@@ -9,6 +10,7 @@ import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
@@ -62,9 +64,10 @@ abstract final class Llm {
     if (environment != null) _environment = environment;
     _all = SystemCredentials(_credentials, () => _environment());
     final started = _rt == null;
+    final dir = directory ?? '${(await getApplicationSupportDirectory()).path}/agent';
     _rt ??= await FlPiLlm.start(
-      directory: directory ?? '${(await getApplicationSupportDirectory()).path}/agent',
-      key: key ?? await ChatKey.read(),
+      directory: dir,
+      key: key ?? await ChatKey.read(encryptedChats: await encryptedChats(dir)),
       credentials: _all,
       externalLibrary: externalLibrary,
       environment: () => SystemProvider.forBuiltins(_environment()),
@@ -93,6 +96,21 @@ abstract final class Llm {
       Loggers.app.warning('Refresh models', e, s);
       return const <String, String>{};
     }));
+  }
+
+  /// Whether a chat under [dir] is encrypted already: one whose file does not
+  /// start as SQLite's does in clear.
+  @visibleForTesting
+  static Future<bool> encryptedChats(String dir) async {
+    final chats = Directory('$dir/chats');
+    if (!await chats.exists()) return false;
+    const clear = 'SQLite format 3\u0000';
+    await for (final f in chats.list()) {
+      if (f is! File || !f.path.endsWith('.db')) continue;
+      final head = await f.openRead(0, clear.length).expand((b) => b).toList();
+      if (head.length == clear.length && String.fromCharCodes(head) != clear) return true;
+    }
+    return false;
   }
 
   /// Hands the stored custom providers to the runtime.

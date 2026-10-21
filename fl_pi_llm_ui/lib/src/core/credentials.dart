@@ -86,14 +86,18 @@ abstract final class ChatKey {
   /// a key.
   static Future<Uint8List>? _reading;
 
-  static Future<Uint8List> read() => _reading ??= _read().catchError((Object e) {
+  /// [encryptedChats]: chats are encrypted already, with the key the
+  /// keychain should hold. Then a missing one is an error: a key made in its
+  /// place would open none of them.
+  static Future<Uint8List> read({required bool encryptedChats}) => _reading ??= _read(encryptedChats).catchError((Object e) {
     _reading = null;
     throw e;
   });
 
-  static Future<Uint8List> _read() async {
+  static Future<Uint8List> _read(bool encryptedChats) async {
     final existing = await SecureStore.storage.read(key: _key);
     if (existing != null) return _decode(existing);
+    if (encryptedChats) throw StateError('The chat key is missing from the keychain, and the chats are encrypted with it');
     final random = Random.secure();
     await SecureStore.storage.write(key: _key, value: base64UrlEncode([for (var i = 0; i < 32; i++) random.nextInt(256)]));
     // Read back: a write that did not land would leave chats nothing can open.

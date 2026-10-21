@@ -351,7 +351,19 @@ impl Chats {
         if self.cache.is_none() {
             let root = &self.storage()?.root;
             std::fs::create_dir_all(root).map_err(|e| format!("storage directory {}: {e}", root.display()))?;
-            let conn = connect(&root.join("cache.db"), self.key(), OpenFlags::default())
+            let path = root.join("cache.db");
+            // What it holds can be fetched again: one this key does not open
+            // (encrypted with a key since lost) is started over.
+            let opened = match connect(&path, self.key(), OpenFlags::default()) {
+                Err(e) if not_a_database(&e) => {
+                    for p in std::iter::once(path.clone()).chain(COMPANIONS.iter().map(|s| companion(&path, s))) {
+                        let _ = std::fs::remove_file(p);
+                    }
+                    connect(&path, self.key(), OpenFlags::default())
+                }
+                r => r,
+            };
+            let conn = opened
                 .and_then(|conn| {
                     configure(&conn)?;
                     conn.execute_batch("CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT;")?;
@@ -511,6 +523,11 @@ mod tests {
         chats.cache_set("k", None).unwrap();
         assert_eq!(chats.cache_get("k").unwrap(), None);
         assert!(chats.list().unwrap().is_empty(), "the cache is not a chat");
+        chats.cache_set("k", Some("v")).unwrap();
+        drop(chats);
+        // Under another key: started over rather than failing.
+        let mut chats = Chats::new(Some(Storage { root: root.clone(), key: Some(key(6)) }));
+        assert_eq!(chats.cache_get("k").unwrap(), None);
         let _ = std::fs::remove_dir_all(&root);
     }
 }
