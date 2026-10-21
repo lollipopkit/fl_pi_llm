@@ -13,7 +13,7 @@ void main() {
     File('${chats.path}/empty.db').writeAsBytesSync([]);
     File('${chats.path}/a.db-wal').writeAsBytesSync(List.filled(32, 9));
     expect(await Llm.encryptedChats(dir), isFalse, reason: 'in clear, new, or not a chat');
-    File('${chats.path}/b.db').writeAsBytesSync(List.filled(32, 7));
-    expect(await Llm.encryptedChats(dir), isTrue);
+    File('${chats.path}/b.db').writeAsBytesSync(List.filled(4, 7));
+    expect(await Llm.encryptedChats(dir), isTrue, reason: 'one cut short is kept for its key too');
   });
 }

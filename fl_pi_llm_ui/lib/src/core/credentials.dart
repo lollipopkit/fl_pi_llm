@@ -34,7 +34,7 @@ final class KeychainCredentials implements LlmCredentials {
     final raw = await SecureStore.storage.read(key: _indexKey);
     if (raw != null) {
       try {
-        return (json.decode(raw) as List).cast<String>();
+        return [for (final id in json.decode(raw) as List) id as String];
       } catch (e) {
         Loggers.app.warning('Credential index is unreadable', e);
       }

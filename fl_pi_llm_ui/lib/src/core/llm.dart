@@ -98,8 +98,8 @@ abstract final class Llm {
     }));
   }
 
-  /// Whether a chat under [dir] is encrypted already: one whose file does not
-  /// start as SQLite's does in clear.
+  /// Whether a chat under [dir] may be encrypted already: one whose file
+  /// does not start as SQLite's does in clear.
   @visibleForTesting
   static Future<bool> encryptedChats(String dir) async {
     final chats = Directory('$dir/chats');
@@ -108,7 +108,9 @@ abstract final class Llm {
     await for (final f in chats.list()) {
       if (f is! File || !f.path.endsWith('.db')) continue;
       final head = await f.openRead(0, clear.length).expand((b) => b).toList();
-      if (head.length == clear.length && String.fromCharCodes(head) != clear) return true;
+      // Empty: made, never written. Anything else not SQLite in clear, cut
+      // short included, may be a chat only the stored key opens.
+      if (head.isNotEmpty && String.fromCharCodes(head) != clear) return true;
     }
     return false;
   }
