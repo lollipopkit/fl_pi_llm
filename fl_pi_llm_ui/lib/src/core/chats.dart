@@ -377,7 +377,8 @@ abstract final class Chats {
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
     LlmSecrets.forget(id);
-    if (c == null) return;
+    // Being closed by another call: done when that is.
+    if (c == null) return _closing[id];
     // A borrow begun from here on opens the chat again once this is closed.
     final closing = _closing[id] = c._dispose();
     try {
