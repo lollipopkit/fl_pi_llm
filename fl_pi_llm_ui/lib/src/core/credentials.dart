@@ -53,16 +53,26 @@ final class KeychainCredentials implements LlmCredentials {
   static Future<void> _saveIndex(List<String> ids) =>
       SecureStore.storage.write(key: _indexKey, value: json.encode(ids.toSet().toList()..sort()));
 
+  /// Index updates one after another: two read at once would each save
+  /// what the other did not add.
+  static Future<void> _indexing = Future.value();
+
+  Future<void> _updateIndex(List<String> Function(List<String> ids) change) {
+    final next = _indexing.then((_) async => _saveIndex(change(await list())));
+    _indexing = next.catchError((_) {});
+    return next;
+  }
+
   @override
   Future<void> write(String providerId, LlmCredential credential) async {
     await SecureStore.storage.write(key: '$_prefix$providerId', value: json.encode(credential.json));
-    await _saveIndex([...await list(), providerId]);
+    await _updateIndex((ids) => [...ids, providerId]);
   }
 
   @override
   Future<void> delete(String providerId) async {
     await SecureStore.storage.delete(key: '$_prefix$providerId');
-    await _saveIndex([...(await list()).where((e) => e != providerId)]);
+    await _updateIndex((ids) => [...ids.where((e) => e != providerId)]);
   }
 }
 
@@ -72,7 +82,16 @@ final class KeychainCredentials implements LlmCredentials {
 abstract final class ChatKey {
   static const _key = 'llm.chatKey';
 
-  static Future<Uint8List> read() async {
+  /// One read at a time, for every caller: two first reads would each make
+  /// a key.
+  static Future<Uint8List>? _reading;
+
+  static Future<Uint8List> read() => _reading ??= _read().catchError((Object e) {
+    _reading = null;
+    throw e;
+  });
+
+  static Future<Uint8List> _read() async {
     final existing = await SecureStore.storage.read(key: _key);
     if (existing != null) return _decode(existing);
     final random = Random.secure();

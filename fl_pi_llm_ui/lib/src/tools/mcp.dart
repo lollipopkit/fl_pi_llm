@@ -96,9 +96,12 @@ abstract final class McpTools {
     client
       ..onerror = ((e) => _dropped(s, transport, '$e'))
       ..onclose = (() => _dropped(s, transport, null));
+    // Only the newest connect may say how the server is: an older one still
+    // connecting goes quiet as soon as another starts.
+    bool current() => identical(s.transport, transport) && identical(s.connecting, attempt);
     try {
       await client.connect(transport);
-      if (!identical(s.transport, transport)) return;
+      if (!current()) return;
       client.setNotificationHandler<JsonRpcToolListChangedNotification>(
         Method.notificationsToolsListChanged,
         (_) => _listTools(s),
@@ -112,7 +115,7 @@ abstract final class McpTools {
       await _listTools(s);
       Loggers.app.info('MCP ${s.label}: ${s.tools.length} tools');
     } catch (e, s_) {
-      if (!identical(s.transport, transport)) return;
+      if (!current()) return;
       // Asking again would get the same answer: it waits for a sign-in.
       final unauthorized = _isUnauthorized(e);
       unauthorized
