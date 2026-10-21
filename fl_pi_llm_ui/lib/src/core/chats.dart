@@ -370,7 +370,10 @@ abstract final class Chats {
 
   /// Closes chat [id], once what borrowed it ([borrow]) is done with it.
   static Future<void> close(String id) async {
-    await _borrowed[id]?.future;
+    // Again after each: another may have begun while one ended.
+    for (Completer<void>? b; (b = _borrowed[id]) != null;) {
+      await b!.future;
+    }
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
     LlmSecrets.forget(id);
