@@ -270,6 +270,9 @@ abstract final class Chats {
   /// Temporary users of each chat ([borrow]), which close it when done.
   static final _borrows = <String, int>{};
 
+  /// Completed when the last borrow of each chat ends: [close] waits for it.
+  static final _borrowed = <String, Completer<void>>{};
+
   static OpenChat? openOf(String id) => _open[id];
 
   /// The chat, opened if it is not.
@@ -365,7 +368,9 @@ abstract final class Chats {
     return added;
   }
 
+  /// Closes chat [id], once what borrowed it ([borrow]) is done with it.
   static Future<void> close(String id) async {
+    await _borrowed[id]?.future;
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
     LlmSecrets.forget(id);
@@ -384,11 +389,13 @@ abstract final class Chats {
   static Future<T> borrow<T>(String id, Future<T> Function(OpenChat chat) fn) async {
     final wasOpen = _open.containsKey(id) || _opening.containsKey(id);
     _borrows[id] = (_borrows[id] ?? 0) + 1;
+    _borrowed[id] ??= Completer<void>();
     try {
       return await fn(await open(id));
     } finally {
       final n = _borrows[id]! - 1;
       n == 0 ? _borrows.remove(id) : _borrows[id] = n;
+      if (n == 0) _borrowed.remove(id)?.complete();
       final c = _open[id];
       if (!wasOpen && n == 0 && c != null && !c.running.value && current.value != id) await close(id);
     }

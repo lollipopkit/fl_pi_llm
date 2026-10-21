@@ -53,27 +53,27 @@ final class KeychainCredentials implements LlmCredentials {
   static Future<void> _saveIndex(List<String> ids) =>
       SecureStore.storage.write(key: _indexKey, value: json.encode(ids.toSet().toList()..sort()));
 
-  /// Index updates one after another: two read at once would each save
-  /// what the other did not add.
-  static Future<void> _indexing = Future.value();
+  /// Writes and deletes one after another, each with its index update: two
+  /// at once would each save an index without what the other did.
+  static Future<void> _changing = Future.value();
 
-  Future<void> _updateIndex(List<String> Function(List<String> ids) change) {
-    final next = _indexing.then((_) async => _saveIndex(change(await list())));
-    _indexing = next.catchError((_) {});
+  static Future<void> _change(Future<void> Function() fn) {
+    final next = _changing.then((_) => fn());
+    _changing = next.catchError((_) {});
     return next;
   }
 
   @override
-  Future<void> write(String providerId, LlmCredential credential) async {
+  Future<void> write(String providerId, LlmCredential credential) => _change(() async {
     await SecureStore.storage.write(key: '$_prefix$providerId', value: json.encode(credential.json));
-    await _updateIndex((ids) => [...ids, providerId]);
-  }
+    await _saveIndex([...await list(), providerId]);
+  });
 
   @override
-  Future<void> delete(String providerId) async {
+  Future<void> delete(String providerId) => _change(() async {
     await SecureStore.storage.delete(key: '$_prefix$providerId');
-    await _updateIndex((ids) => [...ids.where((e) => e != providerId)]);
-  }
+    await _saveIndex([...(await list()).where((e) => e != providerId)]);
+  });
 }
 
 /// What the chats are encrypted with ([FlPiLlm.start]): 32 random bytes in
