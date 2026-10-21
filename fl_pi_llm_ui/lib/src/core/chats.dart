@@ -377,8 +377,18 @@ abstract final class Chats {
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
     LlmSecrets.forget(id);
-    await c?._dispose();
+    if (c == null) return;
+    // A borrow begun from here on opens the chat again once this is closed.
+    final closing = _closing[id] = c._dispose();
+    try {
+      await closing;
+    } finally {
+      if (identical(_closing[id], closing)) _closing.remove(id);
+    }
   }
+
+  /// Chats being closed, for [borrow] to wait for.
+  static final _closing = <String, Future<void>>{};
 
   static Future<void> closeAll() async {
     for (final id in [..._open.keys]) {
@@ -394,6 +404,8 @@ abstract final class Chats {
     _borrows[id] = (_borrows[id] ?? 0) + 1;
     _borrowed[id] ??= Completer<void>();
     try {
+      // Closed or not, it is opened again below.
+      await _closing[id]?.then((_) {}, onError: (_) {});
       return await fn(await open(id));
     } finally {
       final n = _borrows[id]! - 1;
