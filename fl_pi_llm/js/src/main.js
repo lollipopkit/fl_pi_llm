@@ -40,7 +40,7 @@ import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
 import { listChats, openChat, removeChat } from './db.js';
 import { legacyFiles, migrate, removeLegacy } from './legacy.js';
 import { ChatTree } from './tree.js';
-import { CUSTOM_APIS, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
+import { CUSTOM_APIS, listedProviders, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
 const host = globalThis.__host;
 const BG = BACKGROUND_CONTEXT;
@@ -203,7 +203,8 @@ function hostTool(sessionId, def) {
         const res = await hostCall('tool', { sessionId, toolCallId, name: def.name, args });
         if (res.error != null) throw new Error(String(res.error));
         return {
-          content: res.content ?? [],
+          // pi 1.3.0 named the result's content `output`; `content` is read no more.
+          output: res.content ?? [],
           details: res.details ?? null,
           ...(res.terminate ? { control: { terminate: true } } : {}),
         };
@@ -628,7 +629,7 @@ const methods = {
   'runtime.info': () => ({ pi: PI_VERSION, piAi: PI_VERSION, piDurable: PI_VERSION, apis: Object.keys(CUSTOM_APIS) }),
 
   /** Every provider and its models: the built-in catalog, then custom ones. */
-  'providers.list': () => models.getProviders().map(providerInfo),
+  'providers.list': () => listedProviders().map(providerInfo),
 
   /** Models whose provider has usable auth. */
   'providers.available': async (p) =>
@@ -656,7 +657,7 @@ const methods = {
   /** Where each provider with usable auth gets it: `stored credential`, or an env var. */
   'providers.auth': async () => {
     const out = {};
-    for (const p of models.getProviders()) {
+    for (const p of listedProviders()) {
       const auth = await models.checkAuth(p.id);
       if (auth) out[p.id] = auth.source;
     }

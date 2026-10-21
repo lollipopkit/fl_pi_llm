@@ -493,8 +493,12 @@ fn the_catalog_is_pi_ais_and_custom_providers_join_it() {
     let providers = h.ok("providers.list", json!({}));
     let ids: Vec<&str> = providers.as_array().unwrap().iter().map(|p| p["id"].as_str().unwrap()).collect();
     assert!(ids.contains(&"openai") && ids.contains(&"anthropic") && ids.contains(&"openrouter"), "{ids:?}");
-    // What cannot authenticate outside Node is left out.
-    assert!(!ids.contains(&"amazon-bedrock"));
+    // What cannot authenticate outside Node is left out: the ChatGPT login.
+    assert!(!ids.contains(&"openai-codex"));
+    // A provider with no model to chat with is left out too.
+    assert!(!ids.contains(&"typesafe"));
+    // The ones a plain key reaches are there.
+    assert!(ids.contains(&"github-copilot") && ids.contains(&"amazon-bedrock") && ids.contains(&"google-vertex"), "{ids:?}");
     let mock = providers.as_array().unwrap().iter().find(|p| p["id"] == "mock").unwrap();
     assert_eq!(mock["custom"], true);
     assert_eq!(mock["models"][0]["id"], "mock");

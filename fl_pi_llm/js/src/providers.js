@@ -33,10 +33,15 @@ export const CUSTOM_APIS = {
 };
 
 /**
- * Built-in providers that cannot work here: their auth reads files or runs
- * a login that only exists under Node.
+ * Built-in providers that cannot work here.
+ *
+ * `openai-codex` is the only one left: its auth is a ChatGPT login, which
+ * only exists under Node. The others take a plain key — a Copilot token, a
+ * Bedrock bearer token, a Google Cloud API key — and the key alone reaches
+ * their endpoint. What else a provider needs (Vertex's project and location,
+ * Bedrock's region) is stored beside the key, as the credential's variables.
  */
-const UNAVAILABLE = new Set(['amazon-bedrock', 'google-vertex', 'openai-codex', 'github-copilot']);
+const UNAVAILABLE = new Set(['openai-codex']);
 
 const credentials = {
   read: async (providerId) => (await call('auth.read', { providerId })) ?? undefined,
@@ -86,10 +91,41 @@ const authContext = {
   fileExists: async () => false,
 };
 
+/**
+ * A provider's own auth may drop the variables stored with its key
+ * (`GOOGLE_CLOUD_PROJECT`, `AWS_REGION`...): the endpoint reads them itself,
+ * and only some of them come back out. They are put back here, where the
+ * credential is still in hand, so that every provider sees what was stored
+ * with its key.
+ */
+function carriesItsVariables(provider) {
+  const auth = provider.auth?.apiKey;
+  const resolve = auth?.resolve;
+  if (!resolve) return;
+  auth.resolve = async (args) => {
+    const resolved = await resolve.call(auth, args);
+    const vars = args.credential?.env;
+    if (!resolved || !vars) return resolved;
+    return { ...resolved, env: { ...vars, ...(resolved.env ?? {}) } };
+  };
+}
+
 export const models = builtinModels({ credentials, modelsStore, authContext });
 for (const p of [...models.getProviders()]) {
   if (UNAVAILABLE.has(p.id)) models.deleteProvider(p.id);
+  else carriesItsVariables(p);
 }
+
+/**
+ * The providers the host sees: pi-ai's catalog, and the custom ones.
+ *
+ * A built-in provider with no model to chat with is left out (a provider of
+ * classifiers only, say): the host would show it as an empty row. A custom
+ * provider is always there — the user added it, and its models are what its
+ * endpoint lists.
+ */
+export const listedProviders = () =>
+  models.getProviders().filter((p) => p.getModels().length > 0 || customIds.has(p.id));
 
 // ---------------------------------------------------------------------------
 // Custom providers
