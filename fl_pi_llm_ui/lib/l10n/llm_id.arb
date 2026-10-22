@@ -115,5 +115,9 @@
   "fieldInvalid": "Tidak valid",
   "waitingForYou": "Menunggumu",
   "otherAnswer": "Lainnya",
-  "otherAnswerHint": "Jawabanmu sendiri"
+  "otherAnswerHint": "Jawabanmu sendiri",
+  "commandRiskReadOnly": "Hanya baca",
+  "commandRiskUnknown": "Tidak terklasifikasi",
+  "commandRiskCaution": "Mengubah sistem",
+  "commandRiskDestructive": "Risiko tinggi"
 }

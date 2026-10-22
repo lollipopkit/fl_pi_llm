@@ -421,4 +421,16 @@ class LlmLocalizationsKo extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => '직접 입력한 답변';
+
+  @override
+  String get commandRiskReadOnly => '읽기 전용';
+
+  @override
+  String get commandRiskUnknown => '분류되지 않음';
+
+  @override
+  String get commandRiskCaution => '시스템 변경';
+
+  @override
+  String get commandRiskDestructive => '높은 위험';
 }

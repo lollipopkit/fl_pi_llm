@@ -61,7 +61,16 @@ class ToolsPage extends StatelessWidget {
               ),
               for (final t in Tools.groups)
                 if (t is! TfMemory)
-                  SettingsRow(icon: _iconOf(t), title: t.groupLabel, subtitle: t.l10nTip, trailing: _switch(t)),
+                  SettingsRow(
+                    icon: _iconOf(t),
+                    title: t.groupLabel,
+                    subtitle: t.l10nTip,
+                    trailing: _switch(t),
+                    onTap: switch (t.openSettings) {
+                      final open? => () => open(context),
+                      null => null,
+                    },
+                  ),
               _store.permittedTools.listenable().listenVal((list) {
                 return SettingsRow(
                   icon: Icons.verified_user_outlined,

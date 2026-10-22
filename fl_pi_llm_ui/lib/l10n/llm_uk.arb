@@ -115,5 +115,9 @@
   "fieldInvalid": "Неправильний формат",
   "waitingForYou": "Чекає на вас",
   "otherAnswer": "Інше",
-  "otherAnswerHint": "Власна відповідь"
+  "otherAnswerHint": "Власна відповідь",
+  "commandRiskReadOnly": "Лише читання",
+  "commandRiskUnknown": "Не визначено",
+  "commandRiskCaution": "Змінює систему",
+  "commandRiskDestructive": "Високий ризик"
 }

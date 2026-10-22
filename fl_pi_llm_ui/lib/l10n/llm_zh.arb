@@ -115,5 +115,9 @@
   "fieldInvalid": "格式不正确",
   "waitingForYou": "等你处理",
   "otherAnswer": "其他",
-  "otherAnswerHint": "填写你的答案"
+  "otherAnswerHint": "填写你的答案",
+  "commandRiskReadOnly": "只读",
+  "commandRiskUnknown": "未判定",
+  "commandRiskCaution": "会更改系统",
+  "commandRiskDestructive": "高风险"
 }

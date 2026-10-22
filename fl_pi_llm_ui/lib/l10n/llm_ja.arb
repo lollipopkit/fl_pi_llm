@@ -115,5 +115,9 @@
   "fieldInvalid": "形式が正しくありません",
   "waitingForYou": "あなたの操作待ち",
   "otherAnswer": "その他",
-  "otherAnswerHint": "自分の回答"
+  "otherAnswerHint": "自分の回答",
+  "commandRiskReadOnly": "読み取り専用",
+  "commandRiskUnknown": "判定不能",
+  "commandRiskCaution": "システムを変更",
+  "commandRiskDestructive": "高リスク"
 }

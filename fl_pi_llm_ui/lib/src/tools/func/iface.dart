@@ -48,6 +48,10 @@ abstract class ToolFunc {
 
   String? get l10nTip => null;
 
+  /// Opens its [group]'s own settings, from its row on the tools page; null
+  /// when the switch is all there is.
+  void Function(BuildContext context)? get openSettings => null;
+
   /// [args] on one line: what a call does, at a glance.
   String summary(_Map args) => jsonEncode(args);
 

@@ -409,4 +409,16 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Jawabanmu sendiri';
+
+  @override
+  String get commandRiskReadOnly => 'Hanya baca';
+
+  @override
+  String get commandRiskUnknown => 'Tidak terklasifikasi';
+
+  @override
+  String get commandRiskCaution => 'Mengubah sistem';
+
+  @override
+  String get commandRiskDestructive => 'Risiko tinggi';
 }

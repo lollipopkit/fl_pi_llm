@@ -115,5 +115,9 @@
   "fieldInvalid": "Неверный формат",
   "waitingForYou": "Ждёт вас",
   "otherAnswer": "Другое",
-  "otherAnswerHint": "Свой ответ"
+  "otherAnswerHint": "Свой ответ",
+  "commandRiskReadOnly": "Только чтение",
+  "commandRiskUnknown": "Не определено",
+  "commandRiskCaution": "Изменяет систему",
+  "commandRiskDestructive": "Высокий риск"
 }

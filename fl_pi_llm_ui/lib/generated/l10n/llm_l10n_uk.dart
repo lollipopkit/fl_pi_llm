@@ -409,4 +409,16 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Власна відповідь';
+
+  @override
+  String get commandRiskReadOnly => 'Лише читання';
+
+  @override
+  String get commandRiskUnknown => 'Не визначено';
+
+  @override
+  String get commandRiskCaution => 'Змінює систему';
+
+  @override
+  String get commandRiskDestructive => 'Високий ризик';
 }

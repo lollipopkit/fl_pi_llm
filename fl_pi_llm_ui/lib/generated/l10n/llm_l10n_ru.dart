@@ -410,4 +410,16 @@ class LlmLocalizationsRu extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Свой ответ';
+
+  @override
+  String get commandRiskReadOnly => 'Только чтение';
+
+  @override
+  String get commandRiskUnknown => 'Не определено';
+
+  @override
+  String get commandRiskCaution => 'Изменяет систему';
+
+  @override
+  String get commandRiskDestructive => 'Высокий риск';
 }

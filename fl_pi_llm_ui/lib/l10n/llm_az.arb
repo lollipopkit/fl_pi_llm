@@ -115,5 +115,9 @@
   "fieldInvalid": "Yanlışdır",
   "waitingForYou": "Sizi gözləyir",
   "otherAnswer": "Digər",
-  "otherAnswerHint": "Öz cavabınız"
+  "otherAnswerHint": "Öz cavabınız",
+  "commandRiskReadOnly": "Yalnız oxuma",
+  "commandRiskUnknown": "Təsnif edilməyib",
+  "commandRiskCaution": "Sistemi dəyişir",
+  "commandRiskDestructive": "Yüksək risk"
 }

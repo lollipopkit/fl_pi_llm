@@ -115,5 +115,9 @@
   "fieldInvalid": "Geçersiz",
   "waitingForYou": "Seni bekliyor",
   "otherAnswer": "Diğer",
-  "otherAnswerHint": "Kendi cevabın"
+  "otherAnswerHint": "Kendi cevabın",
+  "commandRiskReadOnly": "Salt okunur",
+  "commandRiskUnknown": "Sınıflandırılmadı",
+  "commandRiskCaution": "Sistemi değiştirir",
+  "commandRiskDestructive": "Yüksek risk"
 }
