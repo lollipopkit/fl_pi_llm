@@ -59,6 +59,7 @@ abstract final class LlmUi {
   /// What the user has on screen in the app now — the record or page they are
   /// looking at — for the model to resolve "this" against. Put before the
   /// user's next message whenever it differs from the last one put there.
-  /// Null for an app that has none, whose chats are not told about it.
+  /// Null for an app that has none, whose chats are not told about it; a chat
+  /// [offers] refuses [Chats.contextGroup] is not told about it either.
   static String? Function(ChatMeta? meta)? appContext;
 }

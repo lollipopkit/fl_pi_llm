@@ -619,6 +619,12 @@ abstract final class Chats {
 
   static const _contextTag = 'app_context';
 
+  /// What [LlmUi.offers] is asked about a chat taking [LlmUi.appContext]: a
+  /// chat about one fixed thing has nothing to be told.
+  static const contextGroup = 'app_context';
+
+  static bool _takesContext(ChatMeta? meta) => LlmUi.appContext != null && LlmUi.offers(meta, contextGroup);
+
   /// Puts [LlmUi.appContext] before the next message, unless the branch's last
   /// one already says the same: a user switching between pages adds one for
   /// each switch, and one sending ten messages from the same page adds none.
@@ -632,7 +638,9 @@ abstract final class Chats {
   static Future<void> _putContext(OpenChat chat) async {
     // A note is a help, and failing to write one must not cost the message.
     try {
-      final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(LlmStores.chat.fetch(chat.id)));
+      final meta = LlmStores.chat.fetch(chat.id);
+      if (!_takesContext(meta)) return;
+      final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(meta));
       if (message != null) await chat.session.append([message]);
     } catch (e, s) {
       Loggers.app.warning('Screen note for ${chat.id}', e, s);
@@ -775,7 +783,7 @@ abstract final class Chats {
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
       _noticePrompt,
-      if (LlmUi.appContext != null) _contextPrompt,
+      if (_takesContext(meta)) _contextPrompt,
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
       if (Tools.skillsOffered(meta)) ?Skills.prompt(),
