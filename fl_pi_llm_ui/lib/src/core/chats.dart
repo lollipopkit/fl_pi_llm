@@ -9,6 +9,7 @@ import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/user_input.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -58,33 +59,23 @@ final class UnsupportedAttachment implements Exception {
   String toString() => 'Cannot attach $name: only images and text files up to 512 KB';
 }
 
+/// A chat as another device takes it ([Chats.exportChat]): its entries in
+/// pi's session-file shape, each after its parent, and the uid of the one it
+/// stands on.
+typedef ChatExport = ({List<Map<String, Object?>> entries, String? tip});
+
 /// An open chat: its session, and what the chat view draws.
-///
-/// Outlives its session: a sync that rewrites the session file swaps a new
-/// one in ([Chats.rewrite]), and the chat view keeps drawing this.
 final class OpenChat {
-  OpenChat._(this.id, LlmSession session) {
-    _attach(session);
+  OpenChat._(this.id, this.session) {
+    _sub = session.events.listen(_onEvent);
     running.addListener(Chats.runningChanges.notify);
     approvals.addListener(Chats.runningChanges.notify);
     pendingInput.addListener(Chats.runningChanges.notify);
   }
 
   final String id;
-  late LlmSession _session;
-  late StreamSubscription<LlmEvent> _sub;
-
-  LlmSession get session => _session;
-
-  void _attach(LlmSession s) {
-    _session = s;
-    _sub = s.events.listen(_onEvent);
-  }
-
-  Future<void> _detach() async {
-    await _sub.cancel();
-    await _session.close();
-  }
+  final LlmSession session;
+  late final StreamSubscription<LlmEvent> _sub;
 
   /// The end of the current branch, root first: the last page read, and
   /// those before it that [loadEarlier] read.
@@ -226,7 +217,8 @@ final class OpenChat {
 
   Future<void> _dispose() async {
     _denyPending('The chat was closed');
-    await _detach();
+    await _sub.cancel();
+    await session.close();
   }
 }
 
@@ -279,6 +271,9 @@ abstract final class Chats {
   /// Temporary users of each chat ([borrow]), which close it when done.
   static final _borrows = <String, int>{};
 
+  /// Completed when the last borrow of each chat ends: [close] waits for it.
+  static final _borrowed = <String, Completer<void>>{};
+
   static OpenChat? openOf(String id) => _open[id];
 
   /// The chat, opened if it is not.
@@ -321,46 +316,81 @@ abstract final class Chats {
     );
   }
 
-  /// Runs [write], which replaces chat [id]'s session file, with the chat's
-  /// session closed, then opens it again in the same [OpenChat]: the view
-  /// showing it carries on. Returns false, and does not write, while a reply
-  /// is being written.
-  static Future<bool> rewrite(String id, Future<void> Function() write) async {
-    // One being opened is waited for: it would otherwise read the file mid-write.
+  /// Chat [id] for another device ([FlPiLlm.exportSession]): every entry,
+  /// each after its parent, and the uid of the one it stands on. The chat need
+  /// not be open.
+  static Future<ChatExport> exportChat(String id) async {
+    final entries = <Map<String, Object?>>[];
+    int? after;
+    String? tip;
+    do {
+      final page = await Llm.rt.exportSession(id, after: after);
+      entries.addAll(page.entries);
+      tip = page.tip;
+      after = page.next;
+    } while (after != null);
+    return (entries: entries, tip: tip);
+  }
+
+  /// About how much of a chat one import request carries: the engine's heap
+  /// is bounded.
+  static const _importChars = 4 << 20;
+
+  /// Writes what [entries], another device's [exportChat] of chat [id], has
+  /// and the chat lacks ([FlPiLlm.importSession]); [tip] for a chat new here.
+  /// Returns how many entries it wrote. An open chat shows them: now, or when
+  /// the reply it is writing ends.
+  static Future<int> importChat(String id, List<Map<String, Object?>> entries, {String? tip}) async {
+    var added = 0;
+    var page = <Map<String, Object?>>[];
+    var chars = 0;
+    Future<void> send({required bool last}) async {
+      final r = await Llm.rt.importSession(id, page, tip: last ? tip : null);
+      if (r.orphans.isNotEmpty) Loggers.app.warning('Sync $id: ${r.orphans.length} entries without their parent');
+      added += r.added;
+      page = [];
+      chars = 0;
+    }
+
+    for (final e in entries) {
+      page.add(e);
+      chars += jsonEncode(e).length;
+      if (chars >= _importChars) await send(last: false);
+    }
+    await send(last: true);
+    if (added == 0) return 0;
     try {
       await _opening[id];
     } catch (_) {
       // Failed to open: then it is not open.
     }
     final chat = _open[id];
-    if (chat == null) {
-      await write();
-      return true;
-    }
-    if (chat.running.value) return false;
-    await chat._detach();
-    try {
-      await write();
-    } finally {
-      try {
-        chat._attach(await _openSession(id));
-        await chat.reload();
-      } catch (e, s) {
-        Loggers.app.warning('Reopen $id', e, s);
-        _open.remove(id);
-        openChanges.notify();
-        chat.error.value = '$e';
-      }
-    }
-    return true;
+    if (chat != null && !chat.running.value) await chat.reload();
+    return added;
   }
 
+  /// Closes chat [id], once what borrowed it ([borrow]) is done with it.
   static Future<void> close(String id) async {
+    // Again after each: another may have begun while one ended.
+    for (Completer<void>? b; (b = _borrowed[id]) != null;) {
+      await b!.future;
+    }
     final c = _open.remove(id);
     if (c != null) openChanges.notify();
     LlmSecrets.forget(id);
-    await c?._dispose();
+    // Being closed by another call: done when that is.
+    if (c == null) return _closing[id];
+    // A borrow begun from here on opens the chat again once this is closed.
+    final closing = _closing[id] = c._dispose();
+    try {
+      await closing;
+    } finally {
+      if (identical(_closing[id], closing)) _closing.remove(id);
+    }
   }
+
+  /// Chats being closed, for [borrow] to wait for.
+  static final _closing = <String, Future<void>>{};
 
   static Future<void> closeAll() async {
     for (final id in [..._open.keys]) {
@@ -374,11 +404,15 @@ abstract final class Chats {
   static Future<T> borrow<T>(String id, Future<T> Function(OpenChat chat) fn) async {
     final wasOpen = _open.containsKey(id) || _opening.containsKey(id);
     _borrows[id] = (_borrows[id] ?? 0) + 1;
+    _borrowed[id] ??= Completer<void>();
     try {
+      // Closed or not, it is opened again below.
+      await _closing[id]?.then((_) {}, onError: (_) {});
       return await fn(await open(id));
     } finally {
       final n = _borrows[id]! - 1;
       n == 0 ? _borrows.remove(id) : _borrows[id] = n;
+      if (n == 0) _borrowed.remove(id)?.complete();
       final c = _open[id];
       if (!wasOpen && n == 0 && c != null && !c.running.value && current.value != id) await close(id);
     }
@@ -391,7 +425,7 @@ abstract final class Chats {
     final sb = StringBuffer();
     for (final e in entries) {
       final m = e.message;
-      if (m == null) continue;
+      if (m == null || contextOf(m) != null) continue;
       final who = switch (m.role) {
         'user' => '👤',
         'assistant' => '🤖',
@@ -427,7 +461,10 @@ abstract final class Chats {
       rethrow;
     }
     final (prompt, images) = composed;
-    await _run(chat, () => chat.session.prompt(prompt, images: images.isEmpty ? null : images));
+    await _run(chat, () async {
+      await _putContext(chat);
+      return chat.session.prompt(prompt, images: images.isEmpty ? null : images);
+    });
     _touch(id);
     unawaited(_maybeTitle(chat, text));
   }
@@ -453,7 +490,8 @@ abstract final class Chats {
   /// Asks again after the last run failed: the last user message, again.
   static Future<void> retry(String id) async {
     final chat = await open(id);
-    final user = chat.entries.value.lastWhereOrNull((e) => e.message?.role == 'user');
+    // Not a screen note a failed send left behind: there is no question in it.
+    final user = chat.entries.value.lastWhereOrNull((e) => e.message?.role == 'user' && contextOf(e.message!) == null);
     if (user != null) await regenerate(id, user);
   }
 
@@ -574,13 +612,81 @@ abstract final class Chats {
   }
 
   /// [m]'s text, when it is one of [notify]'s rather than the user's.
-  static String? noticeOf(LlmMessage m) {
+  static String? noticeOf(LlmMessage m) => _tagged(m, _noticeTag);
+
+  // ---------------------------------------------------------------------------
+  // What the user has on screen
+
+  static const _contextTag = 'app_context';
+
+  /// What [LlmUi.offers] is asked about a chat taking [LlmUi.appContext]: a
+  /// chat about one fixed thing has nothing to be told.
+  static const contextGroup = 'app_context';
+
+  static bool _takesContext(ChatMeta? meta) => LlmUi.appContext != null && LlmUi.offers(meta, contextGroup);
+
+  /// Puts [LlmUi.appContext] before the next message, unless the branch's last
+  /// one already says the same: a user switching between pages adds one for
+  /// each switch, and one sending ten messages from the same page adds none.
+  ///
+  /// A user turn of its own rather than the system prompt: the system prompt
+  /// is the chat's, set once and cached by the provider, while this changes
+  /// under the conversation and the model has to see when it did.
+  ///
+  /// Not on an edit or a regeneration: the new message has to share the old
+  /// one's parent to be another version of it, so it keeps the old one's note.
+  static Future<void> _putContext(OpenChat chat) async {
+    // A note is a help, and failing to write one must not cost the message.
+    try {
+      final meta = LlmStores.chat.fetch(chat.id);
+      if (!_takesContext(meta)) return;
+      final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(meta));
+      if (message != null) await chat.session.append([message]);
+    } catch (e, s) {
+      Loggers.app.warning('Screen note for ${chat.id}', e, s);
+    }
+  }
+
+  /// The message saying [now] at the end of [branch], or null when there is
+  /// nothing to say or the branch's last one already says it.
+  ///
+  /// A note before the last compaction counts as unsaid: the model may only
+  /// have its summary.
+  @visibleForTesting
+  static LlmMessage? contextToPut(List<LlmEntry> branch, String? now) {
+    final text = now?.trim();
+    if (text == null || text.isEmpty) return null;
+    String? last;
+    for (final e in branch.reversed) {
+      if (e.type == 'compaction') break;
+      if (e.message case final m? when contextOf(m) != null) {
+        last = contextOf(m);
+        break;
+      }
+    }
+    if (last == text) return null;
+    return LlmMessage({
+      'role': 'user',
+      'content': '<$_contextTag>\n$text\n</$_contextTag>',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// [m]'s text, when it is one of [_putContext]'s rather than the user's.
+  static String? contextOf(LlmMessage m) => _tagged(m, _contextTag);
+
+  static String? _tagged(LlmMessage m, String tag) {
     if (m.role != 'user') return null;
     final t = m.text.trim();
-    const open = '<$_noticeTag>', close = '</$_noticeTag>';
+    final open = '<$tag>', close = '</$tag>';
     if (!t.startsWith(open) || !t.endsWith(close)) return null;
     return t.substring(open.length, t.length - close.length).trim();
   }
+
+  static String get _contextPrompt =>
+      'A user message wrapped in <$_contextTag> comes from the app, not from the user: it says what the user had on '
+      'screen when they wrote the messages after it, until the next one. Use it to tell what they mean by "this" or '
+      'by a request that names nothing; it is not a request itself.';
 
   static String get _noticePrompt =>
       'A user message wrapped in <$_noticeTag> comes from the app, not from the user: it reports something that '
@@ -677,6 +783,7 @@ abstract final class Chats {
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
       _noticePrompt,
+      if (_takesContext(meta)) _contextPrompt,
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
       if (Tools.skillsOffered(meta)) ?Skills.prompt(),

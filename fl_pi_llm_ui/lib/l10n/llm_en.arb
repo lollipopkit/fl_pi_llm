@@ -253,5 +253,13 @@
   "fieldInvalid": "Not valid",
   "waitingForYou": "Waiting for you",
   "otherAnswer": "Other",
-  "otherAnswerHint": "Your own answer"
+  "otherAnswerHint": "Your own answer",
+  "commandRiskReadOnly": "Read-only",
+  "@commandRiskReadOnly": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."},
+  "commandRiskUnknown": "Unclassified",
+  "@commandRiskUnknown": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."},
+  "commandRiskCaution": "Changes system",
+  "@commandRiskCaution": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."},
+  "commandRiskDestructive": "High risk",
+  "@commandRiskDestructive": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."}
 }

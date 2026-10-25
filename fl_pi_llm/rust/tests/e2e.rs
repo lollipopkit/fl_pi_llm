@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use fl_pi_llm::db::{Key, Storage};
 use fl_pi_llm::engine::{Engine, Inbound, Outbound};
 
 mod common;
@@ -125,7 +126,8 @@ impl Harness {
     fn with_store(dir: std::path::PathBuf, legacy: Legacy) -> Self {
         let (tx, rx) = mpsc::channel();
         let tx = Mutex::new(tx);
-        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(dir.clone())).unwrap();
+        let storage = Storage { root: dir.clone(), key: Some(Key::new(&[9; 32]).unwrap()) };
+        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(storage)).unwrap();
         Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false }
     }
 
@@ -687,4 +689,180 @@ fn a_session_exports_as_a_pi_session_file() {
     for l in &lines[1..] {
         assert!(l["parentId"].is_null() || lines.iter().any(|o| o["id"] == l["parentId"]), "{l}");
     }
+}
+
+/// Every page of chat [id]'s export, and the entry it stands on.
+fn export_all(h: &mut Harness, id: &str, max_chars: Option<u64>) -> (Vec<Value>, Value, usize) {
+    let (mut entries, mut after, mut pages) = (vec![], Value::Null, 0);
+    loop {
+        let page = h.ok("sessions.export", json!({"sessionId": id, "after": after, "maxChars": max_chars}));
+        entries.extend(page["entries"].as_array().unwrap().iter().cloned());
+        pages += 1;
+        if page["next"].is_null() {
+            return (entries, page["tip"].clone(), pages);
+        }
+        after = page["next"].clone();
+    }
+}
+
+/// Chat [id] from [from] into [to], as a sync does: how many entries it added.
+fn sync(from: &mut Harness, to: &mut Harness, id: &str, new_here: bool) -> u64 {
+    let (entries, tip, _) = export_all(from, id, None);
+    let v = to.ok("sessions.import", json!({"sessionId": id, "entries": entries, "tip": if new_here { tip } else { Value::Null }}));
+    assert_eq!(v["orphans"], json!([]), "{v}");
+    v["added"].as_u64().unwrap()
+}
+
+/// What was said in chat [id], every version, sorted.
+fn said(h: &mut Harness, id: &str) -> Vec<String> {
+    let tree = h.ok("session.tree", json!({"sessionId": id}));
+    let mut out: Vec<String> = tree["entries"].as_array().unwrap().iter()
+        .map(|e| match e["type"].as_str().unwrap() {
+            "message" => format!("{}: {}", e["message"]["role"].as_str().unwrap(), e["message"]["content"][0]["text"].as_str().unwrap_or("")),
+            "compaction" => format!("compaction: {}", e["summary"].as_str().unwrap()),
+            other => other.to_string(),
+        })
+        .collect();
+    out.sort();
+    out
+}
+
+/// The user messages on chat [id]'s current branch.
+fn asked(h: &mut Harness, id: &str) -> Vec<String> {
+    let branch = h.ok("session.entries", json!({"sessionId": id}));
+    branch["entries"].as_array().unwrap().iter()
+        .filter(|e| e["message"]["role"] == "user")
+        .map(|e| e["message"]["content"][0]["text"].as_str().unwrap().to_string())
+        .collect()
+}
+
+/// A chat continued on two devices keeps what each said, as versions, and
+/// syncing again adds nothing.
+#[test]
+fn a_chat_synced_both_ways_keeps_what_either_said() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let mut a = Harness::mocked(&url);
+    let mut b = Harness::mocked(&url);
+    open(&mut a, "s", model(&url), json!({}));
+    a.ok("session.prompt", json!({"sessionId":"s","text":"q1"}));
+
+    // New on b: it stands where a stood.
+    assert_eq!(sync(&mut a, &mut b, "s", true), 2);
+    open(&mut b, "s", model(&url), json!({}));
+    assert_eq!(asked(&mut b, "s"), ["q1"]);
+    assert_eq!(said(&mut a, "s"), said(&mut b, "s"));
+
+    // Each goes on on its own.
+    a.ok("session.prompt", json!({"sessionId":"s","text":"q2 from a"}));
+    b.ok("session.prompt", json!({"sessionId":"s","text":"q2 from b"}));
+    // Into open chats: each keeps standing on its own.
+    assert_eq!(sync(&mut a, &mut b, "s", false), 2);
+    assert_eq!(sync(&mut b, &mut a, "s", false), 2);
+    assert_eq!(asked(&mut a, "s"), ["q1", "q2 from a"]);
+    assert_eq!(asked(&mut b, "s"), ["q1", "q2 from b"]);
+    assert_eq!(said(&mut a, "s"), said(&mut b, "s"));
+    assert_eq!(said(&mut a, "s").len(), 6);
+    // The other device's is a version of the same message.
+    let page = b.ok("session.page", json!({"sessionId":"s","limit":2}));
+    let versions: Vec<_> = page["entries"][0]["versions"].as_array().unwrap().iter()
+        .map(|v| v["message"]["content"][0]["text"].clone()).collect();
+    assert_eq!(versions.len(), 2, "{page}");
+
+    // Settled.
+    assert_eq!(sync(&mut a, &mut b, "s", false), 0);
+    assert_eq!(sync(&mut b, &mut a, "s", false), 0);
+
+    // b stands on a's version; a goes on with it, and so does b's branch.
+    let tree = b.ok("session.tree", json!({"sessionId":"s"}));
+    let a_q2 = tree["entries"].as_array().unwrap().iter()
+        .find(|e| e["message"]["content"][0]["text"] == "q2 from a").unwrap()["id"].clone();
+    b.ok("session.switchTo", json!({"sessionId":"s","entryId":a_q2}));
+    a.ok("session.prompt", json!({"sessionId":"s","text":"q3 from a"}));
+    assert_eq!(sync(&mut a, &mut b, "s", false), 2);
+    assert_eq!(asked(&mut b, "s"), ["q1", "q2 from a", "q3 from a"]);
+    assert_eq!(said(&mut a, "s"), said(&mut b, "s"));
+    // And after a relaunch.
+    b.ok("session.close", json!({"sessionId":"s"}));
+    let mut b = Harness::with_store(b.dir.clone(), Legacy::default());
+    b.register(&url);
+    open(&mut b, "s", model(&url), json!({}));
+    assert_eq!(asked(&mut b, "s"), ["q1", "q2 from a", "q3 from a"]);
+}
+
+/// A closed chat syncs in pages, a summary's kept tail with it; a chat new
+/// here is created.
+#[test]
+fn a_closed_chat_syncs_in_pages_with_its_compaction() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let mut a = Harness::mocked(&url);
+    let mut b = Harness::mocked(&url);
+    open(&mut a, "c", model(&url), json!({"compaction":{"keepRecentTokens":1}}));
+    let long = "word ".repeat(200);
+    for i in 0..3 {
+        a.ok("session.prompt", json!({"sessionId":"c","text":format!("turn{i} {long}")}));
+    }
+    a.ok("session.compact", json!({"sessionId":"c"}));
+    a.ok("session.close", json!({"sessionId":"c"}));
+
+    let (entries, tip, pages) = export_all(&mut a, "c", Some(512));
+    assert!(pages > 3, "{pages}");
+    let compaction = entries.iter().find(|e| e["type"] == "compaction").unwrap().clone();
+    assert!(!compaction["firstKept"].is_null(), "{compaction}");
+    // One page at a time, as a sync with little memory would.
+    for (i, e) in entries.iter().enumerate() {
+        let last = i == entries.len() - 1;
+        let v = b.ok("sessions.import", json!({"sessionId":"c","entries":[e],"tip": if last { tip.clone() } else { Value::Null }}));
+        assert_eq!(v["added"], 1, "{v}");
+    }
+    assert_eq!(b.ok("sessions.list", json!({}))[0]["id"], "c");
+    open(&mut b, "c", model(&url), json!({}));
+    open(&mut a, "c", model(&url), json!({}));
+    assert_eq!(said(&mut a, "c"), said(&mut b, "c"));
+    assert_eq!(a.roles("c"), b.roles("c"));
+    // The summary keeps the same tail on both.
+    let kept = |h: &mut Harness| {
+        let branch = h.ok("session.entries", json!({"sessionId":"c"}))["entries"].as_array().unwrap().clone();
+        let c = branch.iter().find(|e| e["type"] == "compaction").unwrap();
+        let first = branch.iter().find(|e| e["id"] == c["firstKeptEntryId"]).unwrap();
+        first["message"]["content"][0]["text"].clone()
+    };
+    assert_eq!(kept(&mut a), kept(&mut b));
+    // And the model gets the summary on b too.
+    b.ok("session.prompt", json!({"sessionId":"c","text":"next"}));
+}
+
+/// A legacy session moved on two devices is the same chat on both: its
+/// entries are not written twice.
+#[test]
+fn a_legacy_session_moved_on_two_devices_syncs_as_one() {
+    let (url, _) = mock_server(Duration::from_millis(1));
+    let chunks = || LEGACY.split_inclusive('\n').map(String::from).collect::<Vec<_>>();
+    let (legacy_a, _) = legacy_store(chunks());
+    let (legacy_b, _) = legacy_store(chunks());
+    let mut a = Harness::with_store(temp_dir(), legacy_a);
+    let mut b = Harness::with_store(temp_dir(), legacy_b);
+    a.register(&url);
+    b.register(&url);
+    open(&mut a, "chat-1", model(&url), json!({}));
+    a.ok("session.prompt", json!({"sessionId":"chat-1","text":"after"}));
+    // b's is moved by the import, before anything is written.
+    assert_eq!(sync(&mut a, &mut b, "chat-1", false), 2);
+    open(&mut b, "chat-1", model(&url), json!({}));
+    assert_eq!(said(&mut a, "chat-1"), said(&mut b, "chat-1"));
+    assert_eq!(sync(&mut b, &mut a, "chat-1", false), 0);
+}
+
+/// An entry whose parent neither side has is left out, and said so.
+#[test]
+fn an_import_without_the_parent_leaves_the_entry_out() {
+    let mut h = Harness::new();
+    let msg = json!({"role":"user","content":[{"type":"text","text":"hi"}],"timestamp":1});
+    let v = h.ok("sessions.import", json!({"sessionId":"o","entries":[
+        {"uid":"a","parent":null,"type":"message","timestamp":1,"message":msg},
+        {"uid":"b","parent":"missing","type":"message","timestamp":2,"message":msg},
+    ]}));
+    assert_eq!(v, json!({"added":1,"orphans":["b"]}));
+    // A chat there is none of exports nothing, and is not made.
+    assert_eq!(h.ok("sessions.export", json!({"sessionId":"none"})), json!({"entries":[],"next":null,"tip":null}));
+    assert_eq!(h.ok("sessions.list", json!({})).as_array().unwrap().len(), 1);
 }

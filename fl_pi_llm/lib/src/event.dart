@@ -196,6 +196,42 @@ final class LlmSessionInfo {
   final DateTime modifiedAt;
 }
 
+/// A page of a session's export ([FlPiLlm.exportSession]): its entries in
+/// pi's session-file shape, each known by a `uid` on every device and after
+/// its `parent`.
+final class LlmSyncPage {
+  const LlmSyncPage({required this.entries, required this.next, required this.tip});
+
+  factory LlmSyncPage.fromJson(Map<String, Object?> j) => LlmSyncPage(
+    entries: [for (final e in (j['entries'] as List)) (e as Map).cast<String, Object?>()],
+    next: j['next'] as int?,
+    tip: j['tip'] as String?,
+  );
+
+  final List<Map<String, Object?>> entries;
+
+  /// Where the next page starts; null after the last.
+  final int? next;
+
+  /// The uid of the entry the session stands on.
+  final String? tip;
+}
+
+/// What an import ([FlPiLlm.importSession]) did.
+final class LlmSyncResult {
+  const LlmSyncResult({required this.added, required this.orphans});
+
+  factory LlmSyncResult.fromJson(Map<String, Object?> j) =>
+      LlmSyncResult(added: j['added'] as int, orphans: (j['orphans'] as List).cast<String>());
+
+  /// The entries written.
+  final int added;
+
+  /// The uids of entries left out: their parent is in neither the session
+  /// nor the pages before.
+  final List<String> orphans;
+}
+
 /// The runtime or a request failed.
 final class LlmException implements Exception {
   const LlmException(this.message);

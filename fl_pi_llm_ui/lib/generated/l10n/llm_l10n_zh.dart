@@ -397,6 +397,18 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => '填写你的答案';
+
+  @override
+  String get commandRiskReadOnly => '只读';
+
+  @override
+  String get commandRiskUnknown => '未判定';
+
+  @override
+  String get commandRiskCaution => '会更改系统';
+
+  @override
+  String get commandRiskDestructive => '高风险';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -791,4 +803,16 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get otherAnswerHint => '填寫你的答案';
+
+  @override
+  String get commandRiskReadOnly => '唯讀';
+
+  @override
+  String get commandRiskUnknown => '未判定';
+
+  @override
+  String get commandRiskCaution => '會變更系統';
+
+  @override
+  String get commandRiskDestructive => '高風險';
 }

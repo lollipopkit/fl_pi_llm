@@ -39,6 +39,8 @@ import {
 import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
 import { listChats, openChat, removeChat } from './db.js';
 import { legacyFiles, migrate, removeLegacy } from './legacy.js';
+import { hostEntry } from './entry.js';
+import { exportPage, importPage } from './sync.js';
 import { ChatTree } from './tree.js';
 import { CUSTOM_APIS, listedProviders, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
@@ -87,31 +89,82 @@ const ChatDoc = defineDoc({
 const storedChats = () => new Map(listChats().map((c) => [c.id, c]));
 
 /**
- * Moves chat [id] out of a session from before pi-durable, if one is left
- * (TODO: remove with legacy.js). The chat's file is made again from it: a
- * move cut short leaves the old session, and is started over.
+ * Runs [fn] after whatever else is being done to chat [id]'s file: opening
+ * its session, a legacy move, a sync, deleting it. Two harnesses never have
+ * one file open.
  */
-const migrating = new Map();
-function migrateLegacy(id, file) {
-  let m = migrating.get(id);
-  if (!m) {
-    m = (async () => {
-      removeChat(id);
-      const harness = await Harness.open(await SqliteStorage.open(openChat(id)), {
-        models: harnessModels,
-        registry: createRegistry(),
-      }, BG);
-      try {
-        const moved = await migrate(harness, file, BG);
-        await setPlace(harness, moved.current, moved.tip, moved.name);
-      } finally {
-        await harness.close(BG);
-      }
-      await removeLegacy(file);
-    })().finally(() => migrating.delete(id));
-    migrating.set(id, m);
+const queues = new Map();
+function onChat(id, fn) {
+  const run = (queues.get(id) ?? Promise.resolve()).then(fn);
+  const tail = run.then(() => {}, () => {});
+  queues.set(id, tail);
+  tail.then(() => { if (queues.get(id) === tail) queues.delete(id); });
+  return run;
+}
+
+/** A harness over chat [id]'s file, for work outside an open session. */
+async function openHarness(id) {
+  const db = openChat(id);
+  const storage = await SqliteStorage.open(db);
+  try {
+    const harness = await Harness.open(storage, { models: harnessModels, registry: createRegistry() }, BG);
+    return { id, db, storage, harness, shape: new ChatTree(db) };
+  } catch (e) {
+    await storage.close(BG).catch(() => {});
+    throw e;
   }
-  return m;
+}
+
+/**
+ * Moves chat [id] out of a session from before pi-durable (TODO: remove with
+ * legacy.js). The chat's file is made again from it: a move cut short leaves
+ * the old session, and is started over. On the chat's queue ([onChat]).
+ */
+async function migrateLegacy(id, file) {
+  removeChat(id);
+  const { harness } = await openHarness(id);
+  try {
+    const moved = await migrate(harness, file, BG);
+    await setPlace(harness, moved.current, moved.tip, moved.name);
+  } finally {
+    await harness.close(BG);
+  }
+  await removeLegacy(file);
+}
+
+/**
+ * Runs [fn] on chat [id]: on its session when it is open, else on a harness
+ * opened for it alone — moved out of a legacy session first, if one is left.
+ */
+function withChat(id, fn) {
+  return onChat(id, async () => {
+    const open = sessions.get(id);
+    if (open) return open.exclusive(() => fn(open));
+    // TODO: remove with legacy.js.
+    const legacy = (await legacyFiles()).get(id);
+    if (legacy) await migrateLegacy(id, legacy);
+    const chat = await openHarness(id);
+    try {
+      return await fn(chat);
+    } finally {
+      await chat.harness.close(BG);
+    }
+  });
+}
+
+/** Where standing on entry [id] puts a chat: the version it ends, or before what follows it. */
+function placeOf(shape, id) {
+  const leaf = shape.conversationEndingAt(id);
+  return { current: leaf ?? shape.entries.get(id).conversationId, tip: leaf != null ? null : id };
+}
+
+/** The last entry of the branch [chat] stands on, or null. */
+async function branchEnd({ harness, shape }) {
+  const place = await harness.snapshot(ChatDoc, BG);
+  if (place?.tip === -1) return null;
+  await shape.refresh();
+  const current = place?.current ?? (await harness.root(BG)).id;
+  return shape.history(current, place?.tip ?? Infinity).at(-1) ?? null;
 }
 
 async function setPlace(harness, current, tip, name) {
@@ -125,44 +178,6 @@ async function setPlace(harness, current, tip, name) {
 
 // ---------------------------------------------------------------------------
 // The host's shapes
-
-const MESSAGE_ROLES = new Set(['user', 'assistant', 'toolResult']);
-
-const textOf = (m) => (typeof m?.content === 'string'
-  ? m.content
-  : (m?.content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join(''));
-
-/** pi-durable hands the model a summary wrapped in a preamble; the host shows the summary. */
-const unwrapSummary = (text) => /<summary>\n?([\s\S]*?)\n?<\/summary>/.exec(text)?.[1] ?? text;
-
-/**
- * One pi-durable entry as the host knows entries, or null for what it never
- * shows (system prompt and tool changes, resets).
- */
-function hostEntry(e, parentId) {
-  const m = e.model?.[0];
-  const id = String(e.id);
-  const base = { id, parentId, seq: e.id, timestamp: m?.timestamp ?? e.data?.timestamp ?? 0 };
-  switch (e.kind) {
-    case 'pi.compaction':
-    case 'fl.compaction':
-      return {
-        ...base,
-        type: 'compaction',
-        summary: e.data?.summary ?? unwrapSummary(textOf(m)),
-        // The first entry the summary kept: `head`, itself when it kept none.
-        firstKeptEntryId: typeof e.head === 'number' ? String(e.head) : id,
-        ...(e.data?.tokensBefore != null ? { tokensBefore: e.data.tokensBefore } : {}),
-      };
-    case 'fl.custom':
-      return { ...base, type: 'custom', customType: e.data?.customType ?? '', data: e.data?.data ?? null };
-    case 'pi.system':
-    case 'pi.reset':
-      return null;
-    default:
-      return m && MESSAGE_ROLES.has(m.role) ? { ...base, type: 'message', message: m } : null;
-  }
-}
 
 /** A settled input submission as the host's run result. */
 function runResult(settled) {
@@ -228,6 +243,18 @@ class Session {
     this.streamed = new Map();
     /** The id of the newest entry the host was shown on the current branch. */
     this.lastId = null;
+    this.queue = Promise.resolve();
+  }
+
+  /**
+   * Runs [fn] after what came before it here. Whatever writes takes a turn —
+   * a prompt until it is admitted, a sync's import — so an import never
+   * writes into a conversation a run has just started on.
+   */
+  exclusive(fn) {
+    const run = this.queue.then(fn);
+    this.queue = run.then(() => {}, () => {});
+    return run;
   }
 
   static async open(p) {
@@ -248,7 +275,7 @@ class Session {
     this.approval = !!p.approval;
     this.compaction = { ...DEFAULT_COMPACTION, ...(p.compaction ?? {}) };
 
-    // TODO: remove with legacy.js.
+    // TODO: remove with legacy.js. `session.open` runs on the chat's queue.
     const legacy = (await legacyFiles()).get(this.id);
     if (legacy) await migrateLegacy(this.id, legacy);
 
@@ -496,11 +523,10 @@ class Session {
     } else {
       const id = Number(targetId);
       await this.shape.refresh();
-      const at = this.shape.entries.get(id);
-      if (!at) throw new Error(`No entry ${targetId}`);
-      const leaf = this.shape.conversationEndingAt(id);
-      this.current = await this.harness.conversation(leaf ?? at.conversationId, BG);
-      this.tip = leaf != null ? null : id;
+      if (!this.shape.entries.has(id)) throw new Error(`No entry ${targetId}`);
+      const place = placeOf(this.shape, id);
+      this.current = await this.harness.conversation(place.current, BG);
+      this.tip = place.tip;
       await this.#configure(this.current);
     }
     await this.#setPlace(this.current.id, this.tip);
@@ -515,18 +541,21 @@ class Session {
     await this.navigate(String(this.shape.leafOf(id)));
   }
 
+  /** Admits [submission] to the conversation the next write goes to. */
+  submit(submission) {
+    return this.exclusive(async () => (await this.writable()).submit(submission, BG));
+  }
+
   /** Writes an entry the model may see, without running it. */
   async write(entry) {
-    const conv = await this.writable();
-    const settled = await (await conv.submit({ type: 'write', entry }, BG)).wait(BG);
+    const settled = await (await this.submit({ type: 'write', entry })).wait(BG);
     if (settled.status !== 'done') throw new Error(`Not written: ${settled.reason}`);
     return String(settled.entry);
   }
 
   async prompt(text, images) {
-    const conv = await this.writable();
     const content = [{ type: 'text', text }, ...(images ?? [])];
-    return runResult(await (await conv.submit({ type: 'input', content }, BG)).wait(BG));
+    return runResult(await (await this.submit({ type: 'input', content })).wait(BG));
   }
 
   /** Picks up what a previous launch left running, and waits for it. */
@@ -542,8 +571,7 @@ class Session {
   }
 
   async compact(instructions) {
-    const conv = await this.writable();
-    const taskId = await conv.compact(instructions || undefined, BG);
+    const taskId = await this.exclusive(async () => (await this.writable()).compact(instructions || undefined, BG));
     const { outcome } = (await this.harness.waitForTask(taskId, BG)).state;
     if (outcome.status !== 'completed') {
       return { status: outcome.status === 'aborted' ? 'aborted' : 'failed', error: outcome.error ?? null };
@@ -686,10 +714,13 @@ const methods = {
    */
   'sessions.migrate': async () => {
     const failed = {};
-    for (const [id, file] of await legacyFiles()) {
-      if (sessions.has(id)) continue;
+    for (const id of (await legacyFiles()).keys()) {
       try {
-        await migrateLegacy(id, file);
+        await onChat(id, async () => {
+          // Moved meanwhile, by opening it.
+          const file = (await legacyFiles()).get(id);
+          if (file && !sessions.has(id)) await migrateLegacy(id, file);
+        });
       } catch (e) {
         failed[id] = errorText(e);
       }
@@ -698,21 +729,54 @@ const methods = {
   },
 
   /** Deletes a stored session. It must not be open. */
-  'sessions.delete': async (p) => {
+  'sessions.delete': (p) => onChat(p.sessionId, async () => {
     if (sessions.has(p.sessionId)) throw new Error(`Session is open: ${p.sessionId}`);
-    // TODO: remove with legacy.js.
-    await migrating.get(p.sessionId)?.catch(() => {});
     removeChat(p.sessionId);
+    // TODO: remove with legacy.js.
     const legacy = (await legacyFiles()).get(p.sessionId);
     if (legacy) await removeLegacy(legacy);
     return null;
+  }),
+
+  /**
+   * A page of the chat for another device: see `sync.js`. `after` is the
+   * last page's `next`; the chat need not be open.
+   */
+  'sessions.export': async (p) => {
+    const id = p.sessionId;
+    // Nothing to read, and no file made for it. TODO: legacy, with legacy.js.
+    if (!sessions.has(id) && !storedChats().has(id) && !(await legacyFiles()).has(id)) {
+      return { entries: [], next: null, tip: null };
+    }
+    return withChat(id, async (chat) => exportPage(chat, await branchEnd(chat), p.after ?? null, p.maxChars ?? undefined));
   },
+
+  /**
+   * Writes what a page of another device's export has and the chat lacks,
+   * creating the chat when there is none. `tip`, given with the last page of
+   * a chat new here, is the entry to stand on: where the other device stood.
+   */
+  'sessions.import': (p) => withChat(p.sessionId, async (chat) => {
+    const { added, orphans, known } = await importPage(chat, p.entries ?? []);
+    const tipId = p.tip == null ? undefined : known.get(p.tip);
+    if (tipId != null) {
+      if (chat instanceof Session) {
+        await chat.navigate(String(tipId));
+      } else {
+        await chat.shape.refresh();
+        const place = placeOf(chat.shape, tipId);
+        const name = (await chat.harness.snapshot(ChatDoc, BG))?.name ?? null;
+        await setPlace(chat.harness, place.current, place.tip, name);
+      }
+    }
+    return { added, orphans };
+  }),
 
   /**
    * Opens a session, creating it when it does not exist. Returns the entries
    * on its current branch and whether a previous launch left work running.
    */
-  'session.open': async (p) => {
+  'session.open': (p) => onChat(p.sessionId, async () => {
     if (sessions.has(p.sessionId)) throw new Error(`Session is already open: ${p.sessionId}`);
     const s = await Session.open(p);
     sessions.set(p.sessionId, s);
@@ -720,7 +784,7 @@ const methods = {
       interrupted: s.interrupted ? [{ operationId: 'run', kind: 'run' }] : [],
       name: s.name,
     };
-  },
+  }),
 
   /** Resolves when the run ends. */
   'session.prompt': async (p) => ({ result: await getSession(p.sessionId).prompt(p.text, p.images) }),
@@ -809,13 +873,14 @@ const methods = {
     return null;
   },
 
-  'session.close': async (p) => {
+  'session.close': (p) => onChat(p.sessionId, async () => {
     const s = sessions.get(p.sessionId);
     if (!s) return null;
     sessions.delete(p.sessionId);
-    await s.close();
+    // After a sync's import into it, not in the middle.
+    await s.exclusive(() => s.close());
     return null;
-  },
+  }),
 
   /**
    * One completion without a session — a chat title, a translation. Streamed

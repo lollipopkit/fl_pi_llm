@@ -42,5 +42,5 @@ See [README.md](README.md#develop). In short: `npm run build` in `js/` after a
 JS change, `flutter_rust_bridge_codegen generate` after changing
 `rust/src/api`, then `cargo test` in `rust/` and `dart test` at the root.
 
-`node scripts/cla_workflow_test.js` tests `.github/workflows/cla.yml` against a
-fake GitHub API. Run it after editing that workflow.
+The CLA check comes from
+[lollipopkit/cla-actions](https://github.com/lollipopkit/cla-actions).

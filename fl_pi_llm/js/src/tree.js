@@ -12,28 +12,12 @@
 // history is the history it was forked from, up to the fork point, then its
 // own entries; an entry's parent is the shown entry before it there.
 import { CURRENT_SQLITE_SCHEMA_VERSION } from '@earendil-works/pi-durable/storage/sqlite';
+import { isShown } from './entry.js';
 
 // The queries below are against this schema. A pi-durable that changes it
 // must have them looked at again.
 if (CURRENT_SQLITE_SCHEMA_VERSION !== 1) {
   throw new Error(`tree.js reads pi-durable SQLite schema 1, not ${CURRENT_SQLITE_SCHEMA_VERSION}`);
-}
-
-const MESSAGE_ROLES = new Set(['user', 'assistant', 'toolResult']);
-
-/** Whether the host is shown an entry of [kind] whose first message is by [role]: `hostEntry`'s rule. */
-export function isShown(kind, role) {
-  switch (kind) {
-    case 'pi.compaction':
-    case 'fl.compaction':
-    case 'fl.custom':
-      return true;
-    case 'pi.system':
-    case 'pi.reset':
-      return false;
-    default:
-      return MESSAGE_ROLES.has(role);
-  }
 }
 
 /** Whether an entry of [kind] is a message to the host, not a summary or the host's own. */

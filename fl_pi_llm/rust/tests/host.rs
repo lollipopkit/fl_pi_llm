@@ -73,6 +73,7 @@ fn runtime(dir: &std::path::Path) -> Runtime {
     let client = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none()).build().unwrap();
     Runtime::start(Config {
         dir: dir.to_path_buf(),
+        key: Some(fl_pi_llm::db::Key::new(&[4; 32]).unwrap()),
         credentials: Arc::new(Key),
         fetch: Arc::new(ReqwestFetch::new(client)),
         logger: None,

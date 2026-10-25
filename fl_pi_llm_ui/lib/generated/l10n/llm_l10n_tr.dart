@@ -409,4 +409,16 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Kendi cevabın';
+
+  @override
+  String get commandRiskReadOnly => 'Salt okunur';
+
+  @override
+  String get commandRiskUnknown => 'Sınıflandırılmadı';
+
+  @override
+  String get commandRiskCaution => 'Sistemi değiştirir';
+
+  @override
+  String get commandRiskDestructive => 'Yüksek risk';
 }

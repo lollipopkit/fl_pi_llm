@@ -188,9 +188,17 @@ pub type Logger = Arc<dyn Fn(&str, &str) + Send + Sync>;
 pub struct Config {
     /// Where chats are kept: a SQLite file each, created on first use.
     pub dir: std::path::PathBuf,
+    /// What they are encrypted with; in clear without one.
+    pub key: Option<crate::db::Key>,
     pub credentials: Arc<dyn Credentials>,
     pub fetch: Arc<dyn Fetch>,
     pub logger: Option<Logger>,
+}
+
+impl Config {
+    fn storage(&self) -> crate::db::Storage {
+        crate::db::Storage { root: self.dir.clone(), key: self.key.clone() }
+    }
 }
 
 /// One open session's host side.
@@ -237,12 +245,12 @@ impl Runtime {
             next_stream: AtomicU64::new(1),
             fatal: Mutex::new(None),
         });
-        let dir = inner.config.dir.clone();
+        let storage = inner.config.storage();
         let engine = Engine::spawn(
             Arc::new(move |o| {
                 let _ = tx.send(o);
             }),
-            Some(dir),
+            Some(storage),
         )
         .map_err(|e| Error(format!("starting the engine: {e}")))?;
         *inner.engine.lock().unwrap() = Some(Arc::new(engine));
@@ -282,9 +290,9 @@ impl Runtime {
     /// The sessions where `needle` was said by the user or the model,
     /// ignoring case.
     pub async fn search(&self, needle: &str) -> Result<Vec<String>> {
-        let dir = self.0.config.dir.clone();
+        let storage = self.0.config.storage();
         let needle = needle.to_string();
-        tokio::task::spawn_blocking(move || crate::db::search(&dir, &needle))
+        tokio::task::spawn_blocking(move || crate::db::search(&storage, &needle))
             .await
             .map_err(|e| Error(e.to_string()))?
             .map_err(Error)

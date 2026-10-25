@@ -110,6 +110,7 @@ abstract class RustLibApi extends BaseApi {
   Stream<HostMessage> crateApiLlmEngineStart({
     required LlmEngine that,
     required String dir,
+    Uint8List? key,
   });
 
   String crateApiMcpMcpCallResult({
@@ -146,6 +147,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<String>> crateApiSearchChats({
     required String dir,
+    Uint8List? key,
     required String needle,
   });
 
@@ -368,6 +370,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Stream<HostMessage> crateApiLlmEngineStart({
     required LlmEngine that,
     required String dir,
+    Uint8List? key,
   }) {
     final sink = RustStreamSink<HostMessage>();
     handler.executeSync(
@@ -379,6 +382,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(dir, serializer);
+          sse_encode_opt_list_prim_u_8_strict(key, serializer);
           sse_encode_StreamSink_host_message_Sse(sink, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
         },
@@ -387,7 +391,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiLlmEngineStartConstMeta,
-        argValues: [that, dir, sink],
+        argValues: [that, dir, key, sink],
         apiImpl: this,
       ),
     );
@@ -396,7 +400,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiLlmEngineStartConstMeta => const TaskConstMeta(
     debugName: "LlmEngine_start",
-    argNames: ["that", "dir", "sink"],
+    argNames: ["that", "dir", "key", "sink"],
   );
 
   @override
@@ -639,6 +643,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<List<String>> crateApiSearchChats({
     required String dir,
+    Uint8List? key,
     required String needle,
   }) {
     return handler.executeNormal(
@@ -646,6 +651,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dir, serializer);
+          sse_encode_opt_list_prim_u_8_strict(key, serializer);
           sse_encode_String(needle, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
@@ -659,7 +665,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiSearchChatsConstMeta,
-        argValues: [dir, needle],
+        argValues: [dir, key, needle],
         apiImpl: this,
       ),
     );
@@ -667,7 +673,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiSearchChatsConstMeta => const TaskConstMeta(
     debugName: "search_chats",
-    argNames: ["dir", "needle"],
+    argNames: ["dir", "key", "needle"],
   );
 
   @override
@@ -1471,8 +1477,11 @@ class LlmEngineImpl extends RustOpaque implements LlmEngine {
     payload: payload,
   );
 
-  /// Starts the runtime, keeping chats under [dir]. Everything it says
-  /// arrives on [sink], in order.
-  Stream<HostMessage> start({required String dir}) =>
-      RustLib.instance.api.crateApiLlmEngineStart(that: this, dir: dir);
+  /// Starts the runtime, keeping chats under [dir], encrypted with [key]
+  /// (32 bytes) when there is one. Everything it says arrives on [sink], in
+  /// order.
+  Stream<HostMessage> start({required String dir, Uint8List? key}) => RustLib
+      .instance
+      .api
+      .crateApiLlmEngineStart(that: this, dir: dir, key: key);
 }

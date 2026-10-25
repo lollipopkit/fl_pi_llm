@@ -5,8 +5,6 @@ part of '../tool.dart';
 final class TfHttpReq extends ToolFunc {
   static const instance = TfHttpReq._();
 
-  // The name predates what the tool became; kept, as permissions and old
-  // chats refer to it.
   const TfHttpReq._()
     : super(
         name: 'http_request',

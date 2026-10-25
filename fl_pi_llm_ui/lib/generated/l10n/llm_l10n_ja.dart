@@ -400,4 +400,16 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => '自分の回答';
+
+  @override
+  String get commandRiskReadOnly => '読み取り専用';
+
+  @override
+  String get commandRiskUnknown => '判定不能';
+
+  @override
+  String get commandRiskCaution => 'システムを変更';
+
+  @override
+  String get commandRiskDestructive => '高リスク';
 }

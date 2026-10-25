@@ -9,7 +9,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
-use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -21,7 +20,7 @@ use rquickjs::{
 };
 use rusqlite::types::{Value as SqlValue, ValueRef};
 
-use crate::db::Chats;
+use crate::db::{Chats, Storage};
 
 /// The bundle built from `js/`: pi-durable, pi-ai and the Web layer, as
 /// QuickJS bytecode compiled by `build.rs`. Empty on 32-bit targets.
@@ -76,16 +75,16 @@ pub struct Engine {
 }
 
 impl Engine {
-    /// Starts an engine keeping its chats under [dir]; without one, opening
+    /// Starts an engine keeping its chats in [storage]; without one, opening
     /// a chat fails.
-    pub fn spawn(sink: Sink, dir: Option<PathBuf>) -> std::io::Result<Self> {
+    pub fn spawn(sink: Sink, storage: Option<Storage>) -> std::io::Result<Self> {
         let (tx, rx) = mpsc::channel();
         let thread = std::thread::Builder::new()
             .name("fl_pi_llm".into())
             // QuickJS runs on this thread's stack; the limit above has to fit.
             .stack_size(STACK_LIMIT * 2)
             .spawn(move || {
-                if let Err(e) = run(rx, sink.clone(), dir) {
+                if let Err(e) = run(rx, sink.clone(), storage) {
                     sink(Outbound::Fatal { message: e });
                 }
             })?;
@@ -136,7 +135,7 @@ struct State {
 
 type Shared = Rc<RefCell<State>>;
 
-fn run(rx: Receiver<Inbound>, sink: Sink, dir: Option<PathBuf>) -> Result<(), String> {
+fn run(rx: Receiver<Inbound>, sink: Sink, storage: Option<Storage>) -> Result<(), String> {
     let rt = Runtime::new().map_err(|e| format!("QuickJS runtime: {e}"))?;
     rt.set_memory_limit(MEMORY_LIMIT);
     rt.set_max_stack_size(STACK_LIMIT);
@@ -149,7 +148,7 @@ fn run(rx: Receiver<Inbound>, sink: Sink, dir: Option<PathBuf>) -> Result<(), St
         streams: HashMap::new(),
         next_timer: 1,
         timers: HashMap::new(),
-        chats: Chats::new(dir),
+        chats: Chats::new(storage),
     }));
 
     ctx.with(|ctx| -> Result<(), String> {

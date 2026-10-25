@@ -820,6 +820,30 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Your own answer'**
   String get otherAnswerHint;
+
+  /// A badge on a shell command awaiting approval: what its shape shows it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get commandRiskReadOnly;
+
+  /// A badge on a shell command awaiting approval: what its shape shows it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Unclassified'**
+  String get commandRiskUnknown;
+
+  /// A badge on a shell command awaiting approval: what its shape shows it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes system'**
+  String get commandRiskCaution;
+
+  /// A badge on a shell command awaiting approval: what its shape shows it does.
+  ///
+  /// In en, this message translates to:
+  /// **'High risk'**
+  String get commandRiskDestructive;
 }
 
 class _LlmLocalizationsDelegate

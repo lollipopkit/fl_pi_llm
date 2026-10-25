@@ -10,16 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  # `.github/workflows/cla.yml` cannot be tried out on GitHub without a
-  # contributor watching, so its script is run here against a fake API.
-  cla-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - run: node scripts/cla_workflow_test.js
-
   # The bundle is checked in so an app building this package needs no JS
   # toolchain. This is what keeps it honest: rebuilt here, it must match.
   bundle:

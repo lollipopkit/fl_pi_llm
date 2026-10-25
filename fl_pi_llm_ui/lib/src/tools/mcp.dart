@@ -74,6 +74,8 @@ abstract final class McpTools {
     final attempt = s.connecting = Object();
     changes.notify();
     await _close(s);
+    // A newer connect took over while this one closed the old transport.
+    if (!identical(s.connecting, attempt)) return;
     s.secret = McpAuth.canCarrySecrets(url) ? McpSecrets.read(id) : const McpSecret();
     // A fresh transport each time: a closed one cannot be started again.
     final transport = StreamableHttpClientTransport(
@@ -94,9 +96,12 @@ abstract final class McpTools {
     client
       ..onerror = ((e) => _dropped(s, transport, '$e'))
       ..onclose = (() => _dropped(s, transport, null));
+    // Only the newest connect may say how the server is: an older one still
+    // connecting goes quiet as soon as another starts.
+    bool current() => identical(s.transport, transport) && identical(s.connecting, attempt);
     try {
       await client.connect(transport);
-      if (!identical(s.transport, transport)) return;
+      if (!current()) return;
       client.setNotificationHandler<JsonRpcToolListChangedNotification>(
         Method.notificationsToolsListChanged,
         (_) => _listTools(s),
@@ -110,7 +115,7 @@ abstract final class McpTools {
       await _listTools(s);
       Loggers.app.info('MCP ${s.label}: ${s.tools.length} tools');
     } catch (e, s_) {
-      if (!identical(s.transport, transport)) return;
+      if (!current()) return;
       // Asking again would get the same answer: it waits for a sign-in.
       final unauthorized = _isUnauthorized(e);
       unauthorized
@@ -185,6 +190,8 @@ abstract final class McpTools {
         tools.addAll(r.tools);
         cursor = r.nextCursor;
       } while (cursor != null);
+      // Reconnected meanwhile: the new connection lists its own.
+      if (!identical(s.client, client)) return;
       final id = nameFor(s.url), label = s.label;
       s
         ..tools = tools
@@ -193,6 +200,7 @@ abstract final class McpTools {
             if (LlmMcp.tool(id, label, t.toJson()) case final def?) (t, def),
         ];
     } catch (e, st) {
+      if (!identical(s.client, client)) return;
       Loggers.app.warning('MCP ${s.label}: list tools', e, st);
       s
         ..tools = const []
@@ -309,7 +317,7 @@ abstract final class McpTools {
   /// The headers [id] is sent, to edit them.
   static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
 
-  /// The server whose tool [name] is, of [toolName]'s making.
+  /// The server whose tool [name] is, as [LlmMcp.tool] names them.
   static String? serverOfTool(String name) => _servers.keys.firstWhereOrNull((id) => name.startsWith('${id}__'));
 
   /// Where the icon of [id], or of its tool [name], may be, best first.

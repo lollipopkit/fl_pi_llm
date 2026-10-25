@@ -354,6 +354,7 @@ name = "fl_pi_llm"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cc",
  "flutter_rust_bridge",
  "getrandom",
  "regex",
@@ -361,6 +362,7 @@ dependencies = [
  "rquickjs",
  "rusqlite",
  "serde_json",
+ "sqlite3mc-src",
  "tokio",
  "yaml-rust2",
 ]
@@ -870,7 +872,6 @@ version = "0.38.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8"
 dependencies = [
- "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -1345,6 +1346,12 @@ dependencies = [
  "rsqlite-vfs",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "sqlite3mc-src"
+version = "205.1.0+sqlite3mc-2.5.1-sqlite-3.53.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f155b7d3de6d72fb7b7c7affcba3773634c1fb2978b944b425c3d3ed5474448c"
 
 [[package]]
 name = "stable_deref_trait"

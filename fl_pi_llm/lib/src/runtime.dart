@@ -27,7 +27,7 @@ typedef LlmLogger = void Function(String level, String message);
 /// Sessions are kept under the directory the runtime is started with, a
 /// SQLite file each.
 final class FlPiLlm {
-  FlPiLlm._(this._http, this._log, this._directory, this._credentials, this._environment);
+  FlPiLlm._(this._http, this._log, this._directory, this._key, this._credentials, this._environment);
 
   static Future<void>? _libInit;
 
@@ -40,6 +40,10 @@ final class FlPiLlm {
   /// it does not exist. A session is queried there, never loaded whole, so
   /// one may grow as long as the disk allows.
   ///
+  /// [key], 32 random bytes the app keeps in the platform's keychain,
+  /// encrypts every session file; a file from before it was given is
+  /// encrypted when first opened. Null keeps them in clear: for tests.
+  ///
   /// [httpClient] is used for every request the models make; one is created
   /// when omitted and closed by [dispose].
   ///
@@ -48,6 +52,7 @@ final class FlPiLlm {
   /// the first call's value counts.
   static Future<FlPiLlm> start({
     required String directory,
+    required Uint8List? key,
     required LlmCredentials credentials,
     HttpClient? httpClient,
     LlmLogger? logger,
@@ -59,6 +64,7 @@ final class FlPiLlm {
       httpClient ?? HttpClient(),
       logger,
       directory,
+      key,
       credentials,
       environment ?? () => Platform.environment,
     );
@@ -70,6 +76,7 @@ final class FlPiLlm {
   final HttpClient _http;
   final LlmLogger? _log;
   final String _directory;
+  final Uint8List? _key;
 
   /// See `package:fl_pi_llm/legacy.dart`.
   LlmLegacySessions? _legacy;
@@ -99,7 +106,7 @@ final class FlPiLlm {
 
   void _start() {
     _engine = LlmEngine();
-    _sub = _engine.start(dir: _directory).listen(_onMessage, onError: (Object e) => _die('$e'));
+    _sub = _engine.start(dir: _directory, key: _key).listen(_onMessage, onError: (Object e) => _die('$e'));
   }
 
   /// Versions of what is running, and the APIs it can speak.
@@ -200,7 +207,25 @@ final class FlPiLlm {
 
   /// The sessions where [needle] was said by the user or the model, ignoring
   /// case. Run beside the engine, off this isolate.
-  Future<List<String>> searchSessions(String needle) => searchChats(dir: _directory, needle: needle);
+  Future<List<String>> searchSessions(String needle) => searchChats(dir: _directory, key: _key, needle: needle);
+
+  /// A page of session [id] for another device, from after [after] — the
+  /// last page's [LlmSyncPage.next] — to about [maxChars]. The session need
+  /// not be open. Every entry comes after its parent.
+  Future<LlmSyncPage> exportSession(String id, {int? after, int? maxChars}) async {
+    final v = await _request('sessions.export', {'sessionId': id, 'after': after, 'maxChars': ?maxChars}) as Map;
+    return LlmSyncPage.fromJson(v.cast<String, Object?>());
+  }
+
+  /// Writes what [entries], pages of another device's [exportSession] in
+  /// order, has and session [id] lacks, creating it when there is none. A
+  /// conversation running a turn is never written to: what goes on from it
+  /// becomes a version. [tip], with the last page of a session new here, is
+  /// the entry it stands on: where the other device stood.
+  Future<LlmSyncResult> importSession(String id, List<Map<String, Object?>> entries, {String? tip}) async {
+    final v = await _request('sessions.import', {'sessionId': id, 'entries': entries, 'tip': tip}) as Map;
+    return LlmSyncResult.fromJson(v.cast<String, Object?>());
+  }
 
   /// Opens the session [id], creating it when there is none.
   ///
@@ -427,6 +452,11 @@ final class FlPiLlm {
       req.followRedirects = false;
     } catch (e) {
       _answerError(callId, 'fetch failed: $e');
+      return;
+    }
+    // Disposed while connecting: past the requests [dispose] aborted.
+    if (_disposed) {
+      req.abort();
       return;
     }
     _requests[callId] = req;

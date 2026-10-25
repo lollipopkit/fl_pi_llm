@@ -115,5 +115,9 @@
   "fieldInvalid": "Ongeldig",
   "waitingForYou": "Wacht op jou",
   "otherAnswer": "Anders",
-  "otherAnswerHint": "Je eigen antwoord"
+  "otherAnswerHint": "Je eigen antwoord",
+  "commandRiskReadOnly": "Alleen lezen",
+  "commandRiskUnknown": "Niet ingedeeld",
+  "commandRiskCaution": "Wijzigt het systeem",
+  "commandRiskDestructive": "Hoog risico"
 }

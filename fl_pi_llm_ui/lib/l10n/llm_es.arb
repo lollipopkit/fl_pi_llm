@@ -115,5 +115,9 @@
   "fieldInvalid": "No válido",
   "waitingForYou": "Te espera",
   "otherAnswer": "Otra",
-  "otherAnswerHint": "Tu propia respuesta"
+  "otherAnswerHint": "Tu propia respuesta",
+  "commandRiskReadOnly": "Solo lectura",
+  "commandRiskUnknown": "Sin clasificar",
+  "commandRiskCaution": "Modifica el sistema",
+  "commandRiskDestructive": "Riesgo alto"
 }

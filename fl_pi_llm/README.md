@@ -29,8 +29,9 @@ Background: [flutter_server_box#1468](https://github.com/lollipopkit/flutter_ser
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 
 // Where sessions live: a SQLite file each, queried rather than loaded, so a
-// session may grow as long as the disk allows. Unencrypted.
-final llm = await FlPiLlm.start(directory: '$supportDir/agent', credentials: myKeys);
+// session may grow as long as the disk allows. Encrypted with `key`, 32 random
+// bytes kept in the platform's keychain.
+final llm = await FlPiLlm.start(directory: '$supportDir/agent', key: chatKey, credentials: myKeys);
 
 final session = await llm.openSession(
   id: 'chat-1', // created when it does not exist, reopened when it does
@@ -70,6 +71,15 @@ tree, reachable by `entry(id)`. A run a crash interrupted is reported by
 `FlPiLlm.complete` does a single completion outside any session, for things
 like a chat title.
 
+A session syncs between devices in pages: `exportSession(id, after: next)`
+on one, `importSession(id, page.entries)` on the other. Each entry is known by
+a uid on every device and comes after its parent; an import writes what the
+session lacks — at the end of the conversation it continues, or as a version
+beside one that went on differently — so what either device said stays, and
+syncing again adds nothing. A conversation running a turn is never written
+to. The session need not be open, and a session new to the device is created,
+standing where the other device stood (`tip`).
+
 An app that kept sessions with fl_pi_llm before 0.1.0 moves them in with
 `package:fl_pi_llm/legacy.dart`: set `legacySessions` right after `start`,
 then `migrateLegacy()`.
@@ -79,7 +89,8 @@ then `migrateLegacy()`.
 The same runtime without Dart: `fl_pi_llm::host` (features `host`, and
 `reqwest` for `ReqwestFetch`; `default-features = false` drops the Dart
 bridge). The program answers what the Dart side answers — the network
-(`Fetch`), where sessions are kept (`Config::dir`), credentials, tools and
+(`Fetch`), where sessions are kept and with what key (`Config::dir`,
+`Config::key`), credentials, tools and
 approvals — and gets sessions in the same format, so one written by a Rust
 host opens in an app and the other way round. Server Box's monitor agent runs it to keep its Agent sessions on the
 server.
@@ -99,8 +110,8 @@ fetch and install skills themselves.
 
 | Path | What |
 |---|---|
-| `js/` | The Web platform layer QuickJS lacks (`src/web.js`), pi-durable's SQLite storage over the engine's databases (`src/db.js`) and the host API (`src/main.js`). Built into `rust/js/fl_pi_llm.js`, which `rust/build.rs` compiles to QuickJS bytecode. |
-| `rust/` | The runtime: a QuickJS context on its own thread, its timers and job queue, the sessions' SQLite files (`db`), the bridge to Dart (`api`, feature `frb`) and the Rust host (`host`). |
+| `js/` | The Web platform layer QuickJS lacks (`src/web.js`), pi-durable's SQLite storage over the engine's databases (`src/db.js`), sync between devices (`src/sync.js`) and the host API (`src/main.js`). Built into `rust/js/fl_pi_llm.js`, which `rust/build.rs` compiles to QuickJS bytecode. |
+| `rust/` | The runtime: a QuickJS context on its own thread, its timers and job queue, the sessions' encrypted SQLite files (`db`; SQLite3 Multiple Ciphers, built by `build.rs`), the bridge to Dart (`api`, feature `frb`) and the Rust host (`host`). |
 | `lib/` | The Dart API. HTTP is done here, with `HttpClient`; sessions are stored by the engine, under the directory `FlPiLlm.start` is given. |
 | `hook/` | The build hook that compiles `rust/`. No CocoaPods, no Gradle plugin, works with SwiftPM. |
 

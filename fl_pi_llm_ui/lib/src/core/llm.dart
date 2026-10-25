@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
@@ -8,6 +10,7 @@ import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
@@ -43,15 +46,16 @@ abstract final class Llm {
 
   /// After the stores: sessions from before pi-durable are moved out of the
   /// encrypted database into [directory] — by default `agent/` in the app's
-  /// support directory, a SQLite file per chat.
+  /// support directory, a SQLite file per chat, encrypted with [ChatKey].
   ///
-  /// [directory], [credentials] and [externalLibrary] are for tests, which
-  /// have neither a keychain nor an app bundle.
+  /// [directory], [key], [credentials] and [externalLibrary] are for tests,
+  /// which have neither a keychain nor an app bundle.
   ///
   /// [environment] replaces the process's, where [FlPiLlm] reads a provider's
   /// key when none is stored.
   static Future<void> init({
     String? directory,
+    Uint8List? key,
     LlmCredentials? credentials,
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
@@ -60,8 +64,10 @@ abstract final class Llm {
     if (environment != null) _environment = environment;
     _all = SystemCredentials(_credentials, () => _environment());
     final started = _rt == null;
+    final dir = directory ?? '${(await getApplicationSupportDirectory()).path}/agent';
     _rt ??= await FlPiLlm.start(
-      directory: directory ?? '${(await getApplicationSupportDirectory()).path}/agent',
+      directory: dir,
+      key: key ?? await ChatKey.read(encryptedChats: await encryptedChats(dir)),
       credentials: _all,
       externalLibrary: externalLibrary,
       environment: () => SystemProvider.forBuiltins(_environment()),
@@ -90,6 +96,23 @@ abstract final class Llm {
       Loggers.app.warning('Refresh models', e, s);
       return const <String, String>{};
     }));
+  }
+
+  /// Whether a chat under [dir] may be encrypted already: one whose file
+  /// does not start as SQLite's does in clear.
+  @visibleForTesting
+  static Future<bool> encryptedChats(String dir) async {
+    final chats = Directory('$dir/chats');
+    if (!await chats.exists()) return false;
+    const clear = 'SQLite format 3\u0000';
+    await for (final f in chats.list()) {
+      if (f is! File || !f.path.endsWith('.db')) continue;
+      final head = await f.openRead(0, clear.length).expand((b) => b).toList();
+      // Empty: made, never written. Anything else not SQLite in clear, cut
+      // short included, may be a chat only the stored key opens.
+      if (head.isNotEmpty && String.fromCharCodes(head) != clear) return true;
+    }
+    return false;
   }
 
   /// Hands the stored custom providers to the runtime.

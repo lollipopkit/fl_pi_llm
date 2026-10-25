@@ -19,6 +19,8 @@
 //                 are left; none at the end
 //   legacy.remove {path}
 
+import { entryDraft } from './entry.js';
+
 const host = globalThis.__host;
 const call = async (name, payload) => JSON.parse(await host.call(name, JSON.stringify(payload)));
 
@@ -136,31 +138,18 @@ async function readEntry(path, ref) {
   return undefined;
 }
 
-const millis = (t) => (typeof t === 'number' ? t : Date.parse(t) || Date.now());
+/**
+ * What a legacy entry is known by on every device: the id pi gave it, which
+ * every copy of the session kept (`sync.js`).
+ */
+const uidOf = (oldId) => `pi:${oldId}`;
 
-/** One legacy entry as the pi-durable entry the chat keeps in its place. */
-function draft(e, mapped) {
-  const timestamp = millis(e.timestamp);
-  switch (e.type) {
-    case 'message':
-      return { kind: 'fl.message', model: [e.message] };
-    case 'custom':
-      return { kind: 'fl.custom', data: { customType: e.customType ?? '', data: e.data ?? null, timestamp } };
-    case 'compaction':
-    case 'branch_summary': {
-      const summary = e.summary ?? '';
-      // The kept tail starts at the first entry the summary did not replace.
-      const kept = e.firstKeptEntryId ?? firstKept(e, mapped);
-      return {
-        kind: 'fl.compaction',
-        data: { summary, timestamp, ...(e.tokensBefore != null ? { tokensBefore: e.tokensBefore } : {}) },
-        model: [{ role: 'user', content: [{ type: 'text', text: summary }], timestamp }],
-        head: (kept == null ? undefined : mapped.get(kept)?.newId) ?? 'self',
-      };
-    }
-    default:
-      return null;
-  }
+/** The new id of the entry legacy compaction [e] kept from, if it kept one. */
+function headOf(e, mapped) {
+  if (e.type !== 'compaction' && e.type !== 'branch_summary') return undefined;
+  // The kept tail starts at the first entry the summary did not replace.
+  const kept = e.firstKeptEntryId ?? firstKept(e, mapped);
+  return kept == null ? undefined : mapped.get(kept)?.newId ?? undefined;
 }
 
 /** pi 0.87 kept the tail as messages; the entry holding the first is the head. */
@@ -228,7 +217,7 @@ export async function migrate(harness, file, BG) {
     for (; i < path.length; i++) {
       const id = path[i];
       const e = await readEntry(file.path, entries.get(id));
-      const entry = e && draft(e, mapped);
+      const entry = e && entryDraft(e, uidOf(id), headOf(e, mapped));
       if (!entry) {
         // Nothing the chat keeps; what follows hangs off what came before,
         // or off the start of this conversation.

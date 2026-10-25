@@ -140,6 +140,7 @@ let decode_indices_ = flutter_rust_bridge::for_generated::lockable_compute_decod
             let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_that = <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LlmEngine>>>::sse_decode(&mut deserializer);
 let api_dir = <String>::sse_decode(&mut deserializer);
+let api_key = <Option<Vec<u8>>>::sse_decode(&mut deserializer);
 let api_sink = <StreamSink<crate::api::HostMessage,flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(&mut deserializer);deserializer.end();
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || {
                     let mut api_that_guard = None;
@@ -151,7 +152,7 @@ let decode_indices_ = flutter_rust_bridge::for_generated::lockable_compute_decod
             }
         }
         let api_that_guard = api_that_guard.unwrap();
- let output_ok = crate::api::LlmEngine::start(&*api_that_guard, api_dir, api_sink)?;   std::result::Result::Ok(output_ok)
+ let output_ok = crate::api::LlmEngine::start(&*api_that_guard, api_dir, api_key, api_sink)?;   std::result::Result::Ok(output_ok)
                 })()) })
             }fn wire__crate__api__mcp__mcp_call_result_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
                 FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "mcp_call_result", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
@@ -237,9 +238,10 @@ let api_args = <String>::sse_decode(&mut deserializer);deserializer.end();
             let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
             let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_dir = <String>::sse_decode(&mut deserializer);
+let api_key = <Option<Vec<u8>>>::sse_decode(&mut deserializer);
 let api_needle = <String>::sse_decode(&mut deserializer);deserializer.end(); move |context|  {
                     transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move ||  {
-                         let output_ok = crate::api::search_chats(api_dir, api_needle)?;   std::result::Result::Ok(output_ok)
+                         let output_ok = crate::api::search_chats(api_dir, api_key, api_needle)?;   std::result::Result::Ok(output_ok)
                     })())
                 } })
             }fn wire__crate__api__skills__skill_dir_name_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {

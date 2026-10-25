@@ -6,15 +6,20 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `send`
+// These functions are ignored because they are not marked as `pub`: `send`, `storage`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `from`
 
-/// The chats kept under [dir] where [needle] was said by the user or the
-/// model, ignoring case. Off the engine, beside it.
+/// The chats kept under [dir], encrypted with [key], where [needle] was said
+/// by the user or the model, ignoring case. Off the engine, beside it.
 Future<List<String>> searchChats({
   required String dir,
+  Uint8List? key,
   required String needle,
-}) => RustLib.instance.api.crateApiSearchChats(dir: dir, needle: needle);
+}) => RustLib.instance.api.crateApiSearchChats(
+  dir: dir,
+  key: key,
+  needle: needle,
+);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LlmEngine>>
 abstract class LlmEngine implements RustOpaqueInterface {
@@ -40,9 +45,10 @@ abstract class LlmEngine implements RustOpaqueInterface {
     required String payload,
   });
 
-  /// Starts the runtime, keeping chats under [dir]. Everything it says
-  /// arrives on [sink], in order.
-  Stream<HostMessage> start({required String dir});
+  /// Starts the runtime, keeping chats under [dir], encrypted with [key]
+  /// (32 bytes) when there is one. Everything it says arrives on [sink], in
+  /// order.
+  Stream<HostMessage> start({required String dir, Uint8List? key});
 }
 
 /// A message from the engine. A flat struct rather than an enum with fields,

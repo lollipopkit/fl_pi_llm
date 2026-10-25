@@ -424,4 +424,16 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Votre propre réponse';
+
+  @override
+  String get commandRiskReadOnly => 'Lecture seule';
+
+  @override
+  String get commandRiskUnknown => 'Non classé';
+
+  @override
+  String get commandRiskCaution => 'Modifie le système';
+
+  @override
+  String get commandRiskDestructive => 'Risque élevé';
 }

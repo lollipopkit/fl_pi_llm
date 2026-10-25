@@ -115,5 +115,9 @@
   "fieldInvalid": "올바르지 않음",
   "waitingForYou": "응답 대기 중",
   "otherAnswer": "기타",
-  "otherAnswerHint": "직접 입력한 답변"
+  "otherAnswerHint": "직접 입력한 답변",
+  "commandRiskReadOnly": "읽기 전용",
+  "commandRiskUnknown": "분류되지 않음",
+  "commandRiskCaution": "시스템 변경",
+  "commandRiskDestructive": "높은 위험"
 }

@@ -8,10 +8,15 @@ pub mod mcp;
 pub mod memory;
 pub mod skills;
 
-/// The chats kept under [dir] where [needle] was said by the user or the
-/// model, ignoring case. Off the engine, beside it.
-pub fn search_chats(dir: String, needle: String) -> anyhow::Result<Vec<String>> {
-    crate::db::search(std::path::Path::new(&dir), &needle).map_err(anyhow::Error::msg)
+/// The chats kept under [dir], encrypted with [key], where [needle] was said
+/// by the user or the model, ignoring case. Off the engine, beside it.
+pub fn search_chats(dir: String, key: Option<Vec<u8>>, needle: String) -> anyhow::Result<Vec<String>> {
+    crate::db::search(&storage(dir, key)?, &needle).map_err(anyhow::Error::msg)
+}
+
+fn storage(dir: String, key: Option<Vec<u8>>) -> anyhow::Result<crate::db::Storage> {
+    let key = key.map(|k| crate::db::Key::new(&k)).transpose().map_err(anyhow::Error::msg)?;
+    Ok(crate::db::Storage { root: dir.into(), key })
 }
 
 use flutter_rust_bridge::frb;
@@ -75,15 +80,16 @@ impl LlmEngine {
         Self { inner: OnceLock::new() }
     }
 
-    /// Starts the runtime, keeping chats under [dir]. Everything it says
-    /// arrives on [sink], in order.
+    /// Starts the runtime, keeping chats under [dir], encrypted with [key]
+    /// (32 bytes) when there is one. Everything it says arrives on [sink], in
+    /// order.
     #[frb(sync)]
-    pub fn start(&self, dir: String, sink: StreamSink<HostMessage>) -> anyhow::Result<()> {
+    pub fn start(&self, dir: String, key: Option<Vec<u8>>, sink: StreamSink<HostMessage>) -> anyhow::Result<()> {
         let engine = Engine::spawn(
             std::sync::Arc::new(move |o: Outbound| {
                 let _ = sink.add(o.into());
             }),
-            Some(dir.into()),
+            Some(storage(dir, key)?),
         )?;
         self.inner.set(engine).map_err(|_| anyhow::anyhow!("already started"))
     }

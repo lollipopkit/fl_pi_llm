@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm/legacy.dart';
@@ -175,6 +176,9 @@ final class MemoryLegacySessions implements LlmLegacySessions {
   Future<void> remove(String path) async => files.remove(path);
 }
 
+/// What the tests' sessions are encrypted with.
+final testKey = Uint8List.fromList(List.filled(32, 7));
+
 void main() {
   late FlPiLlm llm;
   late MockServer server;
@@ -182,6 +186,7 @@ void main() {
   final credentials = MemoryCredentials({'mock': LlmCredential.apiKey('sk-test')});
 
   setUpAll(() async => llm = await FlPiLlm.start(
+    key: testKey,
     directory: dir = Directory.systemTemp.createTempSync('fl_pi_llm').path,
     credentials: credentials,
     externalLibrary: testLibrary(),
@@ -272,6 +277,7 @@ void main() {
 
   test("a built-in provider's key can come from the environment", () async {
     final rt = await FlPiLlm.start(
+      key: testKey,
       directory: tempDir(),
       credentials: MemoryCredentials({'anthropic': LlmCredential.apiKey('sk-stored')}),
       environment: () => {'OPENAI_API_KEY': 'sk-env', 'ANTHROPIC_API_KEY': 'sk-env-too', 'GEMINI_API_KEY': ''},
@@ -285,7 +291,7 @@ void main() {
   });
 
   test('with no environment, only stored keys count', () async {
-    final rt = await FlPiLlm.start(directory: tempDir(), credentials: MemoryCredentials({}), environment: () => {});
+    final rt = await FlPiLlm.start(key: testKey, directory: tempDir(), credentials: MemoryCredentials({}), environment: () => {});
     addTearDown(rt.dispose);
     expect(await rt.authSources(), isEmpty);
   });
@@ -293,13 +299,13 @@ void main() {
   test('a session outlives the runtime', () async {
     final disk = tempDir();
     // A second runtime over its own directory, as after a relaunch.
-    var rt = await FlPiLlm.start(directory: disk, credentials: credentials);
+    var rt = await FlPiLlm.start(key: testKey, directory: disk, credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     var s = await rt.openSession(id: 'relaunch', model: mock);
     await s.prompt('remember me');
     await rt.dispose();
 
-    rt = await FlPiLlm.start(directory: disk, credentials: credentials);
+    rt = await FlPiLlm.start(key: testKey, directory: disk, credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     s = await rt.openSession(id: 'relaunch', model: mock);
     final entries = await s.entries();
@@ -314,7 +320,7 @@ void main() {
     final legacy = MemoryLegacySessions({
       path: [for (var i = 0; i < log.length; i += 97) log.substring(i, (i + 97).clamp(0, log.length))],
     });
-    final rt = await FlPiLlm.start(directory: tempDir(), credentials: credentials)..legacySessions = legacy;
+    final rt = await FlPiLlm.start(key: testKey, directory: tempDir(), credentials: credentials)..legacySessions = legacy;
     addTearDown(rt.dispose);
     await rt.setCustomProviders([mockProvider(server)]);
     expect((await rt.sessions()).map((i) => i.id), ['chat-1'], reason: 'listed before it is moved');
@@ -327,10 +333,45 @@ void main() {
     await s.close();
   });
 
+  test('a session syncs to another device and back', () async {
+    final a = await FlPiLlm.start(key: testKey, directory: tempDir(), credentials: credentials);
+    final b = await FlPiLlm.start(key: Uint8List.fromList(List.filled(32, 8)), directory: tempDir(), credentials: credentials);
+    addTearDown(a.dispose);
+    addTearDown(b.dispose);
+    for (final rt in [a, b]) {
+      await rt.setCustomProviders([mockProvider(server)]);
+    }
+    Future<int> sync(FlPiLlm from, FlPiLlm to, {bool newHere = false}) async {
+      var added = 0;
+      int? after;
+      do {
+        final page = await from.exportSession('synced', after: after, maxChars: 1);
+        after = page.next;
+        final r = await to.importSession('synced', page.entries, tip: after == null && newHere ? page.tip : null);
+        expect(r.orphans, isEmpty);
+        added += r.added;
+      } while (after != null);
+      return added;
+    }
+
+    final sa = await a.openSession(id: 'synced', model: mock);
+    await sa.prompt('from a');
+    await sa.close();
+    expect(await sync(a, b, newHere: true), 2);
+    final sb = await b.openSession(id: 'synced', model: mock);
+    await sb.prompt('from b');
+    expect(await sync(b, a), 2);
+    expect(await sync(a, b), 0, reason: 'settled');
+    final again = await a.openSession(id: 'synced', model: mock);
+    expect([for (final e in await again.entries()) e.message!.text], [for (final e in await sb.entries()) e.message!.text]);
+    await again.close();
+    await sb.close();
+  });
+
   test('an answer that comes after dispose goes nowhere', () async {
     // A host call — here an approval — still waiting when the runtime is
     // disposed answered into an engine that was already freed.
-    final rt = await FlPiLlm.start(directory: tempDir(), credentials: credentials);
+    final rt = await FlPiLlm.start(key: testKey, directory: tempDir(), credentials: credentials);
     await rt.setCustomProviders([mockProvider(server)]);
     final asked = Completer<void>();
     final disposed = Completer<void>();

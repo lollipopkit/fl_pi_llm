@@ -30,10 +30,12 @@ flutter_rust_bridge = { version = "=2.13.0", optional = true }
 getrandom = "0.4"
 rquickjs = { version = "0.14", features = ["either"] }
 regex = "1"
-# The chats (`db`): SQLite built from source, the same on every target. 0.39
-# too: a host whose sqlx 0.9 takes libsqlite3-sys below 0.38 (one `sqlite3`
-# link per build) can still depend on this.
-rusqlite = { version = ">=0.39, <0.41", features = ["bundled", "functions"] }
+# The chats (`db`): SQLite3 Multiple Ciphers, built from source by build.rs
+# the same on every target, so a chat is encrypted at rest. `in_gecko`: the
+# bindings rusqlite bundles, and no SQLite of libsqlite3-sys's own linked.
+# 0.39 too: a host whose sqlx 0.9 takes libsqlite3-sys below 0.38 (one
+# `sqlite3` link per build) can still depend on this.
+rusqlite = { version = ">=0.39, <0.41", features = ["in_gecko", "functions"] }
 serde_json = "1"
 tokio = { version = "1", features = ["sync", "rt", "fs", "io-util", "macros", "time"], optional = true }
 reqwest = { version = "0.13", default-features = false, optional = true }
@@ -57,4 +59,6 @@ lto = true
 codegen-units = 1
 
 [build-dependencies]
+cc = "1"
 rquickjs = "0.14"
+sqlite3mc-src = "205.1"

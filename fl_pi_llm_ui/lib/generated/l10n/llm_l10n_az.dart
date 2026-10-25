@@ -429,4 +429,16 @@ class LlmLocalizationsAz extends LlmLocalizations {
 
   @override
   String get otherAnswerHint => 'Öz cavabınız';
+
+  @override
+  String get commandRiskReadOnly => 'Yalnız oxuma';
+
+  @override
+  String get commandRiskUnknown => 'Təsnif edilməyib';
+
+  @override
+  String get commandRiskCaution => 'Sistemi dəyişir';
+
+  @override
+  String get commandRiskDestructive => 'Yüksək risk';
 }
