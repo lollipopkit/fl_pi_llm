@@ -478,7 +478,6 @@ abstract final class Chats {
     await _run(chat, () async {
       await chat.session.navigate(entry.parentId);
       await chat.reload();
-      await _putContext(chat);
       return chat.session.prompt(text, images: images.isEmpty ? null : images);
     });
     _touch(id);
@@ -491,7 +490,8 @@ abstract final class Chats {
   /// Asks again after the last run failed: the last user message, again.
   static Future<void> retry(String id) async {
     final chat = await open(id);
-    final user = chat.entries.value.lastWhereOrNull((e) => e.message?.role == 'user');
+    // Not a screen note a failed send left behind: there is no question in it.
+    final user = chat.entries.value.lastWhereOrNull((e) => e.message?.role == 'user' && contextOf(e.message!) == null);
     if (user != null) await regenerate(id, user);
   }
 
@@ -626,18 +626,36 @@ abstract final class Chats {
   /// A user turn of its own rather than the system prompt: the system prompt
   /// is the chat's, set once and cached by the provider, while this changes
   /// under the conversation and the model has to see when it did.
+  ///
+  /// Not on an edit or a regeneration: the new message has to share the old
+  /// one's parent to be another version of it, so it keeps the old one's note.
   static Future<void> _putContext(OpenChat chat) async {
-    final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(LlmStores.chat.fetch(chat.id)));
-    if (message != null) await chat.session.append([message]);
+    // A note is a help, and failing to write one must not cost the message.
+    try {
+      final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(LlmStores.chat.fetch(chat.id)));
+      if (message != null) await chat.session.append([message]);
+    } catch (e, s) {
+      Loggers.app.warning('Screen note for ${chat.id}', e, s);
+    }
   }
 
   /// The message saying [now] at the end of [branch], or null when there is
   /// nothing to say or the branch's last one already says it.
+  ///
+  /// A note before the last compaction counts as unsaid: the model may only
+  /// have its summary.
   @visibleForTesting
   static LlmMessage? contextToPut(List<LlmEntry> branch, String? now) {
     final text = now?.trim();
     if (text == null || text.isEmpty) return null;
-    final last = branch.reversed.map((e) => e.message == null ? null : contextOf(e.message!)).nonNulls.firstOrNull;
+    String? last;
+    for (final e in branch.reversed) {
+      if (e.type == 'compaction') break;
+      if (e.message case final m? when contextOf(m) != null) {
+        last = contextOf(m);
+        break;
+      }
+    }
     if (last == text) return null;
     return LlmMessage({
       'role': 'user',

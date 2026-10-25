@@ -27,7 +27,17 @@ void main() {
     expect(Chats.contextToPut(const [], '  '), isNull);
   });
 
-  test('the user writing the tag is not the app', () {
+  test('a compaction since the last note means it is said again', () {
+    final note = Chats.contextToPut(const [], 'Server A')!;
+    final branch = [
+      _entry(note),
+      _user('why is it slow'),
+      LlmEntry({'id': 'c', 'type': 'compaction'}),
+    ];
+    expect(Chats.contextOf(Chats.contextToPut(branch, 'Server A')!), 'Server A');
+  });
+
+  test('only a whole user message in the tag is the app\'s', () {
     expect(Chats.contextOf(LlmMessage({'role': 'assistant', 'content': '<app_context>\nx\n</app_context>'})), isNull);
     expect(Chats.contextOf(LlmMessage({'role': 'user', 'content': 'see <app_context>x</app_context>'})), isNull);
   });
