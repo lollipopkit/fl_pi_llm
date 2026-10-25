@@ -55,4 +55,10 @@ abstract final class LlmUi {
   /// What the app adds to a chat's system prompt, after the user's own.
   /// Applied when a chat opens and on [Chats.reconfigure].
   static String? Function(ChatMeta? meta) appPrompt = (_) => null;
+
+  /// What the user has on screen in the app now — the record or page they are
+  /// looking at — for the model to resolve "this" against. Put before the
+  /// user's next message whenever it differs from the last one put there.
+  /// Null for an app that has none, whose chats are not told about it.
+  static String? Function(ChatMeta? meta)? appContext;
 }

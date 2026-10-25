@@ -209,12 +209,18 @@ class _UserMessageState extends State<_UserMessage> {
     final forCapture = widget.forCapture;
     final m = entry.message!;
     // The app's, not the user's: a line across, not a bubble to edit.
-    if (Chats.noticeOf(m) case final notice?) {
+    final notice = Chats.noticeOf(m);
+    final screen = notice == null ? Chats.contextOf(m) : null;
+    if (notice ?? screen case final line?) {
       return Row(
         children: [
-          Icon(Icons.notifications_none, size: 15, color: context.theme.colorScheme.onSurfaceVariant),
+          Icon(
+            notice != null ? Icons.notifications_none : Icons.visibility_outlined,
+            size: 15,
+            color: context.theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 7),
-          Expanded(child: Text(notice, style: UIs.text13Grey)),
+          Expanded(child: Text(line, style: UIs.text13Grey)),
         ],
       );
     }

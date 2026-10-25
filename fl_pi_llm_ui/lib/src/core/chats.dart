@@ -9,6 +9,7 @@ import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/user_input.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
@@ -424,7 +425,7 @@ abstract final class Chats {
     final sb = StringBuffer();
     for (final e in entries) {
       final m = e.message;
-      if (m == null) continue;
+      if (m == null || contextOf(m) != null) continue;
       final who = switch (m.role) {
         'user' => '👤',
         'assistant' => '🤖',
@@ -460,7 +461,10 @@ abstract final class Chats {
       rethrow;
     }
     final (prompt, images) = composed;
-    await _run(chat, () => chat.session.prompt(prompt, images: images.isEmpty ? null : images));
+    await _run(chat, () async {
+      await _putContext(chat);
+      return chat.session.prompt(prompt, images: images.isEmpty ? null : images);
+    });
     _touch(id);
     unawaited(_maybeTitle(chat, text));
   }
@@ -474,6 +478,7 @@ abstract final class Chats {
     await _run(chat, () async {
       await chat.session.navigate(entry.parentId);
       await chat.reload();
+      await _putContext(chat);
       return chat.session.prompt(text, images: images.isEmpty ? null : images);
     });
     _touch(id);
@@ -607,13 +612,55 @@ abstract final class Chats {
   }
 
   /// [m]'s text, when it is one of [notify]'s rather than the user's.
-  static String? noticeOf(LlmMessage m) {
+  static String? noticeOf(LlmMessage m) => _tagged(m, _noticeTag);
+
+  // ---------------------------------------------------------------------------
+  // What the user has on screen
+
+  static const _contextTag = 'app_context';
+
+  /// Puts [LlmUi.appContext] before the next message, unless the branch's last
+  /// one already says the same: a user switching between pages adds one for
+  /// each switch, and one sending ten messages from the same page adds none.
+  ///
+  /// A user turn of its own rather than the system prompt: the system prompt
+  /// is the chat's, set once and cached by the provider, while this changes
+  /// under the conversation and the model has to see when it did.
+  static Future<void> _putContext(OpenChat chat) async {
+    final message = contextToPut(chat.entries.value, LlmUi.appContext?.call(LlmStores.chat.fetch(chat.id)));
+    if (message != null) await chat.session.append([message]);
+  }
+
+  /// The message saying [now] at the end of [branch], or null when there is
+  /// nothing to say or the branch's last one already says it.
+  @visibleForTesting
+  static LlmMessage? contextToPut(List<LlmEntry> branch, String? now) {
+    final text = now?.trim();
+    if (text == null || text.isEmpty) return null;
+    final last = branch.reversed.map((e) => e.message == null ? null : contextOf(e.message!)).nonNulls.firstOrNull;
+    if (last == text) return null;
+    return LlmMessage({
+      'role': 'user',
+      'content': '<$_contextTag>\n$text\n</$_contextTag>',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// [m]'s text, when it is one of [_putContext]'s rather than the user's.
+  static String? contextOf(LlmMessage m) => _tagged(m, _contextTag);
+
+  static String? _tagged(LlmMessage m, String tag) {
     if (m.role != 'user') return null;
     final t = m.text.trim();
-    const open = '<$_noticeTag>', close = '</$_noticeTag>';
+    final open = '<$tag>', close = '</$tag>';
     if (!t.startsWith(open) || !t.endsWith(close)) return null;
     return t.substring(open.length, t.length - close.length).trim();
   }
+
+  static String get _contextPrompt =>
+      'A user message wrapped in <$_contextTag> comes from the app, not from the user: it says what the user had on '
+      'screen when they wrote the messages after it, until the next one. Use it to tell what they mean by "this" or '
+      'by a request that names nothing; it is not a request itself.';
 
   static String get _noticePrompt =>
       'A user message wrapped in <$_noticeTag> comes from the app, not from the user: it reports something that '
@@ -710,6 +757,7 @@ abstract final class Chats {
       LlmStores.llm.systemPrompt.get(),
       ?LlmUi.appPrompt(meta),
       _noticePrompt,
+      if (LlmUi.appContext != null) _contextPrompt,
       if (Tools.memoryOn) ?TfMemory.prompt(tools: tools),
       if (tools) ?McpTools.instructions,
       if (Tools.skillsOffered(meta)) ?Skills.prompt(),
