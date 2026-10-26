@@ -42,7 +42,7 @@ import { legacyFiles, migrate, removeLegacy } from './legacy.js';
 import { hostEntry } from './entry.js';
 import { exportPage, importPage } from './sync.js';
 import { ChatTree } from './tree.js';
-import { CUSTOM_APIS, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
+import { CUSTOM_APIS, listedProviders, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
 const host = globalThis.__host;
 const BG = BACKGROUND_CONTEXT;
@@ -50,7 +50,7 @@ const BG = BACKGROUND_CONTEXT;
 const hostCall = async (name, payload) => JSON.parse(await host.call(name, JSON.stringify(payload)));
 const emit = (payload) => host.emit(JSON.stringify(payload));
 
-const PI_VERSION = '1.1.0';
+const PI_VERSION = '1.4.0';
 
 // ---------------------------------------------------------------------------
 // Storage
@@ -83,6 +83,9 @@ const ChatDoc = defineDoc({
   // `tip`: an entry of `current` to continue from, -1 before the first entry,
   // null at the end.
   initial: () => ({ current: null, tip: null, name: null }),
+  // pi 1.4.0 asks every document for a checkpoint policy, with no default.
+  // The whole state is three fields, written in one go: a base every time.
+  checkpointWhen: () => true,
 });
 
 /** Every chat in storage, by id, with when it was made and last written. */
@@ -218,7 +221,8 @@ function hostTool(sessionId, def) {
         const res = await hostCall('tool', { sessionId, toolCallId, name: def.name, args });
         if (res.error != null) throw new Error(String(res.error));
         return {
-          content: res.content ?? [],
+          // pi 1.3.0 named the result's content `output`; `content` is read no more.
+          output: res.content ?? [],
           details: res.details ?? null,
           ...(res.terminate ? { control: { terminate: true } } : {}),
         };
@@ -656,7 +660,7 @@ const methods = {
   'runtime.info': () => ({ pi: PI_VERSION, piAi: PI_VERSION, piDurable: PI_VERSION, apis: Object.keys(CUSTOM_APIS) }),
 
   /** Every provider and its models: the built-in catalog, then custom ones. */
-  'providers.list': () => models.getProviders().map(providerInfo),
+  'providers.list': () => listedProviders().map(providerInfo),
 
   /** Models whose provider has usable auth. */
   'providers.available': async (p) =>
@@ -684,7 +688,7 @@ const methods = {
   /** Where each provider with usable auth gets it: `stored credential`, or an env var. */
   'providers.auth': async () => {
     const out = {};
-    for (const p of models.getProviders()) {
+    for (const p of listedProviders()) {
       const auth = await models.checkAuth(p.id);
       if (auth) out[p.id] = auth.source;
     }

@@ -190,6 +190,10 @@ void main() {
     directory: dir = Directory.systemTemp.createTempSync('fl_pi_llm').path,
     credentials: credentials,
     externalLibrary: testLibrary(),
+    // The machine's own environment would give pi the keys of every provider
+    // set up on it (MINIMAX_API_KEY, HF_TOKEN...), and they would count as
+    // usable auth here. The environment is the test's, empty.
+    environment: () => const {},
   ));
   tearDownAll(() async {
     await llm.dispose();

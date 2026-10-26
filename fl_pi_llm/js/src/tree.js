@@ -16,8 +16,11 @@ import { isShown } from './entry.js';
 
 // The queries below are against this schema. A pi-durable that changes it
 // must have them looked at again.
-if (CURRENT_SQLITE_SCHEMA_VERSION !== 1) {
-  throw new Error(`tree.js reads pi-durable SQLite schema 1, not ${CURRENT_SQLITE_SCHEMA_VERSION}`);
+//
+// pi 1.4.0's schema 2 rebuilds the tasks table for the `sleeping` status; the
+// tables read here — durable_metadata, conversations, entries — are the same.
+if (CURRENT_SQLITE_SCHEMA_VERSION !== 2) {
+  throw new Error(`tree.js reads pi-durable SQLite schema 2, not ${CURRENT_SQLITE_SCHEMA_VERSION}`);
 }
 
 /** Whether an entry of [kind] is a message to the host, not a summary or the host's own. */
