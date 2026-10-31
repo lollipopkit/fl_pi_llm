@@ -9,6 +9,7 @@ import 'llm_l10n_az.dart';
 import 'llm_l10n_de.dart';
 import 'llm_l10n_en.dart';
 import 'llm_l10n_es.dart';
+import 'llm_l10n_fa.dart';
 import 'llm_l10n_fr.dart';
 import 'llm_l10n_id.dart';
 import 'llm_l10n_it.dart';
@@ -111,6 +112,7 @@ abstract class LlmLocalizations {
     Locale('de'),
     Locale('en'),
     Locale('es'),
+    Locale('fa'),
     Locale('fr'),
     Locale('id'),
     Locale('it'),
@@ -861,6 +863,7 @@ class _LlmLocalizationsDelegate
     'de',
     'en',
     'es',
+    'fa',
     'fr',
     'id',
     'it',
@@ -901,6 +904,8 @@ LlmLocalizations lookupLlmLocalizations(Locale locale) {
       return LlmLocalizationsEn();
     case 'es':
       return LlmLocalizationsEs();
+    case 'fa':
+      return LlmLocalizationsFa();
     case 'fr':
       return LlmLocalizationsFr();
     case 'id':
