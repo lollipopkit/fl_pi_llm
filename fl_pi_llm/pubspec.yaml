@@ -8,7 +8,10 @@ environment:
   sdk: ">=3.11.0 <4.0.0"
 
 dependencies:
-  code_assets: ^1.0.0
+  # 2.x too: an app whose other hooks are on it (rage through fl_lib) must
+  # resolve; the only change in 2.0 (`OS`/`Architecture` as const map keys)
+  # is not used here.
+  code_assets: '>=1.0.0 <3.0.0'
   flutter_rust_bridge: 2.13.0
   flutter_rust_bridge_hooks: 2.13.0
   hooks: ^2.0.2
