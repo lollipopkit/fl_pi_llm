@@ -207,7 +207,7 @@ void main() {
 
   test('info', () async {
     final info = await llm.info();
-    expect(info['piDurable'], '1.1.0');
+    expect(info['piDurable'], '1.4.0');
     expect(info['apis'], contains('anthropic-messages'));
   });
 
