@@ -24,6 +24,12 @@ fn main() {
     if std::env::var("CARGO_CFG_TARGET_VENDOR").as_deref() == Ok("apple") {
         println!("cargo:rustc-cdylib-link-arg=-Wl,-headerpad_max_install_names");
     }
+    // Android 15 devices ship with a 16 KB page size, and a cdylib linked for
+    // 4 KB pages fails to load on them (`dlopen` ENOEXEC) — the app never gets
+    // past its first frame. fl_tty's hook passes the same flag for fl_tty.so.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android") {
+        println!("cargo:rustc-cdylib-link-arg=-Wl,-z,max-page-size=16384");
+    }
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("fl_pi_llm.qbc");
     if std::env::var("CARGO_CFG_TARGET_POINTER_WIDTH").as_deref() != Ok("64") {
         std::fs::write(&out, []).unwrap();
