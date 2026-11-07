@@ -320,6 +320,15 @@ pub fn strip_wrappers(part: &str, any_env: bool) -> String {
             if any_env || SAFE_ENV.contains(&name) || name.starts_with("LC_") { 1 } else { 0 }
         } else {
             match first {
+                // Its options too where more texts are checked (deny, ask):
+                // `sudo -u root rm`.
+                "sudo" if any_env => {
+                    let mut n = 1;
+                    while let Some(w) = words.get(n).filter(|w| w.starts_with('-')) {
+                        n += if matches!(*w, "-u" | "-g" | "-h" | "-p" | "-C" | "-D" | "-r" | "-t" | "-T" | "-U") { 2 } else { 1 };
+                    }
+                    n
+                }
                 "sudo" | "time" | "nohup" | "command" | "builtin" | "noglob" => {
                     // `command -v` looks a command up; it does not run one.
                     if first == "command" && words.get(1).is_some_and(|w| w.starts_with('-')) { 0 } else { 1 }
@@ -462,11 +471,14 @@ mod tests {
         assert_eq!(r.verdict("timeout -s KILL 5 rm x"), RuleVerdict::Deny("rm *".into()));
         assert_eq!(r.verdict("stdbuf -o L rm x"), RuleVerdict::Deny("rm *".into()));
         assert_eq!(r.verdict("/bin/rm -rf x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("sudo -n rm x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("sudo -u root rm x"), RuleVerdict::Deny("rm *".into()));
         assert_eq!(r.verdict("cd / && /usr/bin/git clean -fd"), RuleVerdict::Ask("git clean *".into()));
         // Never more for allow: a path or env is not what the rule names.
         let a = rules(&["rm *"], &[], &[]);
         assert_eq!(a.verdict("/bin/rm x"), RuleVerdict::None);
         assert_eq!(a.verdict("env FOO=1 rm x"), RuleVerdict::None);
+        assert_eq!(a.verdict("sudo -u root rm x"), RuleVerdict::None);
     }
 
     #[test]

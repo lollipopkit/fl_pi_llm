@@ -100,7 +100,11 @@ static READ_ONLY_STARTS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         r"^(timedatectl|hostnamectl)(\s+(status|show))?(\s+--?[a-z-]+)*\s*$",
         r"^loginctl\s+(list-[a-z-]+|show-[a-z-]+|session-status|user-status)\b",
         r"^(find|locate|which|whereis|type|command\s+-v)\b",
-        r"^(ip|ss|netstat|ifconfig|route|ping|traceroute|tracepath|dig|nslookup|host)\b",
+        r"^(ss|netstat|ifconfig|route|ping|traceroute|tracepath|dig|nslookup|host)\b",
+        // `ip` only as it shows: flags with no value, an object, then nothing
+        // or a listing verb. An abbreviated `add`, an option taking a value
+        // (`-n ns`), anything else is not known to read.
+        r"^ip(\s+-[a-z0-9]+)*\s+[a-z]+(\s+(show|list|ls|lst|sh|s|get|g)\b[^;&|]*)?\s*$",
         r"^(journalctl|dmesg|systemctl\s+(status|show|is-active|is-enabled|is-failed|cat|list-[a-z-]+|--failed)|service\s+[^\s]+\s+status)\b",
         r"^(docker|podman)\s+(ps|images|inspect|logs|stats|info|version|system\s+df|volume\s+(ls|inspect)|image\s+(ls|inspect))\b",
         // Compose's global options (the project, its files, its env file) may
@@ -291,17 +295,17 @@ mod tests {
 
     #[test]
     fn what_runs_under_another_name_is_judged_as_itself() {
-        for c in ["/bin/rm -rf /srv", "/usr/bin/rm x", "env rm x", "env FOO=1 rm x", "timeout 5 rm x", "timeout -s KILL 5 rm x", "nice -n 5 rm x", "stdbuf -oL rm x", "sh -c 'rm -rf /srv'", "bash -c \"cd / && rm -rf srv\"", "/sbin/mkfs.ext4 /dev/sdb"] {
+        for c in ["/bin/rm -rf /srv", "/usr/bin/rm x", "env rm x", "env FOO=1 rm x", "timeout 5 rm x", "timeout -s KILL 5 rm x", "sudo -n rm x", "sudo -u root rm -rf /srv", "sudo --user=root -E rm x", "nice -n 5 rm x", "stdbuf -oL rm x", "sh -c 'rm -rf /srv'", "bash -c \"cd / && rm -rf srv\"", "/sbin/mkfs.ext4 /dev/sdb"] {
             assert_eq!(classify(c), CommandRisk::Destructive, "{c}");
         }
     }
 
     #[test]
     fn a_reads_name_set_to_change_something_is_no_read() {
-        for c in ["date -s '2026-01-01'", "date 010112002026", "hostname newbox", "hostname -F /etc/hostname", "ip link set eth0 down", "ip addr add 10.0.0.2/24 dev eth0", "ip -4 route del default", "ifconfig eth0 down", "route add default gw 10.0.0.1", "journalctl --vacuum-size=100M", "journalctl --rotate", "sort -o /etc/x y", "sed -n 'w /tmp/x' f", "sed 's/a/b/w /tmp/x' f", "sed 's/a/id/e' f", "sed -f script.sed f"] {
+        for c in ["date -s '2026-01-01'", "date 010112002026", "hostname newbox", "hostname -F /etc/hostname", "ip link set eth0 down", "ip addr add 10.0.0.2/24 dev eth0", "ip -4 route del default", "ip a add 10.0.0.2/24 dev eth0", "ip l set eth0 down", "ip r del default", "ip -n ns link set eth0 down", "ip netns exec ns rm x", "ifconfig eth0 down", "route add default gw 10.0.0.1", "journalctl --vacuum-size=100M", "journalctl --rotate", "sort -o /etc/x y", "sed -n 'w /tmp/x' f", "sed 's/a/b/w /tmp/x' f", "sed 's/a/id/e' f", "sed -f script.sed f"] {
             assert_ne!(classify(c), CommandRisk::ReadOnly, "{c}");
         }
-        for c in ["date +%s", "hostname", "hostname -i", "ip addr", "ip -4 route show", "ip link show eth0", "ifconfig eth0", "route -n", "journalctl -u nginx --since today", "sort -u f", "sed -n '/error/p' f", "sed 's/a/b/g' f"] {
+        for c in ["date +%s", "hostname", "hostname -i", "ip addr", "ip -4 route show", "ip link show eth0", "ip -br a", "ip a s", "ip route get 1.1.1.1", "ifconfig eth0", "route -n", "journalctl -u nginx --since today", "sort -u f", "sed -n '/error/p' f", "sed 's/a/b/g' f"] {
             assert_eq!(classify(c), CommandRisk::ReadOnly, "{c}");
         }
     }
