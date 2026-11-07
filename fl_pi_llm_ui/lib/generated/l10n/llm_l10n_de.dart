@@ -459,11 +459,11 @@ class LlmLocalizationsDe extends LlmLocalizations {
 
   @override
   String get permManualNote =>
-      'Änderungen, die keine Regel abdeckt, werden erfragt.';
+      'Neue Aufgaben fragen bei jedem Schritt nach, den keine Regel erlaubt.';
 
   @override
   String get permAutoNote =>
-      'Änderungen, die keine Regel abdeckt, beurteilt das Modell anhand der Regeln des automatischen Modus unten: Erlaubt wird ausgeführt, blockiert erfährt der Agent den Grund; ohne Urteil wirst du gefragt.';
+      'Bei neuen Aufgaben beurteilt das Modell jeden Schritt, den keine Regel erlaubt, anhand der Regeln für den automatischen Modus unten: Erlaubtes läuft, Blockiertes wird dem Agent begründet; ohne Urteil wirst du gefragt.';
 
   @override
   String get permBypassNote =>

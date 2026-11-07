@@ -1,8 +1,8 @@
 //! How the commands an AI agent runs are approved, in the shape of Claude
 //! Code's permissions: the operator's `allow` / `ask` / `deny` command rules
-//! ([`rules`]) come first, deny before ask before allow; then
-//! what [`risk`] knows to read, and a plan the person
-//! approved; what is left goes by the mode the task or chat runs in:
+//! ([`rules`]) come first, deny before ask before allow, then a plan the
+//! person approved; what is left goes by the mode the task or chat runs in,
+//! a read no different from a change:
 //!
 //! - `manual`: the person is asked.
 //! - `auto`: a model judges it against the auto mode rules (`hard_deny`,
@@ -192,7 +192,7 @@ pub fn decide(p: &Permissions, picked: Mode, command: Option<&str>, effect: Effe
         Mode::Bypass if ask_rule => ask(),
         Mode::Bypass => Decision::Run,
         _ if effect == Effect::Danger || ask_rule => ask(),
-        _ if verdict != RuleVerdict::None || effect != Effect::Change || approved => Decision::Run,
+        _ if matches!(verdict, RuleVerdict::Allow(_)) || approved => Decision::Run,
         Mode::Manual => ask(),
         Mode::Auto => Decision::Judge,
     }
@@ -436,7 +436,9 @@ mod tests {
         assert_eq!(d(Mode::Bypass, "rm -rf /srv", Effect::Change), Decision::Deny { rule: "rm -rf *".into() });
         assert!(matches!(d(Mode::Bypass, "systemctl stop nginx", Effect::Change), Decision::Ask { .. }));
         assert_eq!(d(Mode::Manual, "systemctl restart nginx", Effect::Change), Decision::Run);
-        assert_eq!(d(Mode::Manual, "df -h", Effect::Read), Decision::Run);
+        // A read goes by the mode as a change does.
+        assert!(matches!(d(Mode::Manual, "df -h", Effect::Read), Decision::Ask { .. }));
+        assert_eq!(d(Mode::Auto, "df -h", Effect::Read), Decision::Judge);
         assert!(matches!(d(Mode::Manual, "touch /etc/x", Effect::Change), Decision::Ask { danger: false, .. }));
         assert_eq!(d(Mode::Auto, "touch /etc/x", Effect::Change), Decision::Judge);
         assert_eq!(d(Mode::Bypass, "touch /etc/x", Effect::Change), Decision::Run);
@@ -448,7 +450,7 @@ mod tests {
         // Approved in a plan.
         assert_eq!(decide(&p, Mode::Manual, Some("touch /etc/x"), Effect::Change, true), Decision::Run);
         // Not a shell command: the mode alone.
-        assert_eq!(decide(&p, Mode::Manual, None, Effect::Read, false), Decision::Run);
+        assert!(matches!(decide(&p, Mode::Manual, None, Effect::Read, false), Decision::Ask { .. }));
         assert!(matches!(decide(&p, Mode::Manual, None, Effect::Change, false), Decision::Ask { allow_rule: None, .. }));
         p.disable_bypass = true;
         assert!(matches!(decide(&p, Mode::Bypass, Some("touch /etc/x"), Effect::Change, false), Decision::Ask { .. }));

@@ -8,7 +8,7 @@
 //! breaks, wrappers that run their argument (`timeout 30`, `nice`, `nohup`,
 //! `sudo`, …) are taken off, and each part is matched on its own: a deny or
 //! ask rule matching any part decides, an allow rule must cover every part
-//! (or the part be a read `command_risk` knows). A command allow rules
+//! (a read included). A command allow rules
 //! cannot see through — a substitution, a subshell, a write by redirection,
 //! a quote left open — is never allowed by a rule; deny and ask rules still
 //! look inside it.
@@ -22,7 +22,6 @@ use std::sync::LazyLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::risk::{self as command_risk, CommandRisk};
 
 pub const MAX_RULES: usize = 256;
 pub const MAX_RULE_LEN: usize = 512;
@@ -93,8 +92,6 @@ impl CommandRules {
             let p = strip_wrappers(part, false);
             match self.allow.iter().find(|r| matches(&pattern_of(r), &p)) {
                 Some(r) => by = by.or_else(|| Some(r.clone())),
-                // A known read needs no rule.
-                None if command_risk::classify(&p) == CommandRisk::ReadOnly => {}
                 None => return RuleVerdict::None,
             }
         }
@@ -106,21 +103,17 @@ impl CommandRules {
 }
 
 /// The allow rule an "always allow" offers for [command], in the shape
-/// Claude Code offers: the part that is not a known read, as its first two
-/// words then ` *` (`systemctl restart *`) when more follows a plain second
-/// word, otherwise word for word, wrappers (`sudo`) left off. `None` when one
-/// rule cannot allow it: a substitution or a write redirect, more than one
-/// part that changes something, or nothing that needs a rule.
+/// Claude Code offers: its first two words then ` *` (`systemctl restart *`)
+/// when more follows a plain second word, otherwise word for word, wrappers
+/// (`sudo`) left off. `None` when one rule cannot allow it: a substitution or
+/// a write redirect, or more than one part.
 pub fn suggest(command: &str) -> Option<String> {
     if !allowable(command) {
         return None;
     }
     let parts = subcommands(command)?;
-    let mut changing = parts.iter().map(|p| strip_wrappers(p, false)).filter(|p| command_risk::classify(p) != CommandRisk::ReadOnly);
-    let part = changing.next()?;
-    if changing.next().is_some() {
-        return None;
-    }
+    let [part] = parts.as_slice() else { return None };
+    let part = strip_wrappers(part, false);
     let words: Vec<&str> = part.split_whitespace().collect();
     let plain = |w: &str| !w.is_empty() && w.chars().all(|c| c.is_ascii_alphanumeric() || "-_.:@+".contains(c)) && !w.starts_with('-');
     let wide = match words.as_slice() {
@@ -374,12 +367,12 @@ mod tests {
         // A flag second, or two words: word for word.
         assert_eq!(suggest("apt-get -y install htop").as_deref(), Some("apt-get -y install htop"));
         assert_eq!(suggest("systemctl daemon-reload").as_deref(), Some("systemctl daemon-reload"));
-        // The read in a chain needs no rule.
-        assert_eq!(suggest("cat /etc/nginx/nginx.conf && systemctl reload nginx").as_deref(), Some("systemctl reload *"));
-        // What one allow rule could never cover.
+        assert_eq!(suggest("ls /").as_deref(), Some("ls /"));
+        // What one allow rule could never cover: a read in a chain needs a
+        // rule too.
+        assert_eq!(suggest("cat /etc/nginx/nginx.conf && systemctl reload nginx"), None);
         assert_eq!(suggest("echo $(id) > /tmp/x"), None);
         assert_eq!(suggest("touch a && rm b"), None);
-        assert_eq!(suggest("ls /"), None);
     }
 
     fn rules(allow: &[&str], ask: &[&str], deny: &[&str]) -> CommandRules {
@@ -441,8 +434,8 @@ mod tests {
     fn allow_must_cover_every_part_it_can_see() {
         let r = rules(&["systemctl restart *"], &[], &[]);
         assert_eq!(r.verdict("systemctl restart nginx"), RuleVerdict::Allow("systemctl restart *".into()));
-        // A known read beside it needs no rule.
-        assert_eq!(r.verdict("systemctl restart nginx && systemctl status nginx"), RuleVerdict::Allow("systemctl restart *".into()));
+        // A read beside it needs a rule as well.
+        assert_eq!(r.verdict("systemctl restart nginx && systemctl status nginx"), RuleVerdict::None);
         assert_eq!(r.verdict("systemctl restart nginx && touch /x"), RuleVerdict::None);
         assert_eq!(r.verdict("systemctl restart $(cat /x)"), RuleVerdict::None);
         assert_eq!(r.verdict("systemctl restart nginx > /etc/x"), RuleVerdict::None);

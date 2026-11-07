@@ -460,11 +460,11 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get permManualNote =>
-      'Les changements qu\'aucune règle ne couvre vous sont demandés.';
+      'Les nouvelles tâches demandent pour chaque étape qu’aucune règle n’autorise.';
 
   @override
   String get permAutoNote =>
-      'Les changements qu\'aucune règle ne couvre sont jugés par le modèle selon les règles du mode automatique ci-dessous : autorisé, il s\'exécute ; bloqué, l\'agent en reçoit la raison ; sans verdict, on vous demande.';
+      'Dans les nouvelles tâches, le modèle juge chaque étape qu’aucune règle n’autorise selon les règles du mode automatique ci-dessous : autorisée, elle s’exécute ; bloquée, l’agent en reçoit la raison ; sans verdict, on vous demande.';
 
   @override
   String get permBypassNote =>

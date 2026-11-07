@@ -456,11 +456,11 @@ class LlmLocalizationsKo extends LlmLocalizations {
   String get permDefaultMode => '새 작업의 기본 모드';
 
   @override
-  String get permManualNote => '규칙에 없는 변경은 모두 확인을 요청합니다.';
+  String get permManualNote => '새 작업은 규칙이 허용하지 않는 모든 단계에 대해 확인을 요청합니다.';
 
   @override
   String get permAutoNote =>
-      '규칙에 없는 변경은 아래 자동 모드 규칙에 따라 모델이 판단합니다. 허용이면 실행하고, 차단이면 이유를 Agent에 알리며, 판단이 없으면 확인을 요청합니다.';
+      '새 작업에서는 규칙이 허용하지 않는 모든 단계를 아래 자동 모드 규칙에 따라 모델이 판단합니다: 허용되면 실행하고, 차단되면 Agent에 이유를 알리며, 판단이 없으면 확인을 요청합니다.';
 
   @override
   String get permBypassNote =>

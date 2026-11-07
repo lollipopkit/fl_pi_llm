@@ -435,11 +435,11 @@ class LlmLocalizationsJa extends LlmLocalizations {
   String get permDefaultMode => '新しいタスクの既定モード';
 
   @override
-  String get permManualNote => 'ルールにない変更は毎回確認します。';
+  String get permManualNote => '新しいタスクは、ルールで許可されていないすべての手順について確認します。';
 
   @override
   String get permAutoNote =>
-      'ルールにない変更は、下の自動モードのルールに沿ってモデルが判断します。許可なら実行、ブロックなら理由を Agent に伝え、判断がなければ確認します。';
+      '新しいタスクでは、ルールで許可されていない手順を下の自動モードのルールに沿ってモデルが判断します：許可なら実行、ブロックなら理由を Agent に伝え、判断がなければ確認します。';
 
   @override
   String get permBypassNote =>

@@ -27,18 +27,12 @@ abstract final class LlmApprovals {
 
   /// Whether [call] of [tool] runs, is refused, or is asked about — and then
   /// whether an earlier "always allow" may answer instead ([remembered]),
-  /// which it may not for a call that loses something for good. An MCP tool
-  /// is what its server says of it.
+  /// which it may not for a call that loses something for good.
   static Future<({LlmApproval? decided, bool remembered})> decide(LlmToolCall call, ToolFunc? tool) async {
     final p = stored;
     final mcp = tool == null ? McpTools.defOf(call.name) : null;
-    final claimed =
-        tool?.effect(call.args) ??
-        (mcp?.readOnly ?? false
-            ? LlmEffect.read
-            : mcp?.destructive ?? false
-            ? LlmEffect.danger
-            : LlmEffect.change);
+    // An MCP tool's word that it only reads changes nothing: the mode decides.
+    final claimed = tool?.effect(call.args) ?? (mcp?.destructive ?? false ? LlmEffect.danger : LlmEffect.change);
     final command = tool?.shellCommand(call.args);
     final subject = command ?? '${call.name} ${tool?.summary(call.args) ?? call.args}';
     return switch (LlmPermissionRules.decide(p, p.mode, command: command, claimed: claimed)) {

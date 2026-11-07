@@ -432,11 +432,11 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String get permDefaultMode => '新任务的默认模式';
 
   @override
-  String get permManualNote => '规则没有覆盖的改动都会询问你。';
+  String get permManualNote => '规则没有允许的每一步都会询问你。';
 
   @override
   String get permAutoNote =>
-      '规则没有覆盖的改动交给模型按下面的自动模式规则判断：允许就执行，拦截就把原因告诉 Agent；没有结论时询问你。';
+      '规则没有允许的每一步交给模型按下面的自动模式规则判断：允许就执行，拦截就把原因告诉 Agent；没有结论时询问你。';
 
   @override
   String get permBypassNote => '所有步骤直接执行，包括删除、重启和改配置，不再询问。拒绝和询问规则仍然生效。';
@@ -921,11 +921,11 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
   String get permDefaultMode => '新任務的預設模式';
 
   @override
-  String get permManualNote => '規則沒有涵蓋的變更都會詢問你。';
+  String get permManualNote => '規則未允許的每一步都會詢問您。';
 
   @override
   String get permAutoNote =>
-      '規則沒有涵蓋的變更交給模型按下面的自動模式規則判斷：允許就執行，攔截就把原因告訴 Agent；沒有結論時詢問你。';
+      '規則未允許的每一步交由模型依下方的自動模式規則判斷：允許就執行，攔截就把原因告訴 Agent；沒有結論時詢問您。';
 
   @override
   String get permBypassNote => '所有步驟直接執行，包括刪除、重新啟動和修改設定，不再詢問。拒絕和詢問規則仍然生效。';
