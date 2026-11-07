@@ -102,11 +102,22 @@ final class McpOAuthTokens {
 
 /// [McpSecret]s, by server, in [LlmStores.mcpSecret].
 abstract final class McpSecrets {
+  static String _oauthKey(String id) => '$id${McpSecretStore.oauthSuffix}';
+
   static McpSecret read(String id) {
-    final raw = LlmStores.mcpSecret.get<Map>(id);
-    if (raw == null) return const McpSecret();
+    final store = LlmStores.mcpSecret;
     try {
-      return McpSecret.fromJson(raw.cast());
+      final headers = McpSecret.fromJson((store.get<Map>(id) ?? const {}).cast());
+      final oauth = store.get<Map>(_oauthKey(id));
+      // TODO: remove once no install keeps a sign-in beside the headers.
+      if (oauth == null && headers.oauth != null) {
+        write(id, headers);
+        return headers;
+      }
+      return McpSecret(
+        headers: headers.headers,
+        oauth: oauth == null ? null : McpOAuthTokens.fromJson(oauth.cast()),
+      );
     } catch (e) {
       Loggers.app.warning('MCP secret of $id is unreadable', e);
       return const McpSecret();
@@ -114,11 +125,21 @@ abstract final class McpSecrets {
   }
 
   static void write(String id, McpSecret secret) {
-    if (secret.isEmpty) return delete(id);
-    LlmStores.mcpSecret.set(id, secret.toJson());
+    final store = LlmStores.mcpSecret;
+    if (secret.headers.isEmpty) {
+      store.remove(id);
+    } else {
+      store.set(id, McpSecret(headers: secret.headers).toJson());
+    }
+    final oauth = secret.oauth;
+    if (oauth == null) {
+      store.remove(_oauthKey(id));
+    } else {
+      store.set(_oauthKey(id), oauth.toJson());
+    }
   }
 
-  static void delete(String id) => LlmStores.mcpSecret.remove(id);
+  static void delete(String id) => write(id, const McpSecret());
 }
 
 /// Hands the transport a connection's token, renewed when it has expired.
