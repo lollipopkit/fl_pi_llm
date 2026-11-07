@@ -846,6 +846,162 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'High risk'**
   String get commandRiskDestructive;
+
+  /// No description provided for @permMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission mode'**
+  String get permMode;
+
+  /// No description provided for @permModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get permModeAuto;
+
+  /// No description provided for @permModeManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get permModeManual;
+
+  /// No description provided for @permModeBypass.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow all'**
+  String get permModeBypass;
+
+  /// No description provided for @permModeBypassOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turned off on this server'**
+  String get permModeBypassOff;
+
+  /// No description provided for @permTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Command permissions'**
+  String get permTitle;
+
+  /// No description provided for @permDefaultMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Default mode'**
+  String get permDefaultMode;
+
+  /// No description provided for @permManualNote.
+  ///
+  /// In en, this message translates to:
+  /// **'New tasks ask about every step no rule allows.'**
+  String get permManualNote;
+
+  /// No description provided for @permAutoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'New tasks have every step no rule allows judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.'**
+  String get permAutoNote;
+
+  /// No description provided for @permBypassNote.
+  ///
+  /// In en, this message translates to:
+  /// **'New tasks run every step unasked, deleting, restarting and config changes included. Deny and ask rules still apply.'**
+  String get permBypassNote;
+
+  /// No description provided for @permDisableBypass.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off Allow all'**
+  String get permDisableBypass;
+
+  /// No description provided for @permDisableBypassSub.
+  ///
+  /// In en, this message translates to:
+  /// **'No task runs in Allow all; one started in it asks as in Manual.'**
+  String get permDisableBypassSub;
+
+  /// No description provided for @permDangerAsks.
+  ///
+  /// In en, this message translates to:
+  /// **'Unless a task allows all, a command that cannot be undone (deleting data, partitions) asks you to type the server\'s name.'**
+  String get permDangerAsks;
+
+  /// No description provided for @permRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Command rules'**
+  String get permRules;
+
+  /// No description provided for @permDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get permDeny;
+
+  /// No description provided for @permAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get permAsk;
+
+  /// No description provided for @permAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get permAllow;
+
+  /// No description provided for @permRulesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One per line. * is any text, as in systemctl status * or apt-get install *; a trailing :* is the same as \" *\". A chained command is checked part by part: deny and ask apply when any part matches, allow only when every part is covered. Rules match the command as written (sh -c \'rm …\' does not match rm *); they are not a security boundary.'**
+  String get permRulesHint;
+
+  /// No description provided for @permAutoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto mode rules'**
+  String get permAutoRules;
+
+  /// No description provided for @permAutoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain-language rules the model judges by. Empty uses the built-in list; a line \$defaults keeps it and adds yours. Order: hard deny, then soft deny (an allow rule or your own explicit request clears it), then allow.'**
+  String get permAutoHint;
+
+  /// No description provided for @permEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get permEnvironment;
+
+  /// No description provided for @permSoftDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft deny'**
+  String get permSoftDeny;
+
+  /// No description provided for @permHardDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard deny'**
+  String get permHardDeny;
+
+  /// No description provided for @permBuiltIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in rules'**
+  String get permBuiltIn;
+
+  /// No description provided for @permShowDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in rules ({n})'**
+  String permShowDefaults(int n);
+
+  /// No description provided for @discardUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get discardUnsaved;
 }
 
 class _LlmLocalizationsDelegate

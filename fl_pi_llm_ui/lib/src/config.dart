@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:fl_pi_llm/fl_pi_llm.dart' show LlmPermissionRules;
 import 'package:fl_pi_llm_ui/src/store/chat_meta.dart';
 import 'package:fl_pi_llm_ui/src/tools/tool.dart';
 
@@ -51,6 +52,14 @@ abstract final class LlmUi {
   /// [Tools.mcpGroup] for every MCP server's. A chat in a [ChatMeta.scope]
   /// that has a narrower job than the app's own list, say.
   static bool Function(ChatMeta? meta, String group) offers = (_, _) => true;
+
+  /// Where this app's tool calls run and what is sensitive there, for the
+  /// auto mode judge ([LlmPermissionRules.defaults]).
+  static List<String> Function() permissionEnvironment = () => const [
+    'These machines: wherever this app\'s tools run commands or act, on the person\'s behalf; the person using the app is their operator.',
+    'Trusted destinations: none configured. Any host other than the one a call acts on, its package repositories and the registries it already pulls from is outside the trust boundary.',
+    'Sensitive data: credentials, keys and tokens anywhere, the app\'s own data and secrets, and any database or files holding personal or application data.',
+  ];
 
   /// What the app adds to a chat's system prompt, after the user's own.
   /// Applied when a chat opens and on [Chats.reconfigure].

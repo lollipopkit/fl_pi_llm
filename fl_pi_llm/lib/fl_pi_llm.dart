@@ -9,6 +9,7 @@ export 'src/event.dart';
 export 'src/mcp.dart';
 export 'src/memory.dart';
 export 'src/model.dart';
+export 'src/permissions.dart';
 export 'src/runtime.dart' show FlPiLlm, LlmLogger, LlmSession;
 export 'src/skills.dart';
 export 'src/tool.dart';

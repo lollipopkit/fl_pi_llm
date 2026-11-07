@@ -317,6 +317,12 @@ abstract final class McpTools {
   /// The headers [id] is sent, to edit them.
   static Map<String, String> headersOf(String id) => McpSecrets.read(id).headers;
 
+  /// What MCP tool [name] is, as its server described it; null for none.
+  static LlmMcpTool? defOf(String name) {
+    final id = serverOfTool(name);
+    return id == null ? null : _servers[id]?.defs.firstWhereOrNull((d) => d.$2.name == name)?.$2;
+  }
+
   /// The server whose tool [name] is, as [LlmMcp.tool] names them.
   static String? serverOfTool(String name) => _servers.keys.firstWhereOrNull((id) => name.startsWith('${id}__'));
 

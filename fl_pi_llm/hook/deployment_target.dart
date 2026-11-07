@@ -13,8 +13,11 @@ import 'package:hooks/hooks.dart';
 Map<String, String> deploymentTargetEnvironment(BuildInput input) {
   if (!input.config.buildCodeAssets) return const {};
   final code = input.config.code;
+  // TODO: `deploymentVersion.major` once code_assets 2.2 is the floor.
   return switch (code.targetOS) {
+    // ignore: deprecated_member_use
     OS.iOS => {'IPHONEOS_DEPLOYMENT_TARGET': '${code.iOS.targetVersion}'},
+    // ignore: deprecated_member_use
     OS.macOS => {'MACOSX_DEPLOYMENT_TARGET': '${code.macOS.targetVersion}'},
     _ => const {},
   };

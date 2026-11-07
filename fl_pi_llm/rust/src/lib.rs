@@ -7,6 +7,7 @@ pub mod db;
 pub mod engine;
 pub mod mcp;
 pub mod memory;
+pub mod permissions;
 pub mod skills;
 #[cfg(feature = "frb")]
 mod frb_generated;

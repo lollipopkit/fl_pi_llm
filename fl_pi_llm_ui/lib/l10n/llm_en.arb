@@ -261,5 +261,38 @@
   "commandRiskCaution": "Changes system",
   "@commandRiskCaution": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."},
   "commandRiskDestructive": "High risk",
-  "@commandRiskDestructive": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."}
+  "@commandRiskDestructive": {"description": "A badge on a shell command awaiting approval: what its shape shows it does."},
+  "permMode": "Permission mode",
+  "permModeAuto": "Auto",
+  "permModeManual": "Manual",
+  "permModeBypass": "Allow all",
+  "permModeBypassOff": "Turned off on this server",
+  "permTitle": "Command permissions",
+  "permDefaultMode": "Default mode",
+  "permManualNote": "New tasks ask about every step no rule allows.",
+  "permAutoNote": "New tasks have every step no rule allows judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.",
+  "permBypassNote": "New tasks run every step unasked, deleting, restarting and config changes included. Deny and ask rules still apply.",
+  "permDisableBypass": "Turn off Allow all",
+  "permDisableBypassSub": "No task runs in Allow all; one started in it asks as in Manual.",
+  "permDangerAsks": "Unless a task allows all, a command that cannot be undone (deleting data, partitions) asks you to type the server's name.",
+  "permRules": "Command rules",
+  "permDeny": "Deny",
+  "permAsk": "Ask",
+  "permAllow": "Allow",
+  "permRulesHint": "One per line. * is any text, as in systemctl status * or apt-get install *; a trailing :* is the same as \" *\". A chained command is checked part by part: deny and ask apply when any part matches, allow only when every part is covered. Rules match the command as written (sh -c 'rm …' does not match rm *); they are not a security boundary.",
+  "permAutoRules": "Auto mode rules",
+  "permAutoHint": "Plain-language rules the model judges by. Empty uses the built-in list; a line $defaults keeps it and adds yours. Order: hard deny, then soft deny (an allow rule or your own explicit request clears it), then allow.",
+  "permEnvironment": "Environment",
+  "permSoftDeny": "Soft deny",
+  "permHardDeny": "Hard deny",
+  "permBuiltIn": "Built-in rules",
+  "permShowDefaults": "Built-in rules ({n})",
+  "@permShowDefaults": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "discardUnsaved": "Discard unsaved changes?"
 }

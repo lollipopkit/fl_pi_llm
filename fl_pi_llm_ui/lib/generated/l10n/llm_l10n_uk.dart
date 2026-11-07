@@ -421,4 +421,91 @@ class LlmLocalizationsUk extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Високий ризик';
+
+  @override
+  String get permMode => 'Режим дозволів';
+
+  @override
+  String get permModeAuto => 'Авто';
+
+  @override
+  String get permModeManual => 'Вручну';
+
+  @override
+  String get permModeBypass => 'Дозволити все';
+
+  @override
+  String get permModeBypassOff => 'Вимкнено на цьому сервері';
+
+  @override
+  String get permTitle => 'Дозволи команд';
+
+  @override
+  String get permDefaultMode => 'Типовий режим нових завдань';
+
+  @override
+  String get permManualNote =>
+      'Нові завдання запитують про кожен крок, який не дозволено правилами.';
+
+  @override
+  String get permAutoNote =>
+      'У нових завданнях кожен крок, не дозволений правилами, оцінює модель за правилами автоматичного режиму нижче: дозволене виконується, про заблоковане агенту повідомляється причина; без вердикту запитують вас.';
+
+  @override
+  String get permBypassNote =>
+      'Усі кроки виконуються без запитань, зокрема видалення, перезапуск і зміна конфігурації. Правила заборони й запиту й далі діють.';
+
+  @override
+  String get permDisableBypass => 'Вимкнути «Дозволити все»';
+
+  @override
+  String get permDisableBypassSub =>
+      'Завдання не можуть працювати в «Дозволити все»; запущене так завдання запитує, як у ручному режимі.';
+
+  @override
+  String get permDangerAsks =>
+      'Окрім завдань із «Дозволити все», незворотна команда (видалення даних, розділи) вимагає ввести ім’я сервера.';
+
+  @override
+  String get permRules => 'Правила команд';
+
+  @override
+  String get permDeny => 'Заборонити';
+
+  @override
+  String get permAsk => 'Питати';
+
+  @override
+  String get permAllow => 'Дозволити';
+
+  @override
+  String get permRulesHint =>
+      'По одному в рядку. * — будь-який текст, наприклад systemctl status * або apt-get install *; :* у кінці рівнозначне « *». Складена команда перевіряється частинами: заборона й запит діють, якщо збіглася будь-яка частина, дозвіл — лише якщо покрита кожна. Правила порівнюють написаний текст (sh -c \'rm …\' не збігається з rm *) і не є межею безпеки.';
+
+  @override
+  String get permAutoRules => 'Правила автоматичного режиму';
+
+  @override
+  String get permAutoHint =>
+      'Правила звичайною мовою, за якими судить модель. Порожньо — вбудований список; рядок \$defaults зберігає його й додає ваші. Порядок: жорстка заборона, потім м’яка (знімається правилом дозволу чи вашим явним проханням), потім дозвіл.';
+
+  @override
+  String get permEnvironment => 'Оточення';
+
+  @override
+  String get permSoftDeny => 'М’яка заборона';
+
+  @override
+  String get permHardDeny => 'Жорстка заборона';
+
+  @override
+  String get permBuiltIn => 'Вбудовані правила';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Вбудовані правила ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Скасувати незбережені зміни?';
 }

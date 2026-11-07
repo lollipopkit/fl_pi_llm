@@ -421,4 +421,91 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Risiko tinggi';
+
+  @override
+  String get permMode => 'Mode izin';
+
+  @override
+  String get permModeAuto => 'Otomatis';
+
+  @override
+  String get permModeManual => 'Manual';
+
+  @override
+  String get permModeBypass => 'Izinkan semua';
+
+  @override
+  String get permModeBypassOff => 'Dinonaktifkan di server ini';
+
+  @override
+  String get permTitle => 'Izin perintah';
+
+  @override
+  String get permDefaultMode => 'Mode bawaan tugas baru';
+
+  @override
+  String get permManualNote =>
+      'Tugas baru menanyakan setiap langkah yang tidak diizinkan aturan.';
+
+  @override
+  String get permAutoNote =>
+      'Pada tugas baru, setiap langkah yang tidak diizinkan aturan dinilai oleh model berdasarkan aturan mode otomatis di bawah: yang diizinkan dijalankan, yang diblokir dijelaskan alasannya ke agent; tanpa keputusan, Anda ditanya.';
+
+  @override
+  String get permBypassNote =>
+      'Setiap langkah dijalankan tanpa bertanya, termasuk menghapus, memulai ulang, dan mengubah konfigurasi. Aturan tolak dan tanya tetap berlaku.';
+
+  @override
+  String get permDisableBypass => 'Matikan Izinkan semua';
+
+  @override
+  String get permDisableBypassSub =>
+      'Tidak ada tugas yang berjalan dengan Izinkan semua; tugas yang dimulai begitu akan bertanya seperti mode manual.';
+
+  @override
+  String get permDangerAsks =>
+      'Kecuali pada tugas yang mengizinkan semua, perintah yang tidak bisa dibatalkan (menghapus data, partisi) meminta Anda mengetik nama server.';
+
+  @override
+  String get permRules => 'Aturan perintah';
+
+  @override
+  String get permDeny => 'Tolak';
+
+  @override
+  String get permAsk => 'Tanya';
+
+  @override
+  String get permAllow => 'Izinkan';
+
+  @override
+  String get permRulesHint =>
+      'Satu per baris. * berarti teks apa pun, misalnya systemctl status * atau apt-get install *; :* di akhir sama dengan “ *”. Perintah berantai diperiksa per bagian: tolak dan tanya berlaku jika satu bagian cocok, izinkan hanya jika setiap bagian tercakup. Aturan mencocokkan teks yang ditulis (sh -c \'rm …\' tidak cocok dengan rm *); ini bukan batas keamanan.';
+
+  @override
+  String get permAutoRules => 'Aturan mode otomatis';
+
+  @override
+  String get permAutoHint =>
+      'Aturan dalam bahasa biasa untuk penilaian model. Kosong memakai daftar bawaan; baris \$defaults mempertahankannya dan menambahkan milik Anda. Urutan: tolak keras, lalu tolak lunak (dibatalkan oleh aturan izin atau permintaan eksplisit Anda), lalu izinkan.';
+
+  @override
+  String get permEnvironment => 'Lingkungan';
+
+  @override
+  String get permSoftDeny => 'Tolak lunak';
+
+  @override
+  String get permHardDeny => 'Tolak keras';
+
+  @override
+  String get permBuiltIn => 'Aturan bawaan';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Aturan bawaan ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Buang perubahan yang belum disimpan?';
 }

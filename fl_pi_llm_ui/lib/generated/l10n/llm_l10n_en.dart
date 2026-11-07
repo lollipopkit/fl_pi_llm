@@ -440,4 +440,90 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'High risk';
+
+  @override
+  String get permMode => 'Permission mode';
+
+  @override
+  String get permModeAuto => 'Auto';
+
+  @override
+  String get permModeManual => 'Manual';
+
+  @override
+  String get permModeBypass => 'Allow all';
+
+  @override
+  String get permModeBypassOff => 'Turned off on this server';
+
+  @override
+  String get permTitle => 'Command permissions';
+
+  @override
+  String get permDefaultMode => 'Default mode';
+
+  @override
+  String get permManualNote => 'New tasks ask about every step no rule allows.';
+
+  @override
+  String get permAutoNote =>
+      'New tasks have every step no rule allows judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.';
+
+  @override
+  String get permBypassNote =>
+      'New tasks run every step unasked, deleting, restarting and config changes included. Deny and ask rules still apply.';
+
+  @override
+  String get permDisableBypass => 'Turn off Allow all';
+
+  @override
+  String get permDisableBypassSub =>
+      'No task runs in Allow all; one started in it asks as in Manual.';
+
+  @override
+  String get permDangerAsks =>
+      'Unless a task allows all, a command that cannot be undone (deleting data, partitions) asks you to type the server\'s name.';
+
+  @override
+  String get permRules => 'Command rules';
+
+  @override
+  String get permDeny => 'Deny';
+
+  @override
+  String get permAsk => 'Ask';
+
+  @override
+  String get permAllow => 'Allow';
+
+  @override
+  String get permRulesHint =>
+      'One per line. * is any text, as in systemctl status * or apt-get install *; a trailing :* is the same as \" *\". A chained command is checked part by part: deny and ask apply when any part matches, allow only when every part is covered. Rules match the command as written (sh -c \'rm …\' does not match rm *); they are not a security boundary.';
+
+  @override
+  String get permAutoRules => 'Auto mode rules';
+
+  @override
+  String get permAutoHint =>
+      'Plain-language rules the model judges by. Empty uses the built-in list; a line \$defaults keeps it and adds yours. Order: hard deny, then soft deny (an allow rule or your own explicit request clears it), then allow.';
+
+  @override
+  String get permEnvironment => 'Environment';
+
+  @override
+  String get permSoftDeny => 'Soft deny';
+
+  @override
+  String get permHardDeny => 'Hard deny';
+
+  @override
+  String get permBuiltIn => 'Built-in rules';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Built-in rules ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Discard unsaved changes?';
 }

@@ -421,4 +421,91 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Yüksek risk';
+
+  @override
+  String get permMode => 'İzin modu';
+
+  @override
+  String get permModeAuto => 'Otomatik';
+
+  @override
+  String get permModeManual => 'Manuel';
+
+  @override
+  String get permModeBypass => 'Tümüne izin ver';
+
+  @override
+  String get permModeBypassOff => 'Bu sunucuda devre dışı';
+
+  @override
+  String get permTitle => 'Komut izinleri';
+
+  @override
+  String get permDefaultMode => 'Yeni görevlerin varsayılan modu';
+
+  @override
+  String get permManualNote =>
+      'Yeni görevler hiçbir kuralın izin vermediği her adım için sorar.';
+
+  @override
+  String get permAutoNote =>
+      'Yeni görevlerde hiçbir kuralın izin vermediği her adımı model aşağıdaki otomatik mod kurallarına göre değerlendirir: izin verilirse çalışır, engellenirse nedeni agent\'a bildirilir; karar yoksa size sorulur.';
+
+  @override
+  String get permBypassNote =>
+      'Silme, yeniden başlatma ve yapılandırma değişiklikleri dahil her adım sormadan çalışır. Reddet ve sor kuralları geçerli kalır.';
+
+  @override
+  String get permDisableBypass => 'Tümüne izin ver seçeneğini kapat';
+
+  @override
+  String get permDisableBypassSub =>
+      'Hiçbir görev Tümüne izin ver modunda çalışmaz; böyle başlatılan görev el ile modundaki gibi sorar.';
+
+  @override
+  String get permDangerAsks =>
+      'Tümüne izin veren görevler dışında, geri alınamayan bir komut (veri silme, bölümler) sunucu adını yazmanızı ister.';
+
+  @override
+  String get permRules => 'Komut kuralları';
+
+  @override
+  String get permDeny => 'Reddet';
+
+  @override
+  String get permAsk => 'Sor';
+
+  @override
+  String get permAllow => 'İzin ver';
+
+  @override
+  String get permRulesHint =>
+      'Satır başına bir tane. * herhangi bir metindir; örn. systemctl status * ya da apt-get install *; sondaki :* “ *” ile aynıdır. Zincirli bir komut parça parça denetlenir: reddet ve sor herhangi bir parça eşleşirse, izin ver yalnızca her parça kapsanırsa geçerlidir. Kurallar yazılan metinle eşleşir (sh -c \'rm …\', rm * ile eşleşmez); güvenlik sınırı değildir.';
+
+  @override
+  String get permAutoRules => 'Otomatik mod kuralları';
+
+  @override
+  String get permAutoHint =>
+      'Modelin karar verirken kullandığı düz dilde kurallar. Boş bırakılırsa yerleşik liste kullanılır; \$defaults satırı onu korur ve sizinkileri ekler. Sıra: kesin ret, sonra yumuşak ret (bir izin kuralı ya da açık isteğiniz kaldırır), sonra izin.';
+
+  @override
+  String get permEnvironment => 'Ortam';
+
+  @override
+  String get permSoftDeny => 'Yumuşak ret';
+
+  @override
+  String get permHardDeny => 'Kesin ret';
+
+  @override
+  String get permBuiltIn => 'Yerleşik kurallar';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Yerleşik kurallar ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Kaydedilmemiş değişiklikler atılsın mı?';
 }

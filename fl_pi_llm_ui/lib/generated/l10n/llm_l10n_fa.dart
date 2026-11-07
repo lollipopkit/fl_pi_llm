@@ -439,4 +439,91 @@ class LlmLocalizationsFa extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'خطر بالا';
+
+  @override
+  String get permMode => 'حالت مجوز';
+
+  @override
+  String get permModeAuto => 'خودکار';
+
+  @override
+  String get permModeManual => 'دستی';
+
+  @override
+  String get permModeBypass => 'اجازه به همه';
+
+  @override
+  String get permModeBypassOff => 'در این سرور خاموش است';
+
+  @override
+  String get permTitle => 'مجوزهای فرمان';
+
+  @override
+  String get permDefaultMode => 'حالت پیش‌فرض کارهای جدید';
+
+  @override
+  String get permManualNote =>
+      'کارهای جدید برای هر مرحله‌ای که هیچ قاعده‌ای اجازه نداده است می‌پرسند.';
+
+  @override
+  String get permAutoNote =>
+      'در کارهای جدید، مدل هر مرحله‌ای را که هیچ قاعده‌ای اجازه نداده بر اساس قواعد حالت خودکار زیر داوری می‌کند: اگر مجاز باشد اجرا می‌شود، اگر مسدود شود دلیلش به Agent گفته می‌شود؛ بدون نتیجه از شما پرسیده می‌شود.';
+
+  @override
+  String get permBypassNote =>
+      'کارهای جدید همهٔ مراحل را بدون پرسش اجرا می‌کنند، از جمله حذف، راه‌اندازی مجدد و تغییر پیکربندی. قواعد رد و پرسش همچنان اعمال می‌شوند.';
+
+  @override
+  String get permDisableBypass => 'خاموش کردن «اجازه به همه»';
+
+  @override
+  String get permDisableBypassSub =>
+      'هیچ کاری با «اجازه به همه» اجرا نمی‌شود؛ کاری که با آن شروع شده مانند حالت دستی می‌پرسد.';
+
+  @override
+  String get permDangerAsks =>
+      'جز در کاری که به همه اجازه می‌دهد، فرمانی که برگشت‌پذیر نیست (حذف داده، پارتیشن‌ها) از شما می‌خواهد نام سرور را تایپ کنید.';
+
+  @override
+  String get permRules => 'قواعد فرمان';
+
+  @override
+  String get permDeny => 'رد';
+
+  @override
+  String get permAsk => 'پرسش';
+
+  @override
+  String get permAllow => 'اجازه';
+
+  @override
+  String get permRulesHint =>
+      'هر خط یک قاعده. * یعنی هر متنی، مانند systemctl status * یا apt-get install *؛ :* در انتها همان \" *\" است. فرمان زنجیره‌ای بخش به بخش بررسی می‌شود: رد و پرسش وقتی هر بخشی مطابقت داشته باشد اعمال می‌شوند، اجازه فقط وقتی همهٔ بخش‌ها پوشش داده شوند. قواعد با متن نوشته‌شدهٔ فرمان مطابقت دارند (sh -c \'rm …\' با rm * مطابقت ندارد)؛ مرز امنیتی نیستند.';
+
+  @override
+  String get permAutoRules => 'قواعد حالت خودکار';
+
+  @override
+  String get permAutoHint =>
+      'قواعدی به زبان ساده که مدل بر اساس آن‌ها داوری می‌کند. خالی یعنی فهرست داخلی؛ خط \$defaults آن را نگه می‌دارد و قواعد شما را اضافه می‌کند. ترتیب: رد قطعی، سپس رد نرم (قاعدهٔ اجازه یا درخواست صریح شما آن را برطرف می‌کند)، سپس اجازه.';
+
+  @override
+  String get permEnvironment => 'محیط';
+
+  @override
+  String get permSoftDeny => 'رد نرم';
+
+  @override
+  String get permHardDeny => 'رد قطعی';
+
+  @override
+  String get permBuiltIn => 'قواعد داخلی';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'قواعد داخلی ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'تغییرات ذخیره‌نشده کنار گذاشته شود؟';
 }

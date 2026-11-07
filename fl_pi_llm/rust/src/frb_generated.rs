@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
                     default_rust_auto_opaque = RustAutoOpaqueMoi,
                 );
                 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-                pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -354002051;
+                pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1123073708;
             
 
 // Section: executor
@@ -232,6 +232,69 @@ let api_args = <String>::sse_decode(&mut deserializer);deserializer.end();
             deserializer.end();
                 transform_result_sse::<_, ()>((move || {
                      let output_ok = Ok::<_, ()>(crate::api::memory::memory_tools())?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_check_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_check", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_permissions = <String>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, ()>((move || {
+                     let output_ok = Ok::<_, ()>(crate::api::permissions::permissions_check(api_permissions))?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_classify_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_classify", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_command = <String>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, ()>((move || {
+                     let output_ok = Ok::<_, ()>(crate::api::permissions::permissions_classify(api_command))?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_decide_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_decide", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_permissions = <String>::sse_decode(&mut deserializer);
+let api_mode = <String>::sse_decode(&mut deserializer);
+let api_command = <Option<String>>::sse_decode(&mut deserializer);
+let api_claimed = <String>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || {
+                     let output_ok = crate::api::permissions::permissions_decide(api_permissions, api_mode, api_command, api_claimed)?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_defaults_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_defaults", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_environment = <Vec<String>>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, ()>((move || {
+                     let output_ok = Ok::<_, ()>(crate::api::permissions::permissions_defaults(api_environment))?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_judge_input_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_judge_input", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_entries = <String>::sse_decode(&mut deserializer);
+let api_command = <String>::sse_decode(&mut deserializer);
+let api_title = <String>::sse_decode(&mut deserializer);
+let api_claimed = <String>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, ()>((move || {
+                     let output_ok = Ok::<_, ()>(crate::api::permissions::permissions_judge_input(api_entries, api_command, api_title, api_claimed))?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_judge_prompt_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_judge_prompt", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_permissions = <String>::sse_decode(&mut deserializer);
+let api_environment = <Vec<String>>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || {
+                     let output_ok = crate::api::permissions::permissions_judge_prompt(api_permissions, api_environment)?;   std::result::Result::Ok(output_ok)
+                })()) })
+            }fn wire__crate__api__permissions__permissions_judgment_impl(ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+                FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "permissions_judgment", port: None, mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync }, move || {
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);deserializer.end();
+                transform_result_sse::<_, ()>((move || {
+                     let output_ok = Ok::<_, ()>(crate::api::permissions::permissions_judgment(api_text))?;   std::result::Result::Ok(output_ok)
                 })()) })
             }fn wire__crate__api__search_chats_impl(port_: flutter_rust_bridge::for_generated::MessagePort,ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,rust_vec_len_: i32,data_len_: i32)  {
                 FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec,_,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "search_chats", port: Some(port_), mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal }, move || {
@@ -467,7 +530,7 @@ return crate::api::HostMessage{kind: var_kind, id: var_id, name: var_name, paylo
                 )  {
                     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
                     match func_id {
-                        16 => wire__crate__api__search_chats_impl(port, ptr, rust_vec_len, data_len),
+                        23 => wire__crate__api__search_chats_impl(port, ptr, rust_vec_len, data_len),
                         _ => unreachable!(),
                     }
                 }
@@ -495,16 +558,23 @@ return crate::api::HostMessage{kind: var_kind, id: var_id, name: var_name, paylo
 13 => wire__crate__api__memory__memory_prompt_impl(ptr, rust_vec_len, data_len),
 14 => wire__crate__api__memory__memory_run_impl(ptr, rust_vec_len, data_len),
 15 => wire__crate__api__memory__memory_tools_impl(ptr, rust_vec_len, data_len),
-17 => wire__crate__api__skills__skill_dir_name_impl(ptr, rust_vec_len, data_len),
-18 => wire__crate__api__skills__skill_files_impl(ptr, rust_vec_len, data_len),
-19 => wire__crate__api__skills__skill_find_impl(ptr, rust_vec_len, data_len),
-20 => wire__crate__api__skills__skill_is_md_impl(ptr, rust_vec_len, data_len),
-21 => wire__crate__api__skills__skill_parse_impl(ptr, rust_vec_len, data_len),
-22 => wire__crate__api__skills__skill_prompt_impl(ptr, rust_vec_len, data_len),
-23 => wire__crate__api__skills__skill_read_impl(ptr, rust_vec_len, data_len),
-24 => wire__crate__api__skills__skill_run_impl(ptr, rust_vec_len, data_len),
-25 => wire__crate__api__skills__skill_source_parse_impl(ptr, rust_vec_len, data_len),
-26 => wire__crate__api__skills__skill_tool_impl(ptr, rust_vec_len, data_len),
+16 => wire__crate__api__permissions__permissions_check_impl(ptr, rust_vec_len, data_len),
+17 => wire__crate__api__permissions__permissions_classify_impl(ptr, rust_vec_len, data_len),
+18 => wire__crate__api__permissions__permissions_decide_impl(ptr, rust_vec_len, data_len),
+19 => wire__crate__api__permissions__permissions_defaults_impl(ptr, rust_vec_len, data_len),
+20 => wire__crate__api__permissions__permissions_judge_input_impl(ptr, rust_vec_len, data_len),
+21 => wire__crate__api__permissions__permissions_judge_prompt_impl(ptr, rust_vec_len, data_len),
+22 => wire__crate__api__permissions__permissions_judgment_impl(ptr, rust_vec_len, data_len),
+24 => wire__crate__api__skills__skill_dir_name_impl(ptr, rust_vec_len, data_len),
+25 => wire__crate__api__skills__skill_files_impl(ptr, rust_vec_len, data_len),
+26 => wire__crate__api__skills__skill_find_impl(ptr, rust_vec_len, data_len),
+27 => wire__crate__api__skills__skill_is_md_impl(ptr, rust_vec_len, data_len),
+28 => wire__crate__api__skills__skill_parse_impl(ptr, rust_vec_len, data_len),
+29 => wire__crate__api__skills__skill_prompt_impl(ptr, rust_vec_len, data_len),
+30 => wire__crate__api__skills__skill_read_impl(ptr, rust_vec_len, data_len),
+31 => wire__crate__api__skills__skill_run_impl(ptr, rust_vec_len, data_len),
+32 => wire__crate__api__skills__skill_source_parse_impl(ptr, rust_vec_len, data_len),
+33 => wire__crate__api__skills__skill_tool_impl(ptr, rust_vec_len, data_len),
                         _ => unreachable!(),
                     }
                 }

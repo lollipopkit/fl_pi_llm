@@ -409,6 +409,89 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => '高风险';
+
+  @override
+  String get permMode => '权限模式';
+
+  @override
+  String get permModeAuto => '自动';
+
+  @override
+  String get permModeManual => '手动';
+
+  @override
+  String get permModeBypass => '全部放行';
+
+  @override
+  String get permModeBypassOff => '此服务器已关闭';
+
+  @override
+  String get permTitle => '命令权限';
+
+  @override
+  String get permDefaultMode => '新任务的默认模式';
+
+  @override
+  String get permManualNote => '规则没有允许的每一步都会询问你。';
+
+  @override
+  String get permAutoNote =>
+      '规则没有允许的每一步交给模型按下面的自动模式规则判断：允许就执行，拦截就把原因告诉 Agent；没有结论时询问你。';
+
+  @override
+  String get permBypassNote => '所有步骤直接执行，包括删除、重启和改配置，不再询问。拒绝和询问规则仍然生效。';
+
+  @override
+  String get permDisableBypass => '关闭全部放行';
+
+  @override
+  String get permDisableBypassSub => '任务不能以全部放行运行；已经以它发起的任务按手动处理。';
+
+  @override
+  String get permDangerAsks => '除全部放行的任务外，无法撤销的命令（删除数据、分区等）都需要你输入服务器名确认。';
+
+  @override
+  String get permRules => '命令规则';
+
+  @override
+  String get permDeny => '拒绝';
+
+  @override
+  String get permAsk => '询问';
+
+  @override
+  String get permAllow => '允许';
+
+  @override
+  String get permRulesHint =>
+      '每行一条。* 代表任意文本，如 systemctl status * 或 apt-get install *；末尾的 :* 与“ *”相同。组合命令会拆开逐段匹配：拒绝和询问只要有一段命中就生效，允许要求每一段都被覆盖。规则按命令文本匹配（sh -c \'rm …\' 不会命中 rm *），不是安全边界。';
+
+  @override
+  String get permAutoRules => '自动模式规则';
+
+  @override
+  String get permAutoHint =>
+      '用自然语言写，供模型判断。留空使用内置规则；写一行 \$defaults 可以保留内置规则并追加自己的。顺序：硬拒绝 → 软拒绝（允许规则或你明确要求的操作可以放行）→ 允许。';
+
+  @override
+  String get permEnvironment => '环境';
+
+  @override
+  String get permSoftDeny => '软拒绝';
+
+  @override
+  String get permHardDeny => '硬拒绝';
+
+  @override
+  String get permBuiltIn => '使用内置规则';
+
+  @override
+  String permShowDefaults(int n) {
+    return '内置规则（$n 条）';
+  }
+
+  @override
+  String get discardUnsaved => '放弃未保存的修改？';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -815,4 +898,87 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get commandRiskDestructive => '高風險';
+
+  @override
+  String get permMode => '權限模式';
+
+  @override
+  String get permModeAuto => '自動';
+
+  @override
+  String get permModeManual => '手動';
+
+  @override
+  String get permModeBypass => '全部允許';
+
+  @override
+  String get permModeBypassOff => '此伺服器已關閉';
+
+  @override
+  String get permTitle => '命令權限';
+
+  @override
+  String get permDefaultMode => '新任務的預設模式';
+
+  @override
+  String get permManualNote => '規則未允許的每一步都會詢問您。';
+
+  @override
+  String get permAutoNote =>
+      '規則未允許的每一步交由模型依下方的自動模式規則判斷：允許就執行，攔截就把原因告訴 Agent；沒有結論時詢問您。';
+
+  @override
+  String get permBypassNote => '所有步驟直接執行，包括刪除、重新啟動和修改設定，不再詢問。拒絕和詢問規則仍然生效。';
+
+  @override
+  String get permDisableBypass => '關閉全部放行';
+
+  @override
+  String get permDisableBypassSub => '任務不能以全部放行執行；已經以它發起的任務按手動處理。';
+
+  @override
+  String get permDangerAsks => '除全部放行的任務外，無法復原的命令（刪除資料、分割區等）都需要你輸入伺服器名稱確認。';
+
+  @override
+  String get permRules => '命令規則';
+
+  @override
+  String get permDeny => '拒絕';
+
+  @override
+  String get permAsk => '詢問';
+
+  @override
+  String get permAllow => '允許';
+
+  @override
+  String get permRulesHint =>
+      '每行一條。* 代表任意文字，如 systemctl status * 或 apt-get install *；結尾的 :* 與「 *」相同。組合命令會拆開逐段比對：拒絕和詢問只要有一段命中就生效，允許要求每一段都被涵蓋。規則依命令文字比對（sh -c \'rm …\' 不會命中 rm *），不是安全邊界。';
+
+  @override
+  String get permAutoRules => '自動模式規則';
+
+  @override
+  String get permAutoHint =>
+      '以自然語言撰寫，供模型判斷。留空使用內建規則；寫一行 \$defaults 可保留內建規則並追加自己的。順序：硬拒絕 → 軟拒絕（允許規則或你明確要求的操作可以放行）→ 允許。';
+
+  @override
+  String get permEnvironment => '環境';
+
+  @override
+  String get permSoftDeny => '軟拒絕';
+
+  @override
+  String get permHardDeny => '硬拒絕';
+
+  @override
+  String get permBuiltIn => '使用內建規則';
+
+  @override
+  String permShowDefaults(int n) {
+    return '內建規則（$n 條）';
+  }
+
+  @override
+  String get discardUnsaved => '放棄未儲存的修改？';
 }

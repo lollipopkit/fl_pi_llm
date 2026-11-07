@@ -6,6 +6,7 @@
 import 'api.dart';
 import 'api/mcp.dart';
 import 'api/memory.dart';
+import 'api/permissions.dart';
 import 'api/skills.dart';
 import 'dart:async';
 import 'dart:convert';
