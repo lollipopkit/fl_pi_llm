@@ -12,6 +12,7 @@ import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:fl_pi_llm_ui/src/view/model_picker.dart';
 import 'package:fl_pi_llm_ui/src/view/menu.dart';
+import 'package:fl_pi_llm_ui/src/view/mode_chip.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// Where a message is written: text, attachments, the model, thinking, tools
@@ -176,6 +177,7 @@ class _ComposerState extends State<Composer> {
         AttachButton(onPicked: (paths) {
           if (mounted) _files.value = [..._files.value, ...paths];
         }),
+        PermissionModeChip.local(),
         Flexible(
           child: _ModelChip(chatId: widget.chatId, model: _model, onChanged: () {
             if (mounted) setState(() {});

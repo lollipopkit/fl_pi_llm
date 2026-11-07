@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 
 pub mod mcp;
 pub mod memory;
+pub mod permissions;
 pub mod skills;
 
 /// The chats kept under [dir], encrypted with [key], where [needle] was said

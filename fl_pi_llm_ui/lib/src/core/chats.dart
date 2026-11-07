@@ -7,6 +7,7 @@ import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
+import 'package:fl_pi_llm_ui/src/core/permissions.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -844,13 +845,16 @@ abstract final class Chats {
   static Future<LlmApproval> _approve(LlmToolCall call) async {
     final tool = Tools.internal(call.name);
     if (tool?.trusted ?? false) return const LlmApproval.allow();
+    var remembered = false;
     try {
-      if (await tool?.preApprove(call.args, call.sessionId) case final decided?) return decided;
+      final d = await LlmApprovals.decide(call, tool);
+      if (d.decided case final decided?) return decided;
+      remembered = d.remembered;
     } catch (e, s) {
       // Not decided, then: the user is asked, which is never the unsafe way.
-      Loggers.app.warning('Pre-approve ${call.name}', e, s);
+      Loggers.app.warning('Permissions for ${call.name}', e, s);
     }
-    if ((tool?.allowAlways ?? true) && LlmStores.tool.permittedTools.get().contains(call.name)) {
+    if (remembered && (tool?.allowAlways ?? true) && LlmStores.tool.permittedTools.get().contains(call.name)) {
       return const LlmApproval.allow();
     }
     // A chat's id is its session's: the question goes where the run is.

@@ -25,13 +25,17 @@ abstract class ToolFunc {
   /// can see and undo.
   bool get trusted => false;
 
-  /// Decides a call before the user is asked: allow or deny it outright, or
-  /// null to ask. For a tool whose calls differ in how much harm they can do —
-  /// a command that only reads, beside one that deletes.
-  FutureOr<LlmApproval?> preApprove(_Map args, String chatId) => null;
+  /// What a call does, as the permissions weigh it ([LlmPermissionRules]):
+  /// a read runs in every mode; a danger asks unless the chat allows all;
+  /// anything else goes by the mode.
+  LlmEffect effect(_Map args) => LlmEffect.change;
+
+  /// The shell command a call runs, for the command rules and the shape of
+  /// it to be weighed; null for a tool that runs none.
+  String? shellCommand(_Map args) => null;
 
   /// Whether "always allow" is offered for it. Off for a tool that no single
-  /// answer covers: it asks every time [preApprove] leaves it to the user.
+  /// answer covers: it asks every time the permissions leave it to the user.
   bool get allowAlways => true;
 
   /// Its mark beside a call in the conversation.

@@ -435,4 +435,91 @@ class LlmLocalizationsPt extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Alto risco';
+
+  @override
+  String get permMode => 'Modo de permissões';
+
+  @override
+  String get permModeAuto => 'Automático';
+
+  @override
+  String get permModeManual => 'Manual';
+
+  @override
+  String get permModeBypass => 'Permitir tudo';
+
+  @override
+  String get permModeBypassOff => 'Desativado neste servidor';
+
+  @override
+  String get permTitle => 'Permissões de comandos';
+
+  @override
+  String get permDefaultMode => 'Modo padrão das novas tarefas';
+
+  @override
+  String get permManualNote =>
+      'Mudanças que nenhuma regra cobre são perguntadas.';
+
+  @override
+  String get permAutoNote =>
+      'Mudanças que nenhuma regra cobre são julgadas pelo modelo segundo as regras do modo automático abaixo: permitida, é executada; bloqueada, o agente recebe o motivo; sem veredito, você é perguntado.';
+
+  @override
+  String get permBypassNote =>
+      'Cada passo é executado sem perguntar, incluindo exclusões, reinícios e mudanças de configuração. As regras de negar e perguntar continuam valendo.';
+
+  @override
+  String get permDisableBypass => 'Desativar «Permitir tudo»';
+
+  @override
+  String get permDisableBypassSub =>
+      'Nenhuma tarefa roda em «Permitir tudo»; uma iniciada assim pergunta como no manual.';
+
+  @override
+  String get permDangerAsks =>
+      'Exceto em tarefas que permitem tudo, um comando irreversível (apagar dados, partições) pede que você digite o nome do servidor.';
+
+  @override
+  String get permRules => 'Regras de comandos';
+
+  @override
+  String get permDeny => 'Negar';
+
+  @override
+  String get permAsk => 'Perguntar';
+
+  @override
+  String get permAllow => 'Permitir';
+
+  @override
+  String get permRulesHint =>
+      'Uma por linha. * é qualquer texto, como systemctl status * ou apt-get install *; um :* final equivale a “ *”. Um comando encadeado é verificado parte a parte: negar e perguntar valem se alguma parte coincide, permitir só se todas forem cobertas. As regras comparam o texto escrito (/bin/rm não coincide com rm *); não são uma fronteira de segurança.';
+
+  @override
+  String get permAutoRules => 'Regras do modo automático';
+
+  @override
+  String get permAutoHint =>
+      'Regras em linguagem natural para o julgamento do modelo. Vazio usa a lista embutida; uma linha \$defaults a mantém e acrescenta as suas. Ordem: negação rígida, depois negação suave (uma regra de permissão ou seu pedido explícito a libera), depois permitir.';
+
+  @override
+  String get permEnvironment => 'Ambiente';
+
+  @override
+  String get permSoftDeny => 'Negação suave';
+
+  @override
+  String get permHardDeny => 'Negação rígida';
+
+  @override
+  String get permBuiltIn => 'Regras embutidas';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Regras embutidas ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Descartar as alterações não salvas?';
 }

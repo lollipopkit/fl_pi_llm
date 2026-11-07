@@ -19,6 +19,10 @@ final class ToolStore extends SqliteStore {
   /// Tools the user allowed to run without asking every time.
   late final permittedTools = listProperty<String>('permittedTools');
 
+  /// How tool calls are approved ([LlmPermissions]'s JSON): the mode chats
+  /// run in, the command rules and the auto mode judge's.
+  late final permissions = propertyDefault<Map<String, dynamic>>('permissions', const {});
+
   /// MCP server URLs.
   late final mcpServers = listProperty<String>('mcpServers');
 }

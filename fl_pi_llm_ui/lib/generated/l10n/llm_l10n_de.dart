@@ -435,4 +435,91 @@ class LlmLocalizationsDe extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Hohes Risiko';
+
+  @override
+  String get permMode => 'Berechtigungsmodus';
+
+  @override
+  String get permModeAuto => 'Automatisch';
+
+  @override
+  String get permModeManual => 'Manuell';
+
+  @override
+  String get permModeBypass => 'Alles erlauben';
+
+  @override
+  String get permModeBypassOff => 'Auf diesem Server deaktiviert';
+
+  @override
+  String get permTitle => 'Befehlsberechtigungen';
+
+  @override
+  String get permDefaultMode => 'Standardmodus für neue Aufgaben';
+
+  @override
+  String get permManualNote =>
+      'Änderungen, die keine Regel abdeckt, werden erfragt.';
+
+  @override
+  String get permAutoNote =>
+      'Änderungen, die keine Regel abdeckt, beurteilt das Modell anhand der Regeln des automatischen Modus unten: Erlaubt wird ausgeführt, blockiert erfährt der Agent den Grund; ohne Urteil wirst du gefragt.';
+
+  @override
+  String get permBypassNote =>
+      'Jeder Schritt läuft ohne Nachfrage, auch Löschen, Neustarts und Konfigurationsänderungen. Verweigern- und Fragen-Regeln gelten weiter.';
+
+  @override
+  String get permDisableBypass => '„Alles erlauben“ abschalten';
+
+  @override
+  String get permDisableBypassSub =>
+      'Keine Aufgabe läuft mit „Alles erlauben“; eine so gestartete fragt wie im manuellen Modus.';
+
+  @override
+  String get permDangerAsks =>
+      'Außer in Aufgaben mit „Alles erlauben“ verlangt ein Befehl, der sich nicht rückgängig machen lässt (Daten löschen, Partitionen), dass du den Servernamen eingibst.';
+
+  @override
+  String get permRules => 'Befehlsregeln';
+
+  @override
+  String get permDeny => 'Verbieten';
+
+  @override
+  String get permAsk => 'Fragen';
+
+  @override
+  String get permAllow => 'Erlauben';
+
+  @override
+  String get permRulesHint =>
+      'Eine pro Zeile. * steht für beliebigen Text, z. B. systemctl status * oder apt-get install *; ein abschließendes :* entspricht „ *“. Verkettete Befehle werden teilweise geprüft: Verbieten und Fragen greifen, wenn ein Teil passt, Erlauben nur, wenn jeder Teil abgedeckt ist. Regeln passen auf den geschriebenen Befehl (/bin/rm passt nicht auf rm *) und sind keine Sicherheitsgrenze.';
+
+  @override
+  String get permAutoRules => 'Regeln des automatischen Modus';
+
+  @override
+  String get permAutoHint =>
+      'Regeln in Klartext, nach denen das Modell urteilt. Leer nutzt die eingebaute Liste; eine Zeile \$defaults behält sie und ergänzt Ihre. Reihenfolge: hartes Verbot, dann weiches Verbot (eine Erlaubnisregel oder Ihre ausdrückliche Bitte hebt es auf), dann Erlauben.';
+
+  @override
+  String get permEnvironment => 'Umgebung';
+
+  @override
+  String get permSoftDeny => 'Weiches Verbot';
+
+  @override
+  String get permHardDeny => 'Hartes Verbot';
+
+  @override
+  String get permBuiltIn => 'Eingebaute Regeln';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Eingebaute Regeln ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Ungespeicherte Änderungen verwerfen?';
 }

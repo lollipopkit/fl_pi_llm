@@ -2,9 +2,9 @@
 library;
 
 import 'package:fl_lib/fl_lib.dart';
+import 'package:fl_pi_llm/fl_pi_llm.dart' show LlmCommandRisk;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
-import 'package:fl_pi_llm_ui/src/tools/command_risk.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How tall a command preview may be, given the height it is shown in.
@@ -123,16 +123,16 @@ class _CommandPreviewState extends State<CommandPreview> {
 class CommandRiskBadge extends StatelessWidget {
   const CommandRiskBadge(this.risk, {super.key});
 
-  final CommandRisk risk;
+  final LlmCommandRisk risk;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final (label, icon, color) = switch (risk) {
-      CommandRisk.readOnly => (llmL10n.commandRiskReadOnly, Icons.visibility_outlined, scheme.primary),
-      CommandRisk.unknown => (llmL10n.commandRiskUnknown, Icons.help_outline, scheme.tertiary),
-      CommandRisk.caution => (llmL10n.commandRiskCaution, Icons.warning_amber_rounded, scheme.tertiary),
-      CommandRisk.destructive => (llmL10n.commandRiskDestructive, Icons.dangerous_outlined, scheme.error),
+      LlmCommandRisk.readOnly => (llmL10n.commandRiskReadOnly, Icons.visibility_outlined, scheme.primary),
+      LlmCommandRisk.unknown => (llmL10n.commandRiskUnknown, Icons.help_outline, scheme.tertiary),
+      LlmCommandRisk.caution => (llmL10n.commandRiskCaution, Icons.warning_amber_rounded, scheme.tertiary),
+      LlmCommandRisk.destructive => (llmL10n.commandRiskDestructive, Icons.dangerous_outlined, scheme.error),
     };
     return Row(
       mainAxisSize: MainAxisSize.min,

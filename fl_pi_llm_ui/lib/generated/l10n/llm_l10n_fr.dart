@@ -436,4 +436,92 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Risque élevé';
+
+  @override
+  String get permMode => 'Mode d’autorisation';
+
+  @override
+  String get permModeAuto => 'Automatique';
+
+  @override
+  String get permModeManual => 'Manuel';
+
+  @override
+  String get permModeBypass => 'Tout autoriser';
+
+  @override
+  String get permModeBypassOff => 'Désactivé sur ce serveur';
+
+  @override
+  String get permTitle => 'Autorisations des commandes';
+
+  @override
+  String get permDefaultMode => 'Mode par défaut des nouvelles tâches';
+
+  @override
+  String get permManualNote =>
+      'Les changements qu\'aucune règle ne couvre vous sont demandés.';
+
+  @override
+  String get permAutoNote =>
+      'Les changements qu\'aucune règle ne couvre sont jugés par le modèle selon les règles du mode automatique ci-dessous : autorisé, il s\'exécute ; bloqué, l\'agent en reçoit la raison ; sans verdict, on vous demande.';
+
+  @override
+  String get permBypassNote =>
+      'Chaque étape s\'exécute sans demander, suppressions, redémarrages et modifications de configuration compris. Les règles refuser et demander restent appliquées.';
+
+  @override
+  String get permDisableBypass => 'Désactiver « Tout autoriser »';
+
+  @override
+  String get permDisableBypassSub =>
+      'Aucune tâche ne tourne en « Tout autoriser » ; une tâche lancée ainsi demande comme en manuel.';
+
+  @override
+  String get permDangerAsks =>
+      'Sauf dans une tâche « Tout autoriser », une commande irréversible (suppression de données, partitions) vous demande de saisir le nom du serveur.';
+
+  @override
+  String get permRules => 'Règles de commandes';
+
+  @override
+  String get permDeny => 'Refuser';
+
+  @override
+  String get permAsk => 'Demander';
+
+  @override
+  String get permAllow => 'Autoriser';
+
+  @override
+  String get permRulesHint =>
+      'Une par ligne. * représente n’importe quel texte, comme systemctl status * ou apt-get install * ; un :* final équivaut à « * ». Une commande enchaînée est vérifiée partie par partie : refuser et demander s’appliquent si une partie correspond, autoriser seulement si chaque partie est couverte. Les règles portent sur le texte écrit (/bin/rm ne correspond pas à rm *) ; ce n’est pas une frontière de sécurité.';
+
+  @override
+  String get permAutoRules => 'Règles du mode auto';
+
+  @override
+  String get permAutoHint =>
+      'Des règles en langage naturel pour le jugement du modèle. Vide utilise la liste intégrée ; une ligne \$defaults la garde et ajoute les vôtres. Ordre : refus strict, puis refus souple (levé par une règle d’autorisation ou votre demande explicite), puis autorisation.';
+
+  @override
+  String get permEnvironment => 'Environnement';
+
+  @override
+  String get permSoftDeny => 'Refus souple';
+
+  @override
+  String get permHardDeny => 'Refus strict';
+
+  @override
+  String get permBuiltIn => 'Règles intégrées';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Règles intégrées ($n)';
+  }
+
+  @override
+  String get discardUnsaved =>
+      'Abandonner les modifications non enregistrées ?';
 }

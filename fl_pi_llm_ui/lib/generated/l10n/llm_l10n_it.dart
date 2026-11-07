@@ -440,4 +440,91 @@ class LlmLocalizationsIt extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Rischio alto';
+
+  @override
+  String get permMode => 'Modalità autorizzazioni';
+
+  @override
+  String get permModeAuto => 'Automatico';
+
+  @override
+  String get permModeManual => 'Manuale';
+
+  @override
+  String get permModeBypass => 'Consenti tutto';
+
+  @override
+  String get permModeBypassOff => 'Disattivato su questo server';
+
+  @override
+  String get permTitle => 'Permessi dei comandi';
+
+  @override
+  String get permDefaultMode => 'Modalità predefinita delle nuove attività';
+
+  @override
+  String get permManualNote =>
+      'Le modifiche non coperte da regole ti vengono chieste.';
+
+  @override
+  String get permAutoNote =>
+      'Le modifiche non coperte da regole le giudica il modello secondo le regole della modalità automatica qui sotto: se consentite vengono eseguite, se bloccate l\'agente ne riceve il motivo; senza verdetto ti viene chiesto.';
+
+  @override
+  String get permBypassNote =>
+      'Ogni passaggio viene eseguito senza chiedere, comprese eliminazioni, riavvii e modifiche alla configurazione. Le regole nega e chiedi restano valide.';
+
+  @override
+  String get permDisableBypass => 'Disattiva «Consenti tutto»';
+
+  @override
+  String get permDisableBypassSub =>
+      'Nessuna attività gira in «Consenti tutto»; una avviata così chiede come in manuale.';
+
+  @override
+  String get permDangerAsks =>
+      'Tranne nelle attività che consentono tutto, un comando irreversibile (eliminare dati, partizioni) chiede di digitare il nome del server.';
+
+  @override
+  String get permRules => 'Regole dei comandi';
+
+  @override
+  String get permDeny => 'Nega';
+
+  @override
+  String get permAsk => 'Chiedi';
+
+  @override
+  String get permAllow => 'Consenti';
+
+  @override
+  String get permRulesHint =>
+      'Una per riga. * è qualsiasi testo, come systemctl status * o apt-get install *; un :* finale equivale a « *». Un comando concatenato è controllato parte per parte: nega e chiedi valgono se una parte corrisponde, consenti solo se ogni parte è coperta. Le regole confrontano il testo scritto (/bin/rm non corrisponde a rm *); non sono un confine di sicurezza.';
+
+  @override
+  String get permAutoRules => 'Regole della modalità automatica';
+
+  @override
+  String get permAutoHint =>
+      'Regole in linguaggio naturale per il giudizio del modello. Vuoto usa l’elenco integrato; una riga \$defaults lo mantiene e aggiunge le tue. Ordine: divieto rigido, poi divieto morbido (lo toglie una regola di consenso o una tua richiesta esplicita), poi consenso.';
+
+  @override
+  String get permEnvironment => 'Ambiente';
+
+  @override
+  String get permSoftDeny => 'Divieto morbido';
+
+  @override
+  String get permHardDeny => 'Divieto rigido';
+
+  @override
+  String get permBuiltIn => 'Regole integrate';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Regole integrate ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Scartare le modifiche non salvate?';
 }

@@ -441,4 +441,91 @@ class LlmLocalizationsAz extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Yüksək risk';
+
+  @override
+  String get permMode => 'İcazə rejimi';
+
+  @override
+  String get permModeAuto => 'Avtomatik';
+
+  @override
+  String get permModeManual => 'Əl ilə';
+
+  @override
+  String get permModeBypass => 'Hamısına icazə ver';
+
+  @override
+  String get permModeBypassOff => 'Bu serverdə deaktiv edilib';
+
+  @override
+  String get permTitle => 'Əmr icazələri';
+
+  @override
+  String get permDefaultMode => 'Yeni tapşırıqların standart rejimi';
+
+  @override
+  String get permManualNote =>
+      'Heç bir qaydanın əhatə etmədiyi dəyişikliklər üçün sizdən soruşulur.';
+
+  @override
+  String get permAutoNote =>
+      'Heç bir qaydanın əhatə etmədiyi dəyişiklikləri model aşağıdakı avtomatik rejim qaydalarına görə qiymətləndirir: icazə verilərsə icra olunur, bloklanarsa səbəb Agent-ə bildirilir; qərar olmadıqda sizdən soruşulur.';
+
+  @override
+  String get permBypassNote =>
+      'Yeni tapşırıqlar hər addımı soruşmadan icra edir, silmə, yenidən başlatma və konfiqurasiya dəyişiklikləri daxil olmaqla. Rədd və soruş qaydaları yenə də tətbiq olunur.';
+
+  @override
+  String get permDisableBypass => 'Hamısına icazəni söndür';
+
+  @override
+  String get permDisableBypassSub =>
+      'Heç bir tapşırıq \"Hamısına icazə\" rejimində işləmir; bu rejimdə başladılmış tapşırıq Əl ilə rejimdəki kimi soruşur.';
+
+  @override
+  String get permDangerAsks =>
+      'Tapşırıq hamısına icazə vermirsə, geri qaytarıla bilməyən əmr (məlumatın silinməsi, bölmələr) serverin adını yazmağınızı tələb edir.';
+
+  @override
+  String get permRules => 'Əmr qaydaları';
+
+  @override
+  String get permDeny => 'Rədd et';
+
+  @override
+  String get permAsk => 'Soruş';
+
+  @override
+  String get permAllow => 'İcazə ver';
+
+  @override
+  String get permRulesHint =>
+      'Hər sətirdə bir qayda. * istənilən mətndir, məsələn systemctl status * və ya apt-get install *; sondakı :* \" *\" ilə eynidir. Zəncirvari əmr hissə-hissə yoxlanılır: rədd və soruş hər hansı hissə uyğun gəldikdə, icazə isə yalnız bütün hissələr əhatə olunduqda tətbiq olunur. Qaydalar əmri yazıldığı kimi uyğunlaşdırır (/bin/rm rm * ilə uyğun gəlmir); təhlükəsizlik sərhədi deyil.';
+
+  @override
+  String get permAutoRules => 'Avtomatik rejim qaydaları';
+
+  @override
+  String get permAutoHint =>
+      'Modelin qiymətləndirdiyi adi dildə qaydalar. Boş olduqda daxili siyahı istifadə olunur; \$defaults sətri onu saxlayır və sizinkiləri əlavə edir. Sıra: sərt rədd, sonra yumşaq rədd (icazə qaydası və ya açıq tələbiniz onu aradan qaldırır), sonra icazə.';
+
+  @override
+  String get permEnvironment => 'Mühit';
+
+  @override
+  String get permSoftDeny => 'Yumşaq rədd';
+
+  @override
+  String get permHardDeny => 'Sərt rədd';
+
+  @override
+  String get permBuiltIn => 'Daxili qaydalar';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Daxili qaydalar ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Yadda saxlanmamış dəyişikliklər atılsın?';
 }

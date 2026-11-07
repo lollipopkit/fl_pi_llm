@@ -435,4 +435,91 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => 'Hoog risico';
+
+  @override
+  String get permMode => 'Machtigingsmodus';
+
+  @override
+  String get permModeAuto => 'Automatisch';
+
+  @override
+  String get permModeManual => 'Handmatig';
+
+  @override
+  String get permModeBypass => 'Alles toestaan';
+
+  @override
+  String get permModeBypassOff => 'Uitgeschakeld op deze server';
+
+  @override
+  String get permTitle => 'Opdrachtmachtigingen';
+
+  @override
+  String get permDefaultMode => 'Standaardmodus voor nieuwe taken';
+
+  @override
+  String get permManualNote =>
+      'Wijzigingen die geen regel dekt, worden gevraagd.';
+
+  @override
+  String get permAutoNote =>
+      'Wijzigingen die geen regel dekt, beoordeelt het model aan de hand van de regels van de automatische modus hieronder: toegestaan wordt uitgevoerd, geblokkeerd vertelt de agent waarom; zonder oordeel word je gevraagd.';
+
+  @override
+  String get permBypassNote =>
+      'Elke stap wordt zonder vragen uitgevoerd, ook verwijderen, herstarten en configuratiewijzigingen. Weiger- en vraagregels blijven gelden.';
+
+  @override
+  String get permDisableBypass => 'Alles toestaan uitschakelen';
+
+  @override
+  String get permDisableBypassSub =>
+      'Geen taak draait met Alles toestaan; een taak die zo is gestart vraagt zoals handmatig.';
+
+  @override
+  String get permDangerAsks =>
+      'Behalve in taken die alles toestaan, vraagt een onomkeerbare opdracht (gegevens wissen, partities) om de servernaam te typen.';
+
+  @override
+  String get permRules => 'Opdrachtregels';
+
+  @override
+  String get permDeny => 'Weigeren';
+
+  @override
+  String get permAsk => 'Vragen';
+
+  @override
+  String get permAllow => 'Toestaan';
+
+  @override
+  String get permRulesHint =>
+      'Eén per regel. * is willekeurige tekst, zoals systemctl status * of apt-get install *; een :* aan het eind is gelijk aan ‘ *’. Een gekoppelde opdracht wordt per deel gecontroleerd: weigeren en vragen gelden als één deel past, toestaan alleen als elk deel gedekt is. Regels passen op de geschreven tekst (/bin/rm past niet op rm *); ze zijn geen beveiligingsgrens.';
+
+  @override
+  String get permAutoRules => 'Regels voor de automatische modus';
+
+  @override
+  String get permAutoHint =>
+      'Regels in gewone taal waarop het model oordeelt. Leeg gebruikt de ingebouwde lijst; een regel \$defaults houdt die en voegt de jouwe toe. Volgorde: harde weigering, dan zachte weigering (op te heffen door een toestaanregel of je eigen expliciete verzoek), dan toestaan.';
+
+  @override
+  String get permEnvironment => 'Omgeving';
+
+  @override
+  String get permSoftDeny => 'Zachte weigering';
+
+  @override
+  String get permHardDeny => 'Harde weigering';
+
+  @override
+  String get permBuiltIn => 'Ingebouwde regels';
+
+  @override
+  String permShowDefaults(int n) {
+    return 'Ingebouwde regels ($n)';
+  }
+
+  @override
+  String get discardUnsaved => 'Niet-opgeslagen wijzigingen verwerpen?';
 }

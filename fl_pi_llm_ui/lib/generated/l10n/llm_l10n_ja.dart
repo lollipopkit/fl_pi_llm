@@ -412,4 +412,90 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get commandRiskDestructive => '高リスク';
+
+  @override
+  String get permMode => '権限モード';
+
+  @override
+  String get permModeAuto => '自動';
+
+  @override
+  String get permModeManual => '手動';
+
+  @override
+  String get permModeBypass => 'すべて許可';
+
+  @override
+  String get permModeBypassOff => 'このサーバーでは無効';
+
+  @override
+  String get permTitle => 'コマンドの権限';
+
+  @override
+  String get permDefaultMode => '新しいタスクの既定モード';
+
+  @override
+  String get permManualNote => 'ルールにない変更は毎回確認します。';
+
+  @override
+  String get permAutoNote =>
+      'ルールにない変更は、下の自動モードのルールに沿ってモデルが判断します。許可なら実行、ブロックなら理由を Agent に伝え、判断がなければ確認します。';
+
+  @override
+  String get permBypassNote =>
+      '削除、再起動、設定変更を含め、すべての手順を確認なしで実行します。拒否と確認のルールは引き続き有効です。';
+
+  @override
+  String get permDisableBypass => 'すべて許可をオフにする';
+
+  @override
+  String get permDisableBypassSub =>
+      'すべて許可ではタスクを実行できません。すでにそのモードで始めたタスクは手動として扱います。';
+
+  @override
+  String get permDangerAsks =>
+      'すべて許可のタスク以外では、元に戻せないコマンド（データ削除、パーティション操作など）はサーバー名の入力が必要です。';
+
+  @override
+  String get permRules => 'コマンドルール';
+
+  @override
+  String get permDeny => '拒否';
+
+  @override
+  String get permAsk => '確認';
+
+  @override
+  String get permAllow => '許可';
+
+  @override
+  String get permRulesHint =>
+      '1 行に 1 つ。* は任意の文字列です（例: systemctl status *、apt-get install *）。末尾の :* は「 *」と同じです。連結されたコマンドは部分ごとに照合し、拒否と確認はどれか 1 つが一致すれば、許可はすべての部分が一致したときだけ適用されます。ルールは書かれた文字列に一致するもので（/bin/rm は rm * に一致しません）、セキュリティ境界ではありません。';
+
+  @override
+  String get permAutoRules => '自動モードルール';
+
+  @override
+  String get permAutoHint =>
+      'モデルが判断に使う自然文のルールです。空欄なら組み込みのルールを使います。\$defaults の行を書くと組み込みを残して追加できます。順序: ハード拒否 → ソフト拒否（許可ルールかあなたの明確な依頼で解除）→ 許可。';
+
+  @override
+  String get permEnvironment => '環境';
+
+  @override
+  String get permSoftDeny => 'ソフト拒否';
+
+  @override
+  String get permHardDeny => 'ハード拒否';
+
+  @override
+  String get permBuiltIn => '組み込みのルール';
+
+  @override
+  String permShowDefaults(int n) {
+    return '組み込みのルール（$n 件）';
+  }
+
+  @override
+  String get discardUnsaved => '保存していない変更を破棄しますか？';
 }
