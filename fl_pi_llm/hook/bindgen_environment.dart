@@ -40,6 +40,8 @@ Map<String, String> bindgenCrossCompileEnvironment(BuildInput input) {
       // and clang rejects the other one for an Apple target.
       triple:
           '${_appleArch(code.targetArchitecture)}-apple-ios'
+          // TODO: `deploymentVersion.major` once code_assets 2.2 is the floor.
+          // ignore: deprecated_member_use
           '${code.iOS.targetVersion}'
           '${code.iOS.targetSdk == IOSSdk.iPhoneSimulator ? '-simulator' : ''}',
       sdk: code.iOS.targetSdk.type,
