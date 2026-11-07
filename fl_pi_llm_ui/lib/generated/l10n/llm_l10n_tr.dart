@@ -445,11 +445,11 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get permManualNote =>
-      'Yeni görevler hiçbir kuralın izin vermediği her adım için sorar.';
+      'Yeni görevler hiçbir kuralın kapsamadığı her adım için sorar.';
 
   @override
   String get permAutoNote =>
-      'Yeni görevlerde hiçbir kuralın izin vermediği her adımı model aşağıdaki otomatik mod kurallarına göre değerlendirir: izin verilirse çalışır, engellenirse nedeni agent\'a bildirilir; karar yoksa size sorulur.';
+      'Yeni görevlerde hiçbir kuralın kapsamadığı her adımı model aşağıdaki otomatik mod kurallarına göre değerlendirir: izin verilirse çalışır, engellenirse nedeni agent\'a bildirilir; karar yoksa size sorulur.';
 
   @override
   String get permBypassNote =>

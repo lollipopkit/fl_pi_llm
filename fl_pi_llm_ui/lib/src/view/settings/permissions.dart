@@ -358,7 +358,19 @@ extension on _PermissionsPageState {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      _fill(await widget.args.save(_collect()));
+      final sent = jsonEncode(_collect().toJson());
+      final view = await widget.args.save(_collect());
+      if (!mounted) return;
+      if (jsonEncode(_collect().toJson()) == sent) {
+        _fill(view);
+      } else {
+        // Edited while it saved: what was typed since stays, and still counts
+        // as unsaved.
+        setState(() {
+          _view = view;
+          _saved = sent;
+        });
+      }
       Toast.show(libL10n.success);
     } catch (e) {
       if (mounted) context.showErrDialog(e);
