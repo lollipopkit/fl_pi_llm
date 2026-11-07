@@ -194,9 +194,18 @@ static QUIET: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[012]?>>?\s*/dev/n
 /// Whether allow rules may see this command as its parts: nothing runs that
 /// the parts do not show, and nothing is written by redirection.
 fn allowable(command: &str) -> bool {
+    // Only a descriptor copied to another (`2>&1`) is taken out: a write that
+    // follows one (`2>&1>/tmp/x`) stays, and `&>file` or `>&file` writes too.
+    static FD_DUP: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[0-9]*>&([0-9]+|-)").unwrap());
+    static BOTH_TO_FILE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&>>?\s*[^\s&]|>&\s*[^\s0-9&-]").unwrap());
     let quiet = QUIET.replace_all(command, "");
-    let line = quiet.replace(">&", "");
-    !(command.contains("$(") || command.contains('`') || command.contains("<(") || command.contains(">(") || WRITE_REDIRECT.is_match(&line))
+    let line = FD_DUP.replace_all(&quiet, "");
+    !(command.contains("$(")
+        || command.contains('`')
+        || command.contains("<(")
+        || command.contains(">(")
+        || WRITE_REDIRECT.is_match(&line)
+        || BOTH_TO_FILE.is_match(&line))
 }
 
 /// The commands in [command], quotes respected; `None` when it cannot be
@@ -491,6 +500,12 @@ mod tests {
         assert_eq!(r.verdict("systemctl restart $(cat /x)"), RuleVerdict::None);
         assert_eq!(r.verdict("systemctl restart nginx > /etc/x"), RuleVerdict::None);
         assert_eq!(r.verdict("systemctl restart nginx 2>/dev/null"), RuleVerdict::Allow("systemctl restart *".into()));
+        // A write after a copied descriptor is still a write.
+        let e = rules(&["echo *"], &[], &[]);
+        assert_eq!(e.verdict("echo ok 2>&1"), RuleVerdict::Allow("echo *".into()));
+        assert_eq!(e.verdict("echo ok 2>&1>/tmp/important"), RuleVerdict::None);
+        assert_eq!(e.verdict("echo ok &>/tmp/x"), RuleVerdict::None);
+        assert_eq!(e.verdict("echo ok >&/tmp/x"), RuleVerdict::None);
         assert_eq!(r.verdict("FOO=1 systemctl restart nginx"), RuleVerdict::None);
         assert_eq!(r.verdict("ls"), RuleVerdict::None);
     }

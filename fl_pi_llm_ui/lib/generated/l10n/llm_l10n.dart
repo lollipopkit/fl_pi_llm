@@ -892,13 +892,13 @@ abstract class LlmLocalizations {
   /// No description provided for @permManualNote.
   ///
   /// In en, this message translates to:
-  /// **'New tasks ask about every step no rule allows.'**
+  /// **'New tasks ask about every step no rule covers.'**
   String get permManualNote;
 
   /// No description provided for @permAutoNote.
   ///
   /// In en, this message translates to:
-  /// **'New tasks have every step no rule allows judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.'**
+  /// **'New tasks have every step no rule covers judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.'**
   String get permAutoNote;
 
   /// No description provided for @permBypassNote.

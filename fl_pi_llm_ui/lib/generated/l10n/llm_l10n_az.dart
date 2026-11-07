@@ -465,11 +465,11 @@ class LlmLocalizationsAz extends LlmLocalizations {
 
   @override
   String get permManualNote =>
-      'Yeni tapşırıqlar heç bir qaydanın icazə vermədiyi hər addım üçün soruşur.';
+      'Yeni tapşırıqlar heç bir qaydanın əhatə etmədiyi hər addım üçün soruşur.';
 
   @override
   String get permAutoNote =>
-      'Yeni tapşırıqlarda heç bir qaydanın icazə vermədiyi hər addımı model aşağıdakı avtomatik rejim qaydalarına görə qiymətləndirir: icazə verilərsə icra olunur, bloklanarsa səbəb Agent-ə bildirilir; qərar olmadıqda sizdən soruşulur.';
+      'Yeni tapşırıqlarda heç bir qaydanın əhatə etmədiyi hər addımı model aşağıdakı avtomatik rejim qaydalarına görə qiymətləndirir: icazə verilərsə icra olunur, bloklanarsa səbəb Agent-ə bildirilir; qərar olmadıqda sizdən soruşulur.';
 
   @override
   String get permBypassNote =>

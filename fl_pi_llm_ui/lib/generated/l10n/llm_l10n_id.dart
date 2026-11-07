@@ -445,11 +445,11 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get permManualNote =>
-      'Tugas baru menanyakan setiap langkah yang tidak diizinkan aturan.';
+      'Tugas baru menanyakan setiap langkah yang tidak dicakup aturan.';
 
   @override
   String get permAutoNote =>
-      'Pada tugas baru, setiap langkah yang tidak diizinkan aturan dinilai oleh model berdasarkan aturan mode otomatis di bawah: yang diizinkan dijalankan, yang diblokir dijelaskan alasannya ke agent; tanpa keputusan, Anda ditanya.';
+      'Pada tugas baru, setiap langkah yang tidak dicakup aturan dinilai oleh model berdasarkan aturan mode otomatis di bawah: yang diizinkan dijalankan, yang diblokir dijelaskan alasannya ke agent; tanpa keputusan, Anda ditanya.';
 
   @override
   String get permBypassNote =>

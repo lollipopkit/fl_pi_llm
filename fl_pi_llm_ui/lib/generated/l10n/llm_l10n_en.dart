@@ -463,11 +463,11 @@ class LlmLocalizationsEn extends LlmLocalizations {
   String get permDefaultMode => 'Default mode';
 
   @override
-  String get permManualNote => 'New tasks ask about every step no rule allows.';
+  String get permManualNote => 'New tasks ask about every step no rule covers.';
 
   @override
   String get permAutoNote =>
-      'New tasks have every step no rule allows judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.';
+      'New tasks have every step no rule covers judged by the model against the auto mode rules below: allowed runs it, blocked tells the agent why; with no verdict you are asked.';
 
   @override
   String get permBypassNote =>
