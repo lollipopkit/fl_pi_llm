@@ -41,7 +41,7 @@ pub fn permissions_defaults(environment: Vec<String>) -> String {
 }
 
 /// What becomes of a call in [mode]: `{decision: run|ask|judge|deny, danger,
-/// allowRule, message}`. [command] is the shell command it runs, none for a
+/// byRule, allowRule, message}`. [command] is the shell command it runs, none for a
 /// tool that runs none; [claimed] `read`, `change` or `danger`, raised to the
 /// command's shape.
 #[frb(sync)]
@@ -52,7 +52,7 @@ pub fn permissions_decide(permissions: String, mode: String, command: Option<Str
     Ok(match p::decide(&perms, Mode::parse(&mode), command.as_deref(), effect, false) {
         Decision::Deny { rule } => json!({ "decision": "deny", "rule": rule, "message": p::deny_message(&rule) }),
         Decision::Run => json!({ "decision": "run" }),
-        Decision::Ask { danger, allow_rule } => json!({ "decision": "ask", "danger": danger, "allowRule": allow_rule }),
+        Decision::Ask { danger, by_rule, allow_rule } => json!({ "decision": "ask", "danger": danger, "byRule": by_rule, "allowRule": allow_rule }),
         Decision::Judge => json!({ "decision": "judge" }),
     }
     .to_string())

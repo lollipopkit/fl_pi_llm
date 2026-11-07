@@ -75,6 +75,17 @@ static MUTATING: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         r"\b(curl|wget)\b.*\s(-o|--output|-x\s+(post|put|patch|delete)|--request\s+(post|put|patch|delete))\b",
         r"\b(set-content|add-content|new-item|copy-item|move-item|rename-item|start-service|stop-service|restart-service)\b",
         r"(^|[;&|]\s*)(sudo\s+)?(useradd|userdel|usermod|groupadd|groupdel|passwd|chpasswd|crontab|mount|umount|swapon|swapoff|sysctl\s+-w|timedatectl\s+set|hostnamectl\s+set|ufw|iptables|nft|firewall-cmd|certbot|fallocate|truncate|install)\b",
+        // What a read's own name starts, set to change something.
+        r"(^|[;&|]\s*)(sudo\s+)?date\s+([^;&|]*\s)?(-s|--set)\b",
+        r"(^|[;&|]\s*)(sudo\s+)?date\s+[0-9]",
+        r"(^|[;&|]\s*)(sudo\s+)?hostname\s+(--file|--boot|-b\b|-f\s+[^\s;&|-]|[a-z0-9][^\s;&|]*\s*($|[;&|]))",
+        r"\bip\s+(-[a-z0-9]+\s+)*(link|addr|address|route|rule|neigh|neighbor|tunnel|tuntap|netns|xfrm|maddr|mroute|vrf|nexthop)\s+(add|del|delete|set|change|replace|flush|append|exec|prepend)\b",
+        r"(^|[;&|]\s*)(sudo\s+)?ifconfig\s+[^\s;&|]+\s+(up|down|inet6?|netmask|mtu|hw|add|del|[0-9])",
+        r"(^|[;&|]\s*)(sudo\s+)?route\s+(add|del|delete|change|flush|replace)\b",
+        r"\bjournalctl\b[^;&|]*--(vacuum-[a-z]+|rotate|flush|sync|relinquish-var|smart-relinquish-var|setup-keys|update-catalog)",
+        r"\bsort\b[^;&|]*\s(-o|--output)",
+        // sed's `w` command and `w`/`e` flags write and run.
+        r"\bsed\b[^;&|]*(\s(-f|--file)\b|/[a-z0-9]*[we]([\s;'\x22}]|$)|[0-9$;'\x22\s{}]w\s+[^\s'\x22])",
     ])
 });
 
@@ -128,6 +139,32 @@ fn read_only_segment(segment: &str) -> bool {
     READ_ONLY_STARTS.iter().any(|p| p.is_match(&s))
 }
 
+static SEPARATOR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&&|\|\||\|&|[;|&\r\n]").unwrap());
+static SHELL_C: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\b(sh|bash|zsh|fish|dash|ash|ksh)\s+-c\s+(?:'([^']*)'|"([^"]*)")"#).unwrap());
+
+/// [line]'s commands as they run, where that differs from how they are
+/// written: wrappers off (`env`, `timeout 5`, …), a program named by its path
+/// by its name alone, a shell's `-c` script by itself. Only ever looked at for
+/// something worse: what is written is judged too.
+fn unwrapped(line: &str) -> Vec<String> {
+    let mut out: Vec<String> = SHELL_C
+        .captures_iter(line)
+        .filter_map(|c| c.get(2).or_else(|| c.get(3)).map(|m| m.as_str().to_string()))
+        .collect();
+    for part in SEPARATOR.split(line) {
+        let bare = super::rules::strip_wrappers(part.trim(), true);
+        let named = match bare.split_once(' ') {
+            Some((first, rest)) => format!("{} {rest}", first.rsplit('/').next().unwrap_or(first)),
+            None => bare.rsplit('/').next().unwrap_or(&bare).to_string(),
+        };
+        if named != part.trim() {
+            out.push(named);
+        }
+    }
+    out
+}
+
 /// What `command` would do, from its shape.
 pub fn classify(command: &str) -> CommandRisk {
     let normalized = command.trim().to_lowercase();
@@ -138,7 +175,7 @@ pub fn classify(command: &str) -> CommandRisk {
     // exact redirections are let through before looking for writes.
     let normalized = QUIET.replace_all(&normalized, "");
 
-    if DESTRUCTIVE.iter().any(|p| p.is_match(&normalized)) {
+    if DESTRUCTIVE.iter().any(|p| p.is_match(&normalized)) || unwrapped(&normalized).iter().any(|c| classify(c) == CommandRisk::Destructive) {
         return CommandRisk::Destructive;
     }
     if SIMULATED_APT.is_match(&normalized) {
@@ -250,6 +287,23 @@ mod tests {
             ],
             Caution,
         );
+    }
+
+    #[test]
+    fn what_runs_under_another_name_is_judged_as_itself() {
+        for c in ["/bin/rm -rf /srv", "/usr/bin/rm x", "env rm x", "env FOO=1 rm x", "timeout 5 rm x", "timeout -s KILL 5 rm x", "nice -n 5 rm x", "stdbuf -oL rm x", "sh -c 'rm -rf /srv'", "bash -c \"cd / && rm -rf srv\"", "/sbin/mkfs.ext4 /dev/sdb"] {
+            assert_eq!(classify(c), CommandRisk::Destructive, "{c}");
+        }
+    }
+
+    #[test]
+    fn a_reads_name_set_to_change_something_is_no_read() {
+        for c in ["date -s '2026-01-01'", "date 010112002026", "hostname newbox", "hostname -F /etc/hostname", "ip link set eth0 down", "ip addr add 10.0.0.2/24 dev eth0", "ip -4 route del default", "ifconfig eth0 down", "route add default gw 10.0.0.1", "journalctl --vacuum-size=100M", "journalctl --rotate", "sort -o /etc/x y", "sed -n 'w /tmp/x' f", "sed 's/a/b/w /tmp/x' f", "sed 's/a/id/e' f", "sed -f script.sed f"] {
+            assert_ne!(classify(c), CommandRisk::ReadOnly, "{c}");
+        }
+        for c in ["date +%s", "hostname", "hostname -i", "ip addr", "ip -4 route show", "ip link show eth0", "ifconfig eth0", "route -n", "journalctl -u nginx --since today", "sort -u f", "sed -n '/error/p' f", "sed 's/a/b/g' f"] {
+            assert_eq!(classify(c), CommandRisk::ReadOnly, "{c}");
+        }
     }
 
     #[test]

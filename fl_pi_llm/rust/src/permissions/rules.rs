@@ -13,9 +13,12 @@
 //! a quote left open — is never allowed by a rule; deny and ask rules still
 //! look inside it.
 //!
-//! Rules match the text written, not the program run: `rm *` in `deny` does
-//! not stop `/bin/rm` or `sh -c 'rm …'`. They state what to ask about and
-//! what never to do, and are not a boundary around a program.
+//! Deny and ask rules also see a command with `env`, `timeout`, `stdbuf` and
+//! the like taken off and a program named by its path by its name
+//! (`/bin/rm` meets `rm *`). Otherwise rules match the text written, not the
+//! program run: `rm *` in `deny` does not stop `sh -c 'rm …'`. They state
+//! what to ask about and what never to do, and are not a boundary around a
+//! program.
 
 use std::sync::LazyLock;
 
@@ -283,6 +286,14 @@ fn candidates(command: &str) -> Vec<String> {
             continue;
         }
         let bare = strip_wrappers(&p, true);
+        // A program named by its path, by its name too: `/bin/rm` meets
+        // `rm *`. Only more texts to check; allow rules never see these.
+        if let Some((first, rest)) = bare.split_once(' ').or(Some((bare.as_str(), "")))
+            && let Some((_, name)) = first.rsplit_once('/')
+            && !name.is_empty()
+        {
+            out.push(collapse(&format!("{name} {rest}")));
+        }
         out.push(p);
         out.push(bare);
     }
@@ -314,10 +325,26 @@ pub fn strip_wrappers(part: &str, any_env: bool) -> String {
                     if first == "command" && words.get(1).is_some_and(|w| w.starts_with('-')) { 0 } else { 1 }
                 }
                 "xargs" if words.get(1).is_some_and(|w| !w.starts_with('-')) => 1,
+                // Only where more texts are checked (deny, ask): `env` may
+                // set anything.
+                "env" if any_env => {
+                    let mut n = 1;
+                    while let Some(w) = words.get(n) {
+                        if *w == "-u" || *w == "--unset" || *w == "-C" || *w == "--chdir" {
+                            n += 2;
+                        } else if w.starts_with('-') || w.contains('=') {
+                            n += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    n
+                }
                 "timeout" => {
                     let mut n = 1;
-                    while words.get(n).is_some_and(|w| w.starts_with('-')) {
-                        n += 1;
+                    while let Some(w) = words.get(n).filter(|w| w.starts_with('-')) {
+                        // `-s KILL`, `-k 5`: an option and its value.
+                        n += if matches!(*w, "-s" | "--signal" | "-k" | "--kill-after") { 2 } else { 1 };
                     }
                     if words.get(n).is_some_and(|w| w.chars().next().is_some_and(|c| c.is_ascii_digit())) { n + 1 } else { 0 }
                 }
@@ -326,8 +353,9 @@ pub fn strip_wrappers(part: &str, any_env: bool) -> String {
                 }
                 "stdbuf" => {
                     let mut n = 1;
-                    while words.get(n).is_some_and(|w| w.starts_with('-')) {
-                        n += 1;
+                    while let Some(w) = words.get(n).filter(|w| w.starts_with('-')) {
+                        // `-o L` as well as `-oL`.
+                        n += if matches!(*w, "-i" | "-o" | "-e") { 2 } else { 1 };
                     }
                     n
                 }
@@ -428,6 +456,17 @@ mod tests {
         assert_eq!(r.verdict("FOO=bar rm -rf tmp/"), RuleVerdict::Deny("rm *".into()));
         assert_eq!(r.verdict("timeout 5 rm x"), RuleVerdict::Deny("rm *".into()));
         assert_eq!(r.verdict("sudo rm x"), RuleVerdict::Deny("rm *".into()));
+        // What runs rm under another name, for deny and ask.
+        assert_eq!(r.verdict("env rm x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("env -i FOO=1 rm x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("timeout -s KILL 5 rm x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("stdbuf -o L rm x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("/bin/rm -rf x"), RuleVerdict::Deny("rm *".into()));
+        assert_eq!(r.verdict("cd / && /usr/bin/git clean -fd"), RuleVerdict::Ask("git clean *".into()));
+        // Never more for allow: a path or env is not what the rule names.
+        let a = rules(&["rm *"], &[], &[]);
+        assert_eq!(a.verdict("/bin/rm x"), RuleVerdict::None);
+        assert_eq!(a.verdict("env FOO=1 rm x"), RuleVerdict::None);
     }
 
     #[test]

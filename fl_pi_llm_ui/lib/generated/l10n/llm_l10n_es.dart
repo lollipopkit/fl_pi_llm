@@ -493,7 +493,7 @@ class LlmLocalizationsEs extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Una por línea. * es cualquier texto, como systemctl status * o apt-get install *; un :* final equivale a « *». Un comando encadenado se comprueba por partes: denegar y preguntar se aplican si alguna parte coincide, permitir solo si todas están cubiertas. Las reglas coinciden con el texto escrito (/bin/rm no coincide con rm *); no son un límite de seguridad.';
+      'Una por línea. * es cualquier texto, como systemctl status * o apt-get install *; un :* final equivale a « *». Un comando encadenado se comprueba por partes: denegar y preguntar se aplican si alguna parte coincide, permitir solo si todas están cubiertas. Las reglas coinciden con el texto escrito (sh -c \'rm …\' no coincide con rm *); no son un límite de seguridad.';
 
   @override
   String get permAutoRules => 'Reglas del modo automático';

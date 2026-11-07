@@ -500,7 +500,7 @@ class LlmLocalizationsAz extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Hər sətirdə bir qayda. * istənilən mətndir, məsələn systemctl status * və ya apt-get install *; sondakı :* \" *\" ilə eynidir. Zəncirvari əmr hissə-hissə yoxlanılır: rədd və soruş hər hansı hissə uyğun gəldikdə, icazə isə yalnız bütün hissələr əhatə olunduqda tətbiq olunur. Qaydalar əmri yazıldığı kimi uyğunlaşdırır (/bin/rm rm * ilə uyğun gəlmir); təhlükəsizlik sərhədi deyil.';
+      'Hər sətirdə bir qayda. * istənilən mətndir, məsələn systemctl status * və ya apt-get install *; sondakı :* \" *\" ilə eynidir. Zəncirvari əmr hissə-hissə yoxlanılır: rədd və soruş hər hansı hissə uyğun gəldikdə, icazə isə yalnız bütün hissələr əhatə olunduqda tətbiq olunur. Qaydalar əmri yazıldığı kimi uyğunlaşdırır (sh -c \'rm …\' rm * ilə uyğun gəlmir); təhlükəsizlik sərhədi deyil.';
 
   @override
   String get permAutoRules => 'Avtomatik rejim qaydaları';

@@ -952,7 +952,7 @@ abstract class LlmLocalizations {
   /// No description provided for @permRulesHint.
   ///
   /// In en, this message translates to:
-  /// **'One per line. * is any text, as in systemctl status * or apt-get install *; a trailing :* is the same as \" *\". A chained command is checked part by part: deny and ask apply when any part matches, allow only when every part is covered. Rules match the command as written (/bin/rm does not match rm *); they are not a security boundary.'**
+  /// **'One per line. * is any text, as in systemctl status * or apt-get install *; a trailing :* is the same as \" *\". A chained command is checked part by part: deny and ask apply when any part matches, allow only when every part is covered. Rules match the command as written (sh -c \'rm …\' does not match rm *); they are not a security boundary.'**
   String get permRulesHint;
 
   /// No description provided for @permAutoRules.

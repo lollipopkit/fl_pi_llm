@@ -494,7 +494,7 @@ class LlmLocalizationsNl extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Eén per regel. * is willekeurige tekst, zoals systemctl status * of apt-get install *; een :* aan het eind is gelijk aan ‘ *’. Een gekoppelde opdracht wordt per deel gecontroleerd: weigeren en vragen gelden als één deel past, toestaan alleen als elk deel gedekt is. Regels passen op de geschreven tekst (/bin/rm past niet op rm *); ze zijn geen beveiligingsgrens.';
+      'Eén per regel. * is willekeurige tekst, zoals systemctl status * of apt-get install *; een :* aan het eind is gelijk aan ‘ *’. Een gekoppelde opdracht wordt per deel gecontroleerd: weigeren en vragen gelden als één deel past, toestaan alleen als elk deel gedekt is. Regels passen op de geschreven tekst (sh -c \'rm …\' past niet op rm *); ze zijn geen beveiligingsgrens.';
 
   @override
   String get permAutoRules => 'Regels voor de automatische modus';

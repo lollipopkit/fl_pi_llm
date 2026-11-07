@@ -27,7 +27,8 @@ abstract final class LlmApprovals {
 
   /// Whether [call] of [tool] runs, is refused, or is asked about — and then
   /// whether an earlier "always allow" may answer instead ([remembered]),
-  /// which it may not for a call that loses something for good.
+  /// which it may not for a call that loses something for good or that an
+  /// ask rule names.
   static Future<({LlmApproval? decided, bool remembered})> decide(LlmToolCall call, ToolFunc? tool) async {
     final p = stored;
     final mcp = tool == null ? McpTools.defOf(call.name) : null;
@@ -38,7 +39,7 @@ abstract final class LlmApprovals {
     return switch (LlmPermissionRules.decide(p, p.mode, command: command, claimed: claimed)) {
       LlmRun() => (decided: const LlmApproval.allow(), remembered: false),
       LlmDeny(:final message) => (decided: LlmApproval.deny(message), remembered: false),
-      LlmAsk(:final danger) => (decided: null, remembered: !danger),
+      LlmAsk(:final danger, :final byRule) => (decided: null, remembered: !danger && !byRule),
       LlmJudge() => (decided: await _judge(call.sessionId, p, subject, claimed), remembered: true),
     };
   }

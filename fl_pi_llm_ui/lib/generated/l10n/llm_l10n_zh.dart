@@ -464,7 +464,7 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      '每行一条。* 代表任意文本，如 systemctl status * 或 apt-get install *；末尾的 :* 与“ *”相同。组合命令会拆开逐段匹配：拒绝和询问只要有一段命中就生效，允许要求每一段都被覆盖。规则按命令文本匹配（/bin/rm 不会命中 rm *），不是安全边界。';
+      '每行一条。* 代表任意文本，如 systemctl status * 或 apt-get install *；末尾的 :* 与“ *”相同。组合命令会拆开逐段匹配：拒绝和询问只要有一段命中就生效，允许要求每一段都被覆盖。规则按命令文本匹配（sh -c \'rm …\' 不会命中 rm *），不是安全边界。';
 
   @override
   String get permAutoRules => '自动模式规则';
@@ -953,7 +953,7 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get permRulesHint =>
-      '每行一條。* 代表任意文字，如 systemctl status * 或 apt-get install *；結尾的 :* 與「 *」相同。組合命令會拆開逐段比對：拒絕和詢問只要有一段命中就生效，允許要求每一段都被涵蓋。規則依命令文字比對（/bin/rm 不會命中 rm *），不是安全邊界。';
+      '每行一條。* 代表任意文字，如 systemctl status * 或 apt-get install *；結尾的 :* 與「 *」相同。組合命令會拆開逐段比對：拒絕和詢問只要有一段命中就生效，允許要求每一段都被涵蓋。規則依命令文字比對（sh -c \'rm …\' 不會命中 rm *），不是安全邊界。';
 
   @override
   String get permAutoRules => '自動模式規則';

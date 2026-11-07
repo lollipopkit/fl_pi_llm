@@ -499,7 +499,7 @@ class LlmLocalizationsIt extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Una per riga. * è qualsiasi testo, come systemctl status * o apt-get install *; un :* finale equivale a « *». Un comando concatenato è controllato parte per parte: nega e chiedi valgono se una parte corrisponde, consenti solo se ogni parte è coperta. Le regole confrontano il testo scritto (/bin/rm non corrisponde a rm *); non sono un confine di sicurezza.';
+      'Una per riga. * è qualsiasi testo, come systemctl status * o apt-get install *; un :* finale equivale a « *». Un comando concatenato è controllato parte per parte: nega e chiedi valgono se una parte corrisponde, consenti solo se ogni parte è coperta. Le regole confrontano il testo scritto (sh -c \'rm …\' non corrisponde a rm *); non sono un confine di sicurezza.';
 
   @override
   String get permAutoRules => 'Regole della modalità automatica';

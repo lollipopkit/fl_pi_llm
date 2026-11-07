@@ -480,7 +480,7 @@ class LlmLocalizationsTr extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Satır başına bir tane. * herhangi bir metindir; örn. systemctl status * ya da apt-get install *; sondaki :* “ *” ile aynıdır. Zincirli bir komut parça parça denetlenir: reddet ve sor herhangi bir parça eşleşirse, izin ver yalnızca her parça kapsanırsa geçerlidir. Kurallar yazılan metinle eşleşir (/bin/rm, rm * ile eşleşmez); güvenlik sınırı değildir.';
+      'Satır başına bir tane. * herhangi bir metindir; örn. systemctl status * ya da apt-get install *; sondaki :* “ *” ile aynıdır. Zincirli bir komut parça parça denetlenir: reddet ve sor herhangi bir parça eşleşirse, izin ver yalnızca her parça kapsanırsa geçerlidir. Kurallar yazılan metinle eşleşir (sh -c \'rm …\', rm * ile eşleşmez); güvenlik sınırı değildir.';
 
   @override
   String get permAutoRules => 'Otomatik mod kuralları';

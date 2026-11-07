@@ -495,7 +495,7 @@ class LlmLocalizationsFr extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Une par ligne. * représente n’importe quel texte, comme systemctl status * ou apt-get install * ; un :* final équivaut à « * ». Une commande enchaînée est vérifiée partie par partie : refuser et demander s’appliquent si une partie correspond, autoriser seulement si chaque partie est couverte. Les règles portent sur le texte écrit (/bin/rm ne correspond pas à rm *) ; ce n’est pas une frontière de sécurité.';
+      'Une par ligne. * représente n’importe quel texte, comme systemctl status * ou apt-get install * ; un :* final équivaut à « * ». Une commande enchaînée est vérifiée partie par partie : refuser et demander s’appliquent si une partie correspond, autoriser seulement si chaque partie est couverte. Les règles portent sur le texte écrit (sh -c \'rm …\' ne correspond pas à rm *) ; ce n’est pas une frontière de sécurité.';
 
   @override
   String get permAutoRules => 'Règles du mode auto';

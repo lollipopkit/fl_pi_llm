@@ -480,7 +480,7 @@ class LlmLocalizationsId extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Satu per baris. * berarti teks apa pun, misalnya systemctl status * atau apt-get install *; :* di akhir sama dengan “ *”. Perintah berantai diperiksa per bagian: tolak dan tanya berlaku jika satu bagian cocok, izinkan hanya jika setiap bagian tercakup. Aturan mencocokkan teks yang ditulis (/bin/rm tidak cocok dengan rm *); ini bukan batas keamanan.';
+      'Satu per baris. * berarti teks apa pun, misalnya systemctl status * atau apt-get install *; :* di akhir sama dengan “ *”. Perintah berantai diperiksa per bagian: tolak dan tanya berlaku jika satu bagian cocok, izinkan hanya jika setiap bagian tercakup. Aturan mencocokkan teks yang ditulis (sh -c \'rm …\' tidak cocok dengan rm *); ini bukan batas keamanan.';
 
   @override
   String get permAutoRules => 'Aturan mode otomatis';

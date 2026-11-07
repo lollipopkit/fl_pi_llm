@@ -470,7 +470,7 @@ class LlmLocalizationsJa extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      '1 行に 1 つ。* は任意の文字列です（例: systemctl status *、apt-get install *）。末尾の :* は「 *」と同じです。連結されたコマンドは部分ごとに照合し、拒否と確認はどれか 1 つが一致すれば、許可はすべての部分が一致したときだけ適用されます。ルールは書かれた文字列に一致するもので（/bin/rm は rm * に一致しません）、セキュリティ境界ではありません。';
+      '1 行に 1 つ。* は任意の文字列です（例: systemctl status *、apt-get install *）。末尾の :* は「 *」と同じです。連結されたコマンドは部分ごとに照合し、拒否と確認はどれか 1 つが一致すれば、許可はすべての部分が一致したときだけ適用されます。ルールは書かれた文字列に一致するもので（sh -c \'rm …\' は rm * に一致しません）、セキュリティ境界ではありません。';
 
   @override
   String get permAutoRules => '自動モードルール';

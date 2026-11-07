@@ -108,6 +108,15 @@ final class LlmPermissions {
     raw: raw,
   );
 
+  /// What [LlmPermissionRules] reads: only the fields it knows, a mode this
+  /// build does not know as manual. [toJson] keeps the rest for storing.
+  Map<String, dynamic> _toRules() => {
+    'defaultMode': (defaultMode ?? LlmPermissionMode.manual).name,
+    'disableBypass': disableBypass,
+    'rules': {'allow': allow, 'ask': ask, 'deny': deny},
+    'autoMode': {for (final e in autoMode.entries) e.key.key: e.value},
+  };
+
   Map<String, dynamic> toJson() {
     final rules = raw['rules'] is Map ? Map<String, dynamic>.of((raw['rules'] as Map).cast()) : <String, dynamic>{};
     final auto = raw['autoMode'] is Map ? Map<String, dynamic>.of((raw['autoMode'] as Map).cast()) : <String, dynamic>{};
@@ -149,12 +158,13 @@ final class LlmRun extends LlmDecision {
   const LlmRun();
 }
 
-/// The person decides; [danger] is a call that loses something for good.
-/// [allowRule] would cover it, to offer.
+/// The person decides; [danger] is a call that loses something for good,
+/// [byRule] one an ask rule names. [allowRule] would cover it, to offer.
 final class LlmAsk extends LlmDecision {
-  const LlmAsk({required this.danger, this.allowRule});
+  const LlmAsk({required this.danger, this.byRule = false, this.allowRule});
 
   final bool danger;
+  final bool byRule;
   final String? allowRule;
 }
 
@@ -183,7 +193,7 @@ abstract final class LlmPermissionRules {
   };
 
   /// Why [p] cannot be stored; null when it can.
-  static String? check(LlmPermissions p) => rs.permissionsCheck(permissions: jsonEncode(p.toJson()));
+  static String? check(LlmPermissions p) => rs.permissionsCheck(permissions: jsonEncode(p._toRules()));
 
   /// The built-in auto mode lists, around [environment]: where the calls run
   /// and what is sensitive there.
@@ -202,19 +212,19 @@ abstract final class LlmPermissionRules {
     required LlmEffect claimed,
   }) {
     final j = jsonDecode(
-      rs.permissionsDecide(permissions: jsonEncode(p.toJson()), mode: mode.name, command: command, claimed: claimed.name),
+      rs.permissionsDecide(permissions: jsonEncode(p._toRules()), mode: mode.name, command: command, claimed: claimed.name),
     ) as Map;
     return switch (j['decision']) {
       'run' => const LlmRun(),
       'judge' => const LlmJudge(),
       'deny' => LlmDeny(rule: j['rule'] as String, message: j['message'] as String),
-      _ => LlmAsk(danger: j['danger'] == true, allowRule: j['allowRule'] as String?),
+      _ => LlmAsk(danger: j['danger'] == true, byRule: j['byRule'] == true, allowRule: j['allowRule'] as String?),
     };
   }
 
   /// The judge's instructions.
   static String judgePrompt(LlmPermissions p, List<String> environment) =>
-      rs.permissionsJudgePrompt(permissions: jsonEncode(p.toJson()), environment: environment);
+      rs.permissionsJudgePrompt(permissions: jsonEncode(p._toRules()), environment: environment);
 
   /// What the judge is shown: the person's words and the commands that ran,
   /// from [entries], then [subject].

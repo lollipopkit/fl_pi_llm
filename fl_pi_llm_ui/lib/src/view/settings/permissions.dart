@@ -172,7 +172,7 @@ final class _PermissionsPageState extends State<PermissionsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SegmentedTabs<LlmPermissionMode>(
+                SegmentedTabs<LlmPermissionMode?>(
                   expand: true,
                   segments: [
                     for (final m in LlmPermissionMode.values)
@@ -181,8 +181,10 @@ final class _PermissionsPageState extends State<PermissionsPage> {
                   ],
                   // A mode this build does not know shows as none of these
                   // until one is picked, and is kept until then.
-                  selected: _mode ?? LlmPermissionMode.manual,
-                  onSelected: (m) => setState(() => _mode = m),
+                  selected: _mode,
+                  onSelected: (m) {
+                    if (m != null) setState(() => _mode = m);
+                  },
                 ),
                 if (note != null) ...[
                   UIs.height7,

@@ -494,7 +494,7 @@ class LlmLocalizationsDe extends LlmLocalizations {
 
   @override
   String get permRulesHint =>
-      'Eine pro Zeile. * steht für beliebigen Text, z. B. systemctl status * oder apt-get install *; ein abschließendes :* entspricht „ *“. Verkettete Befehle werden teilweise geprüft: Verbieten und Fragen greifen, wenn ein Teil passt, Erlauben nur, wenn jeder Teil abgedeckt ist. Regeln passen auf den geschriebenen Befehl (/bin/rm passt nicht auf rm *) und sind keine Sicherheitsgrenze.';
+      'Eine pro Zeile. * steht für beliebigen Text, z. B. systemctl status * oder apt-get install *; ein abschließendes :* entspricht „ *“. Verkettete Befehle werden teilweise geprüft: Verbieten und Fragen greifen, wenn ein Teil passt, Erlauben nur, wenn jeder Teil abgedeckt ist. Regeln passen auf den geschriebenen Befehl (sh -c \'rm …\' passt nicht auf rm *) und sind keine Sicherheitsgrenze.';
 
   @override
   String get permAutoRules => 'Regeln des automatischen Modus';
