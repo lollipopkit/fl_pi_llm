@@ -132,10 +132,6 @@ class LlmLocalizationsTr extends LlmLocalizations {
   String get key => 'Anahtar';
 
   @override
-  String get keyInKeychain =>
-      'Sistem anahtar zincirinde saklanır, yedeklere asla girmez.';
-
-  @override
   String get mcpServers => 'MCP sunucuları';
 
   @override

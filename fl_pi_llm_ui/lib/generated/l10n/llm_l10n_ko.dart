@@ -138,9 +138,6 @@ class LlmLocalizationsKo extends LlmLocalizations {
   String get key => '키';
 
   @override
-  String get keyInKeychain => '시스템 keychain에 저장되며 백업에는 포함되지 않습니다.';
-
-  @override
   String get mcpServers => 'MCP 서버';
 
   @override

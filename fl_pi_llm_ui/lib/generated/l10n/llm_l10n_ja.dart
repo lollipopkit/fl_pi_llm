@@ -132,9 +132,6 @@ class LlmLocalizationsJa extends LlmLocalizations {
   String get key => 'キー';
 
   @override
-  String get keyInKeychain => 'システムのキーチェーンに保存され、バックアップには含まれません。';
-
-  @override
   String get mcpServers => 'MCP サーバー';
 
   @override

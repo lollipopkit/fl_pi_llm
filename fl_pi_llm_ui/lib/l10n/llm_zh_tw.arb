@@ -36,7 +36,6 @@
   "image": "圖片",
   "invalidLinkFmt": "未知連結：{uri}",
   "key": "金鑰",
-  "keyInKeychain": "儲存在系統鑰匙圈中，不會進入備份。",
   "mcpServers": "MCP 伺服器",
   "memory": "記憶",
   "memoryDelete": "刪除記憶",

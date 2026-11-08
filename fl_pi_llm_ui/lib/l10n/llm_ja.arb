@@ -36,7 +36,6 @@
   "image": "画像",
   "invalidLinkFmt": "不明なリンク：{uri}",
   "key": "キー",
-  "keyInKeychain": "システムのキーチェーンに保存され、バックアップには含まれません。",
   "mcpServers": "MCP サーバー",
   "memory": "メモリ",
   "memoryDelete": "メモリを削除",

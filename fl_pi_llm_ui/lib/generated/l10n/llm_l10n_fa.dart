@@ -138,10 +138,6 @@ class LlmLocalizationsFa extends LlmLocalizations {
   String get key => 'کلید';
 
   @override
-  String get keyInKeychain =>
-      'در Keychain سیستم ذخیره می‌شود و هرگز در نسخه‌های پشتیبان قرار نمی‌گیرد.';
-
-  @override
   String get mcpServers => 'سرورهای MCP';
 
   @override

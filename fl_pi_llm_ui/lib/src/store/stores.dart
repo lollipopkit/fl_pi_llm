@@ -1,6 +1,7 @@
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm_ui/src/store/chat.dart';
 import 'package:fl_pi_llm_ui/src/store/llm.dart';
+import 'package:fl_pi_llm_ui/src/store/llm_credential.dart';
 import 'package:fl_pi_llm_ui/src/store/mcp_secret.dart';
 import 'package:fl_pi_llm_ui/src/store/memory.dart';
 import 'package:fl_pi_llm_ui/src/store/tool.dart';
@@ -18,4 +19,8 @@ abstract final class LlmStores {
   /// MCP headers and tokens. Not in [all], which apps back up: see
   /// [McpSecretStore].
   static final mcpSecret = McpSecretStore.instance;
+
+  /// Provider keys and sign-ins, also not in [all]: see
+  /// [LlmCredentialStore].
+  static final credential = LlmCredentialStore.instance;
 }

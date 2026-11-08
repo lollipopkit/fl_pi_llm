@@ -36,7 +36,6 @@
   "image": "Image",
   "invalidLinkFmt": "Lien inconnu : {uri}",
   "key": "Clé",
-  "keyInKeychain": "Stockée dans le trousseau du système, jamais dans les sauvegardes.",
   "mcpServers": "Serveurs MCP",
   "memory": "Mémoire",
   "memoryDelete": "Supprimer de la mémoire",

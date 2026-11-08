@@ -71,7 +71,6 @@
   "image": "Image",
   "invalidLinkFmt": "Invalid link: {uri}",
   "key": "Key",
-  "keyInKeychain": "Stored in the system keychain, never in backups.",
   "mcpServers": "MCP servers",
   "memory": "Memory",
   "memoryDelete": "Delete memory",

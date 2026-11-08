@@ -26,6 +26,7 @@ export 'src/skills/source.dart';
 export 'src/store/chat.dart';
 export 'src/store/chat_meta.dart';
 export 'src/store/llm.dart';
+export 'src/store/llm_credential.dart';
 export 'src/store/mcp_secret.dart';
 export 'src/store/memory.dart';
 export 'src/store/stores.dart';

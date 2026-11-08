@@ -15,6 +15,7 @@ import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
+import 'package:fl_pi_llm_ui/src/store/mcp_secret.dart';
 import 'package:fl_pi_llm_ui/src/store/memory.dart';
 import 'package:fl_pi_llm_ui/src/store/tool.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';

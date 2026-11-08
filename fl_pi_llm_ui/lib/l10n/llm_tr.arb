@@ -36,7 +36,6 @@
   "image": "Resim",
   "invalidLinkFmt": "Bilinmeyen bağlantı: {uri}",
   "key": "Anahtar",
-  "keyInKeychain": "Sistem anahtar zincirinde saklanır, yedeklere asla girmez.",
   "mcpServers": "MCP sunucuları",
   "memory": "Hafıza",
   "memoryDelete": "Bellekten sil",

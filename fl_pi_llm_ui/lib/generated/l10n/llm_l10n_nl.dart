@@ -139,10 +139,6 @@ class LlmLocalizationsNl extends LlmLocalizations {
   String get key => 'Sleutel';
 
   @override
-  String get keyInKeychain =>
-      'Opgeslagen in de sleutelhanger van het systeem, nooit in back-ups.';
-
-  @override
   String get mcpServers => 'MCP-servers';
 
   @override

@@ -401,6 +401,29 @@ void main() {
       expect(Skills.byDir('app-help')!.builtin, isFalse);
     });
 
+    test('carried to another device whole, and removed there', () async {
+      final dir = Directory.systemTemp.createTempSync('src');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      (File('${dir.path}/pdf/SKILL.md')..createSync(recursive: true)).writeAsStringSync(_md('pdf'));
+      (File('${dir.path}/pdf/forms.md')..createSync(recursive: true)).writeAsStringSync('Forms.');
+      await installAll(dir.path);
+      Skills.setEnabled('pdf', false);
+      final carried = jsonDecode(jsonEncode(Skills.export('pdf'))) as Map<String, Object?>;
+      final fingerprint = Skills.fingerprints?['pdf'];
+
+      final other = Directory.systemTemp.createTempSync('skills');
+      addTearDown(() => other.deleteSync(recursive: true));
+      Skills.root = other.path;
+      Skills.import('pdf', carried);
+      expect(Skills.byDir('pdf')?.enabled, isFalse);
+      expect(Skills.filesOf('pdf'), ['SKILL.md', 'forms.md']);
+      expect(Skills.fingerprints?['pdf'], fingerprint);
+
+      Skills.import('pdf', null);
+      expect(Skills.all, isEmpty);
+      expect(() => Skills.import('../x', carried), throwsArgumentError);
+    });
+
     test('removed, files and all', () async {
       served['/SKILL.md'] = _b(_md('gone'));
       await installAll('$base/SKILL.md');

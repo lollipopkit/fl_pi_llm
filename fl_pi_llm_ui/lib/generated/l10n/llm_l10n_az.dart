@@ -138,10 +138,6 @@ class LlmLocalizationsAz extends LlmLocalizations {
   String get key => 'Açar';
 
   @override
-  String get keyInKeychain =>
-      'Sistemin keychain-ində saxlanılır, ehtiyat nüsxələrə daxil edilmir.';
-
-  @override
   String get mcpServers => 'MCP server-ləri';
 
   @override

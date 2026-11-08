@@ -95,8 +95,8 @@ final class InstalledSkill {
 
 /// The skills installed on this device: plain files, one directory each, as
 /// `npx skills` leaves them, and a lock beside them saying where each came
-/// from. Not in the database, nor backed up: what a source has can be
-/// fetched again.
+/// from. Not in the database: an app syncs them through [export] and
+/// [import].
 abstract final class Skills {
   /// A skill's files past these are refused, as the CLI refuses an archive.
   static const maxSkillBytes = 25 * 1024 * 1024;
@@ -137,6 +137,7 @@ abstract final class Skills {
   static Map<String, InstalledSkill> get _skills => _lock ??= _readLock();
 
   static Map<String, InstalledSkill> _readLock() {
+    _lockUnreadable = false;
     if (!_hasRoot) return {};
     final f = File('$root/$_lockName');
     if (!f.existsSync()) return {};
@@ -150,6 +151,7 @@ abstract final class Skills {
       };
     } catch (e, s) {
       Loggers.app.warning('Skills lock is unreadable', e, s);
+      _lockUnreadable = true;
       return {};
     }
   }
@@ -186,21 +188,7 @@ abstract final class Skills {
     if (size > maxSkillBytes) throw StateError('${skill.name} is larger than ${maxSkillBytes ~/ 1024 ~/ 1024} MB');
 
     final dir = SkillDiscovery.dirName(skill.name);
-    final target = Directory('$root/$dir');
-    // Written aside and moved in, so a failure leaves the old one whole.
-    final tmp = Directory('$root/.tmp-$dir-${Random().nextInt(1 << 32)}');
-    try {
-      for (final MapEntry(key: rel, value: bytes) in files.entries) {
-        final f = File('${tmp.path}/$rel');
-        if (!_inside(tmp.path, f.path)) continue;
-        f.parent.createSync(recursive: true);
-        f.writeAsBytesSync(bytes);
-      }
-      if (target.existsSync()) target.deleteSync(recursive: true);
-      tmp.renameSync(target.path);
-    } finally {
-      if (tmp.existsSync()) tmp.deleteSync(recursive: true);
-    }
+    _write(dir, files);
     final now = DateTime.now();
     final old = _skills[dir];
     final installed = InstalledSkill(
@@ -219,6 +207,25 @@ abstract final class Skills {
     return installed;
   }
 
+  /// Writes [files] as [dir] aside and moves them in, so a failure leaves
+  /// the old one whole.
+  static void _write(String dir, Map<String, Uint8List> files) {
+    final target = Directory('$root/$dir');
+    final tmp = Directory('$root/.tmp-$dir-${Random().nextInt(1 << 32)}');
+    try {
+      for (final MapEntry(key: rel, value: bytes) in files.entries) {
+        final f = File('${tmp.path}/$rel');
+        if (!_inside(tmp.path, f.path)) continue;
+        f.parent.createSync(recursive: true);
+        f.writeAsBytesSync(bytes);
+      }
+      if (target.existsSync()) target.deleteSync(recursive: true);
+      tmp.renameSync(target.path);
+    } finally {
+      if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+    }
+  }
+
   static void remove(String dir) {
     if (_skills[dir]?.builtin ?? false) throw StateError('$dir comes with the app');
     _drop(dir);
@@ -235,6 +242,61 @@ abstract final class Skills {
     final s = _skills[dir];
     if (s == null) return;
     _skills[dir] = s.copyWith(enabled: on);
+    _saveLock();
+  }
+
+  /// What an app syncing the skills compares, by directory: one whose
+  /// value changed is sent ([export]). Null while the lock cannot be read:
+  /// what it lists is unknown then, not gone.
+  static Map<String, String>? get fingerprints {
+    final skills = _skills;
+    if (_lockUnreadable) return null;
+    return {for (final s in skills.values) s.dir: '${s.hash}|${s.enabled}'};
+  }
+
+  /// The last read of the lock failed.
+  static bool _lockUnreadable = false;
+
+  /// [dir] as a sync carries it: its lock entry, and its files unless it
+  /// comes with the app (only whether it is on travels then). Null when it
+  /// is not here.
+  static Map<String, Object?>? export(String dir) {
+    final s = _skills[dir];
+    if (s == null) return null;
+    if (s.builtin) return {'lock': s.toJson()};
+    final base = Directory('$root/$dir');
+    return {
+      'lock': s.toJson(),
+      'files': {
+        for (final f in base.listSync(recursive: true))
+          if (f is File) f.path.substring(base.path.length + 1): base64Encode(f.readAsBytesSync()),
+      },
+    };
+  }
+
+  /// Puts [dir] here as [export] gave it, over one of the same name; null
+  /// removes it. One that comes with the app is only switched on or off.
+  static void import(String dir, Map<String, Object?>? data) {
+    if (dir != SkillDiscovery.dirName(dir)) throw ArgumentError.value(dir, 'dir');
+    final current = _skills[dir];
+    if (data == null) {
+      if (current != null && !current.builtin) _drop(dir);
+      return;
+    }
+    final lock = InstalledSkill.fromJson(dir, (data['lock'] as Map).cast());
+    if (current?.builtin ?? lock.builtin) {
+      if (current != null) setEnabled(dir, lock.enabled);
+      return;
+    }
+    final files = {
+      for (final MapEntry(:key, :value) in (data['files'] as Map).cast<String, String>().entries)
+        key: base64Decode(value),
+    };
+    if (files.length > maxSkillFiles || files.values.fold<int>(0, (a, b) => a + b.length) > maxSkillBytes) {
+      throw StateError('$dir is larger than a skill may be');
+    }
+    _write(dir, files);
+    _skills[dir] = lock;
     _saveLock();
   }
 

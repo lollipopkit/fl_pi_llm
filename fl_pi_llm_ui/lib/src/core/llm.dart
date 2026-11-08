@@ -34,7 +34,7 @@ abstract final class Llm {
   /// shell exported, with nothing entered in the app.
   static final envAuth = <String, String>{}.vn;
 
-  static LlmCredentials _credentials = KeychainCredentials.instance;
+  static LlmCredentials _credentials = StoreCredentials.instance;
 
   static Map<String, String> Function() _environment = SystemProvider.platform;
 
@@ -60,7 +60,11 @@ abstract final class Llm {
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
   }) async {
-    if (credentials != null) _credentials = credentials;
+    if (credentials != null) {
+      _credentials = credentials;
+    } else {
+      await StoreCredentials.adoptKeychain();
+    }
     if (environment != null) _environment = environment;
     _all = SystemCredentials(_credentials, () => _environment());
     final started = _rt == null;
@@ -81,6 +85,7 @@ abstract final class Llm {
     // in the background, a chat opened meanwhile moved first and waited for.
     if (started) rt.legacySessions = const SqliteLegacySessions();
     await applyCustomProviders();
+    _followStores();
     if (started) {
       unawaited(rt.migrateLegacy().then((failed) {
         for (final MapEntry(:key, :value) in failed.entries) {
@@ -113,6 +118,51 @@ abstract final class Llm {
       if (head.isNotEmpty && String.fromCharCodes(head) != clear) return true;
     }
     return false;
+  }
+
+  static StreamSubscription<String>? _providersEdited;
+  static StreamSubscription<String>? _credentialsEdited;
+  static Timer? _storesEdited;
+  static bool _providersChanged = false;
+  static final _keysChanged = <String>{};
+
+  /// The providers and keys as the stores hold them, however they got
+  /// there: a sync or a restore writes the stores and nothing else. The
+  /// models of a provider whose key changed are listed again, and every
+  /// provider's when the providers did. Once for writes close together. A
+  /// sign-in kept on this device, which the runtime writes itself, is not
+  /// one of them.
+  static void _followStores() {
+    void edited({String? key}) {
+      if (key == null) {
+        _providersChanged = true;
+      } else {
+        _keysChanged.add(key);
+      }
+      _storesEdited?.cancel();
+      _storesEdited = Timer(const Duration(milliseconds: 500), () async {
+        if (_rt == null) return;
+        final providers = _providersChanged;
+        final keys = _keysChanged.toList();
+        _providersChanged = false;
+        _keysChanged.clear();
+        try {
+          if (providers) await applyCustomProviders();
+          await refresh(only: providers ? null : keys);
+        } catch (e, s) {
+          Loggers.app.warning('Providers edited elsewhere', e, s);
+        }
+      });
+    }
+
+    _providersEdited ??= LlmStores.llm
+        .watch()
+        .where((k) => k == LlmStores.llm.customProviders.key)
+        .listen((_) => edited());
+    _credentialsEdited ??= LlmStores.credential
+        .watch()
+        .where((k) => !LlmStores.credential.isDeviceLocalKey(k) && !LlmStores.credential.isInternalKey(k))
+        .listen((k) => edited(key: k));
   }
 
   /// Hands the stored custom providers to the runtime.

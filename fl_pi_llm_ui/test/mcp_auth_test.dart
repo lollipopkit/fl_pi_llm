@@ -182,8 +182,10 @@ final class _Mock {
   }
 }
 
-Map<String, Object?>? _stored(String url) =>
-    LlmStores.mcpSecret.get<Map>(McpTools.nameFor(url))?.cast();
+Map<String, Object?>? _stored(String url) {
+  final secret = McpSecrets.read(McpTools.nameFor(url));
+  return secret.isEmpty ? null : secret.toJson();
+}
 
 void main() {
   // No `TestWidgetsFlutterBinding`: it answers every HTTP request with a 400.
@@ -211,6 +213,20 @@ void main() {
 
   test('are kept apart from the tool settings, which apps back up', () {
     expect(LlmStores.all, isNot(contains(LlmStores.mcpSecret)));
+  });
+
+  test('a sign-in is kept apart from the headers, on this device alone', () {
+    const tokens = McpOAuthTokens(accessToken: 'a', refreshToken: 'r', issuer: 'https://i', resource: 'https://r');
+    McpSecrets.write('s', const McpSecret(headers: {'X-K': 'v'}, oauth: tokens));
+    final store = LlmStores.mcpSecret;
+    expect(store.get<Map>('s'), {'headers': {'X-K': 'v'}});
+    expect(store.get<Map>('s.oauth')?['refreshToken'], 'r');
+    expect(store.isDeviceLocalKey('s.oauth'), isTrue);
+    expect(store.isDeviceLocalKey('s'), isFalse);
+    expect(McpSecrets.read('s').oauth?.refreshToken, 'r');
+    McpSecrets.delete('s');
+    expect(store.get<Map>('s'), isNull);
+    expect(store.get<Map>('s.oauth'), isNull);
   });
 
   group('headers', () {

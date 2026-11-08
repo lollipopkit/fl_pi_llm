@@ -263,16 +263,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
         ),
         SettingsGroup(
           title: llmL10n.key,
-          header: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Input(controller: _key, label: libL10n.apiKey, obscureText: true),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(13, 0, 13, 6),
-                child: Text(llmL10n.keyInKeychain, style: UIs.text12Grey),
-              ),
-            ],
-          ),
+          header: Input(controller: _key, label: libL10n.apiKey, obscureText: true),
         ),
         ListenableBuilder(
           listenable: Listenable.merge([_listed, _listing, _listError]),
