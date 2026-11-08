@@ -88,6 +88,8 @@ class _ComposerState extends State<Composer> {
     Composer.draftScope = null;
   }
 
+  static final _models = Listenable.merge([Llm.providers, Llm.configured]);
+
   LlmModelRef? get _model {
     final id = widget.chatId;
     return (id == null ? null : LlmStores.chat.fetch(id)?.model) ?? Llm.defaultModel;
@@ -178,12 +180,20 @@ class _ComposerState extends State<Composer> {
           if (mounted) _files.value = [..._files.value, ...paths];
         }),
         PermissionModeChip.local(),
+        // The default follows the providers: one chosen on another device
+        // may name a provider that is not here, or not yet.
         Flexible(
-          child: _ModelChip(chatId: widget.chatId, model: _model, onChanged: () {
-            if (mounted) setState(() {});
-          }),
+          child: ListenableBuilder(
+            listenable: _models,
+            builder: (_, _) => _ModelChip(chatId: widget.chatId, model: _model, onChanged: () {
+              if (mounted) setState(() {});
+            }),
+          ),
         ),
-        _ThinkingChip(model: _model, compact: widget.compact),
+        ListenableBuilder(
+          listenable: _models,
+          builder: (_, _) => _ThinkingChip(model: _model, compact: widget.compact),
+        ),
         if (widget.chatId != null) _ToolsToggle(chatId: widget.chatId!),
       ],
       // The chat opens after the composer is built: follow it.
@@ -403,25 +413,22 @@ class _ModelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([Llm.providers, Llm.configured]),
-      builder: (context, _) => ComposerModelChip(
-        name: switch (model) {
-          final m? => Llm.modelLabel(m),
-          null => llmL10n.model,
-        },
-        onTap: () async {
-          final picked = await pickModel(context, current: model);
-          if (picked == null) return;
-          final id = chatId;
-          if (id == null) {
-            LlmStores.llm.defaultModel.set(picked);
-          } else {
-            await Chats.setModel(id, picked);
-          }
-          onChanged();
-        },
-      ),
+    return ComposerModelChip(
+      name: switch (model) {
+        final m? => Llm.modelLabel(m),
+        null => llmL10n.model,
+      },
+      onTap: () async {
+        final picked = await pickModel(context, current: model);
+        if (picked == null) return;
+        final id = chatId;
+        if (id == null) {
+          LlmStores.llm.defaultModel.set(picked);
+        } else {
+          await Chats.setModel(id, picked);
+        }
+        onChanged();
+      },
     );
   }
 }

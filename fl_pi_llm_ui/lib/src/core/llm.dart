@@ -9,6 +9,7 @@ import 'package:fl_pi_llm_ui/src/core/credentials.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
+import 'package:fl_pi_llm_ui/src/store/llm.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
@@ -84,6 +85,8 @@ abstract final class Llm {
     // TODO: remove with SqliteLegacySessions. Before any chat opens; then
     // in the background, a chat opened meanwhile moved first and waited for.
     if (started) rt.legacySessions = const SqliteLegacySessions();
+    // TODO: remove with LlmStore.splitLegacyProviders.
+    LlmStores.llm.splitLegacyProviders(StoreCredentials.adopt);
     await applyCustomProviders();
     _followStores();
     if (started) {
@@ -147,7 +150,11 @@ abstract final class Llm {
         _providersChanged = false;
         _keysChanged.clear();
         try {
-          if (providers) await applyCustomProviders();
+          if (providers) {
+            // A list another device sent as builds before kept it.
+            LlmStores.llm.splitLegacyProviders(StoreCredentials.adopt);
+            await applyCustomProviders();
+          }
           await refresh(only: providers ? null : keys);
         } catch (e, s) {
           Loggers.app.warning('Providers edited elsewhere', e, s);
@@ -157,7 +164,7 @@ abstract final class Llm {
 
     _providersEdited ??= LlmStores.llm
         .watch()
-        .where((k) => k == LlmStores.llm.customProviders.key)
+        .where(LlmStore.isProviderKey)
         .listen((_) => edited());
     _credentialsEdited ??= LlmStores.credential
         .watch()
@@ -169,7 +176,7 @@ abstract final class Llm {
   static Future<void> applyCustomProviders() async {
     if (_rt == null) return;
     try {
-      await rt.setCustomProviders([...?LlmStores.llm.customProviders.get(), ?system]);
+      await rt.setCustomProviders([...LlmStores.llm.customProviders, ?system]);
     } catch (e, s) {
       Loggers.app.warning('Apply custom providers', e, s);
     }
@@ -257,8 +264,14 @@ abstract final class Llm {
     return out;
   }
 
-  /// What a new chat talks to: the chosen default, or the first usable model.
-  static LlmModelRef? get defaultModel => LlmStores.llm.defaultModel.get() ?? usableModels.firstOrNull?.ref;
+  /// What a new chat talks to: the chosen default while its provider is
+  /// here and usable, else the first usable model. A default chosen on
+  /// another device may name a provider this one does not have.
+  static LlmModelRef? get defaultModel {
+    final chosen = LlmStores.llm.defaultModel.get();
+    if (chosen != null && configured.value.contains(chosen.provider) && provider(chosen.provider) != null) return chosen;
+    return usableModels.firstOrNull?.ref;
+  }
 
   static Future<LlmCredential?> readCredential(String providerId) =>
       _credentials.read(providerId);
