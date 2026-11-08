@@ -13,7 +13,7 @@
 
 ## 为什么需要这份协议
 
-fl_pi_llm 以 **GNU Affero 通用公共许可证第 3 版（AGPLv3）** 发布。它是 ServerBox 和 GPT Box 的 LLM 层，而这两个应用同时也通过 Apple App Store 等渠道分发，这些渠道的条款无法与 AGPLv3 的全部条件同时满足。只有持有 AGPLv3 本身所授予之外的权利的一方，才能在两处同时分发。
+fl_pi_llm 以 **GNU Affero 通用公共许可证第 3 版（AGPLv3）** 发布。它是 ServerBox 和 LLMBox 的 LLM 层，而这两个应用同时也通过 Apple App Store 等渠道分发，这些渠道的条款无法与 AGPLv3 的全部条件同时满足。只有持有 AGPLv3 本身所授予之外的权利的一方，才能在两处同时分发。
 
 本协议就你的贡献向维护者授予这些权利，使你的工作能够和这些应用的其余部分一起构建、一起发布。
 

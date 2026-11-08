@@ -1,5 +1,5 @@
 name: fl_pi_llm
-description: pi-durable and pi-ai on QuickJS, for Flutter apps. One LLM layer for GPT Box and Server Box.
+description: pi-durable and pi-ai on QuickJS, for Flutter apps. One LLM layer for LLMBox and Server Box.
 version: 0.1.0
 publish_to: none
 repository: https://github.com/lollipopkit/fl_pi_llm
