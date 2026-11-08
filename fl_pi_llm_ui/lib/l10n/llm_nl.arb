@@ -36,7 +36,6 @@
   "image": "Afbeelding",
   "invalidLinkFmt": "Onbekende link: {uri}",
   "key": "Sleutel",
-  "keyInKeychain": "Opgeslagen in de sleutelhanger van het systeem, nooit in back-ups.",
   "mcpServers": "MCP-servers",
   "memory": "Geheugen",
   "memoryDelete": "Geheugen verwijderen",

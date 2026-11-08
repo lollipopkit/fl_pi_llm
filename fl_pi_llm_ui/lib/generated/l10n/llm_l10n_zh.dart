@@ -131,9 +131,6 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String get key => '密钥';
 
   @override
-  String get keyInKeychain => '保存在系统钥匙串中，不会进入备份。';
-
-  @override
   String get mcpServers => 'MCP 服务器';
 
   @override
@@ -618,9 +615,6 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get key => '金鑰';
-
-  @override
-  String get keyInKeychain => '儲存在系統鑰匙圈中，不會進入備份。';
 
   @override
   String get mcpServers => 'MCP 伺服器';

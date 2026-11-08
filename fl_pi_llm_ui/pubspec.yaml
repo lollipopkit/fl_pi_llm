@@ -48,6 +48,12 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # As fl_lib has it: its mock keychain, for the move out of it.
+  flutter_secure_storage:
+    git:
+      url: https://github.com/lollipopkit/flutter_secure_storage.git
+      ref: serverbox
+      path: flutter_secure_storage
   flutter_lints: ^6.0.0
 
 flutter:

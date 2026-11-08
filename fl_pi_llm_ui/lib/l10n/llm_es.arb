@@ -36,7 +36,6 @@
   "image": "Imagen",
   "invalidLinkFmt": "Enlace desconocido: {uri}",
   "key": "Clave",
-  "keyInKeychain": "Guardada en el llavero del sistema, nunca en las copias de seguridad.",
   "mcpServers": "Servidores MCP",
   "memory": "Memoria",
   "memoryDelete": "Eliminar memoria",

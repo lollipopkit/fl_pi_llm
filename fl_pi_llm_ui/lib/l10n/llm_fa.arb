@@ -36,7 +36,6 @@
   "image": "تصویر",
   "invalidLinkFmt": "پیوند نامعتبر: {uri}",
   "key": "کلید",
-  "keyInKeychain": "در Keychain سیستم ذخیره می‌شود و هرگز در نسخه‌های پشتیبان قرار نمی‌گیرد.",
   "mcpServers": "سرورهای MCP",
   "memory": "حافظه",
   "memoryDelete": "حذف حافظه",

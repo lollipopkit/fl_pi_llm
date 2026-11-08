@@ -132,10 +132,6 @@ class LlmLocalizationsRu extends LlmLocalizations {
   String get key => 'Ключ';
 
   @override
-  String get keyInKeychain =>
-      'Хранится в системной связке ключей, никогда не попадает в резервные копии.';
-
-  @override
   String get mcpServers => 'Серверы MCP';
 
   @override

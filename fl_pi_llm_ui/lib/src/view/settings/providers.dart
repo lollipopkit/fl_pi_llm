@@ -15,8 +15,8 @@ import 'package:shortid/shortid.dart';
 
 /// Providers, their keys, and which models to use by default.
 ///
-/// The catalog is pi-ai's. A key goes into the system keychain; a provider
-/// without one is listed but offers no models. Custom providers and the ones
+/// The catalog is pi-ai's. A provider without a key is listed but offers no
+/// models. Custom providers and the ones
 /// with a key always come first.
 class ProvidersPage extends StatefulWidget {
   const ProvidersPage({super.key});

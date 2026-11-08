@@ -36,7 +36,6 @@
   "image": "图片",
   "invalidLinkFmt": "未知链接：{uri}",
   "key": "密钥",
-  "keyInKeychain": "保存在系统钥匙串中，不会进入备份。",
   "mcpServers": "MCP 服务器",
   "memory": "记忆",
   "memoryDelete": "删除记忆",

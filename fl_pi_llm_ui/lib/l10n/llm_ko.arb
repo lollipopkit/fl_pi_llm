@@ -36,7 +36,6 @@
   "image": "이미지",
   "invalidLinkFmt": "잘못된 링크: {uri}",
   "key": "키",
-  "keyInKeychain": "시스템 keychain에 저장되며 백업에는 포함되지 않습니다.",
   "mcpServers": "MCP 서버",
   "memory": "메모리",
   "memoryDelete": "메모리 삭제",

@@ -4,76 +4,98 @@ import 'dart:typed_data';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm_ui/src/store/llm_credential.dart';
+import 'package:fl_pi_llm_ui/src/store/stores.dart';
 
-/// Provider credentials in the platform's keychain.
-final class KeychainCredentials implements LlmCredentials {
-  const KeychainCredentials();
+/// Provider credentials in [LlmCredentialStore].
+final class StoreCredentials implements LlmCredentials {
+  const StoreCredentials();
 
-  static const instance = KeychainCredentials();
+  static const instance = StoreCredentials();
 
-  static const _prefix = 'llm.credential.';
+  static LlmCredentialStore get _store => LlmStores.credential;
+
+  static String _signIn(String providerId) => '$providerId${LlmCredentialStore.oauthSuffix}';
 
   @override
   Future<LlmCredential?> read(String providerId) async {
-    final raw = await SecureStore.storage.read(key: '$_prefix$providerId');
-    if (raw == null) return null;
+    final raw = _store.get<Object>(_signIn(providerId)) ?? _store.get<Object>(providerId);
+    if (raw is! Map) return null;
+    return LlmCredential(raw.cast<String, Object?>());
+  }
+
+  @override
+  Future<List<String>> list() async => {
+    for (final k in _store.keys())
+      k.endsWith(LlmCredentialStore.oauthSuffix) ? k.substring(0, k.length - LlmCredentialStore.oauthSuffix.length) : k,
+  }.toList();
+
+  /// An API key under the provider's id, anything else as this device's
+  /// sign-in; the other one goes.
+  @override
+  Future<void> write(String providerId, LlmCredential credential) async {
+    final (keep, drop) = credential.type == 'api_key' ? (providerId, _signIn(providerId)) : (_signIn(providerId), providerId);
+    SqliteStore.transact(() {
+      _store.set(keep, credential.json);
+      _store.remove(drop);
+    });
+  }
+
+  @override
+  Future<void> delete(String providerId) async {
+    SqliteStore.transact(() {
+      _store.remove(providerId);
+      _store.remove(_signIn(providerId));
+    });
+  }
+
+  /// Moves what builds before kept in the keychain into the store, and
+  /// removes it there; once, or again at the next launch when the keychain
+  /// fails.
+  /// TODO: remove with [_adopted] once no install can still hold them.
+  static Future<void> adoptKeychain() async {
+    if (_adopted.get()) return;
     try {
-      return LlmCredential((json.decode(raw) as Map).cast<String, Object?>());
-    } catch (e) {
-      Loggers.app.warning('Credential of $providerId is unreadable', e);
-      return null;
-    }
-  }
-
-  /// The providers with a credential. Kept beside them so listing does not
-  /// read every secret in the keychain into memory.
-  static const _indexKey = 'llm.credentialIds';
-
-  @override
-  Future<List<String>> list() async {
-    final raw = await SecureStore.storage.read(key: _indexKey);
-    if (raw != null) {
-      try {
-        return [for (final id in json.decode(raw) as List) id as String];
-      } catch (e) {
-        Loggers.app.warning('Credential index is unreadable', e);
+      final raw = await SecureStore.storage.read(key: _legacyIndex);
+      final ids = raw == null
+          ? [
+              for (final k in (await SecureStore.storage.readAll()).keys)
+                if (k.startsWith(_legacyPrefix)) k.substring(_legacyPrefix.length),
+            ]
+          : [for (final id in json.decode(raw) as List) id as String];
+      for (final id in ids) {
+        final value = await SecureStore.storage.read(key: '$_legacyPrefix$id');
+        if (value != null && await instance.read(id) == null) {
+          try {
+            final credential = LlmCredential((json.decode(value) as Map).cast<String, Object?>());
+            final key = credential.type == 'api_key' ? id : _signIn(id);
+            adopt(_store, key, credential.json);
+          } catch (e) {
+            // Not one this reads: left out, and the rest still moved.
+            Loggers.app.warning('Credential of $id is unreadable', e);
+          }
+        }
+        await SecureStore.storage.delete(key: '$_legacyPrefix$id');
       }
+      await SecureStore.storage.delete(key: _legacyIndex);
+      await _adopted.set(true);
+    } catch (e, s) {
+      Loggers.app.warning('Move provider credentials out of the keychain', e, s);
     }
-    // TODO: remove once every install has the index (it was added after
-    // the first release on fl_pi_llm): built from a full read, once.
-    final all = await SecureStore.storage.readAll();
-    final ids = [
-      for (final k in all.keys)
-        if (k.startsWith(_prefix)) k.substring(_prefix.length),
-    ];
-    await _saveIndex(ids);
-    return ids;
   }
 
-  static Future<void> _saveIndex(List<String> ids) =>
-      SecureStore.storage.write(key: _indexKey, value: json.encode(ids.toSet().toList()..sort()));
+  /// Makes each write [adoptKeychain] does. A host that syncs the store sets
+  /// it, so what is moved in counts as no device's edit and loses to any
+  /// made since.
+  /// TODO: remove with [adoptKeychain].
+  static void Function(SqliteStore store, String key, Object value) adopt = _set;
 
-  /// Writes and deletes one after another, each with its index update: two
-  /// at once would each save an index without what the other did.
-  static Future<void> _changing = Future.value();
+  static void _set(SqliteStore store, String key, Object value) => store.set(key, value);
 
-  static Future<void> _change(Future<void> Function() fn) {
-    final next = _changing.then((_) => fn());
-    _changing = next.catchError((_) {});
-    return next;
-  }
+  static const _adopted = PrefPropDefault('llm_credentials_adopted', false, updateLastUpdateTsOnSetProp: false);
 
-  @override
-  Future<void> write(String providerId, LlmCredential credential) => _change(() async {
-    await SecureStore.storage.write(key: '$_prefix$providerId', value: json.encode(credential.json));
-    await _saveIndex([...await list(), providerId]);
-  });
-
-  @override
-  Future<void> delete(String providerId) => _change(() async {
-    await SecureStore.storage.delete(key: '$_prefix$providerId');
-    await _saveIndex([...(await list()).where((e) => e != providerId)]);
-  });
+  static const _legacyPrefix = 'llm.credential.';
+  static const _legacyIndex = 'llm.credentialIds';
 }
 
 /// What the chats are encrypted with ([FlPiLlm.start]): 32 random bytes in

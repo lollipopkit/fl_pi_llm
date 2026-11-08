@@ -1,8 +1,9 @@
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
+import 'package:fl_pi_llm_ui/src/store/llm_credential.dart';
 
 /// Which models to use, and the providers the user added. Keys are not here:
-/// they are in the keychain.
+/// they are in [LlmCredentialStore].
 final class LlmStore extends SqliteStore {
   LlmStore._() : super('llm');
 

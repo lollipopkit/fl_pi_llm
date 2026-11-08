@@ -139,10 +139,6 @@ class LlmLocalizationsEn extends LlmLocalizations {
   String get key => 'Key';
 
   @override
-  String get keyInKeychain =>
-      'Stored in the system keychain, never in backups.';
-
-  @override
   String get mcpServers => 'MCP servers';
 
   @override

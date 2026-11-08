@@ -132,10 +132,6 @@ class LlmLocalizationsId extends LlmLocalizations {
   String get key => 'Kunci';
 
   @override
-  String get keyInKeychain =>
-      'Disimpan di keychain sistem, tidak pernah di cadangan.';
-
-  @override
   String get mcpServers => 'Server MCP';
 
   @override

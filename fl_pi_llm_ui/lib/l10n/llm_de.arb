@@ -36,7 +36,6 @@
   "image": "Bild",
   "invalidLinkFmt": "Unbekannter Link: {uri}",
   "key": "Schlüssel",
-  "keyInKeychain": "Im Schlüsselbund des Systems gespeichert, nie in Backups.",
   "mcpServers": "MCP-Server",
   "memory": "Gedächtnis",
   "memoryDelete": "Erinnerung löschen",

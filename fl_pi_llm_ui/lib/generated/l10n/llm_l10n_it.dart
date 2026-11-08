@@ -138,10 +138,6 @@ class LlmLocalizationsIt extends LlmLocalizations {
   String get key => 'Chiave';
 
   @override
-  String get keyInKeychain =>
-      'Salvata nel portachiavi di sistema, mai nei backup.';
-
-  @override
   String get mcpServers => 'Server MCP';
 
   @override

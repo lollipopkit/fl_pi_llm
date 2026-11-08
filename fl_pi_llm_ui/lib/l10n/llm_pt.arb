@@ -36,7 +36,6 @@
   "image": "Imagem",
   "invalidLinkFmt": "Link desconhecido: {uri}",
   "key": "Chave",
-  "keyInKeychain": "Guardada no chaveiro do sistema, nunca nos backups.",
   "mcpServers": "Servidores MCP",
   "memory": "Memória",
   "memoryDelete": "Excluir memória",

@@ -139,10 +139,6 @@ class LlmLocalizationsFr extends LlmLocalizations {
   String get key => 'Clé';
 
   @override
-  String get keyInKeychain =>
-      'Stockée dans le trousseau du système, jamais dans les sauvegardes.';
-
-  @override
   String get mcpServers => 'Serveurs MCP';
 
   @override

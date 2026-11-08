@@ -36,7 +36,6 @@
   "image": "Şəkil",
   "invalidLinkFmt": "Yanlış keçid: {uri}",
   "key": "Açar",
-  "keyInKeychain": "Sistemin keychain-ində saxlanılır, ehtiyat nüsxələrə daxil edilmir.",
   "mcpServers": "MCP server-ləri",
   "memory": "Yaddaş",
   "memoryDelete": "Yaddaşı sil",

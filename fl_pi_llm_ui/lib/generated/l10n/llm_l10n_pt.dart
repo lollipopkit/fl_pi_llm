@@ -139,10 +139,6 @@ class LlmLocalizationsPt extends LlmLocalizations {
   String get key => 'Chave';
 
   @override
-  String get keyInKeychain =>
-      'Guardada no chaveiro do sistema, nunca nos backups.';
-
-  @override
   String get mcpServers => 'Servidores MCP';
 
   @override

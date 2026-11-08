@@ -343,12 +343,6 @@ abstract class LlmLocalizations {
   /// **'Key'**
   String get key;
 
-  /// No description provided for @keyInKeychain.
-  ///
-  /// In en, this message translates to:
-  /// **'Stored in the system keychain, never in backups.'**
-  String get keyInKeychain;
-
   /// No description provided for @mcpServers.
   ///
   /// In en, this message translates to:

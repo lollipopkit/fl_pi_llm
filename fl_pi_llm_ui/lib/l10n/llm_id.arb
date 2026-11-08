@@ -36,7 +36,6 @@
   "image": "Gambar",
   "invalidLinkFmt": "Tautan tidak dikenal: {uri}",
   "key": "Kunci",
-  "keyInKeychain": "Disimpan di keychain sistem, tidak pernah di cadangan.",
   "mcpServers": "Server MCP",
   "memory": "Memori",
   "memoryDelete": "Hapus memori",
