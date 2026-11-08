@@ -1,6 +1,6 @@
 # fl_pi_llm
 
-The LLM layer shared by [GPT Box](https://github.com/lollipopkit/flutter_gpt_box)
+The LLM layer shared by [LLMBox](https://github.com/lollipopkit/llmbox)
 and [Server Box](https://github.com/lollipopkit/flutter_server_box).
 
 It runs [pi](https://github.com/earendil-works/pi)'s `pi-durable` and

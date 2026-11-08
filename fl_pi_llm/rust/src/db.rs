@@ -112,7 +112,7 @@ fn unlock(conn: &Connection, key: &Key) -> rusqlite::Result<()> {
 /// encrypted. `rekey` takes no WAL database: the journal is folded in first.
 ///
 /// TODO: remove once no install keeps a chat from before encryption (Server
-/// Box's Agent chats, development builds of GPT Box).
+/// Box's Agent chats, development builds of LLMBox).
 fn encrypt(path: &Path, key: &Key) -> rusqlite::Result<()> {
     let conn = Connection::open(path)?;
     conn.query_row("SELECT count(*) FROM sqlite_master", [], |_| Ok(()))?;
