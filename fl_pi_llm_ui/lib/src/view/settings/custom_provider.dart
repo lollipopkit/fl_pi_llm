@@ -34,7 +34,7 @@ class CustomProviderPage extends StatefulWidget {
 
 class _CustomProviderPageState extends State<CustomProviderPage> {
   late final _id = widget.args?.id ?? 'custom_${shortid.generate()}';
-  late final _existing = (LlmStores.llm.customProviders.get() ?? const []).any((e) => e.id == _id);
+  late final _existing = LlmStores.llm.customProvider(_id) != null;
   late final _name = TextEditingController(text: widget.args?.name);
   late final _url = TextEditingController(text: widget.args?.baseUrl);
   final _key = TextEditingController();
@@ -163,16 +163,12 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
       models: extra.isEmpty ? null : extra,
       allowInsecure: _insecure && _allowInsecure.value,
     );
-    final list = [...LlmStores.llm.customProviders.get() ?? const <LlmCustomProvider>[]];
-    final i = list.indexWhere((e) => e.id == _id);
-    i < 0 ? list.add(provider) : list[i] = provider;
-
     final (_, err) = await context.showLoadingDialog(
       fn: () async {
         // An endpoint without a key (a local server) still gets a
         // credential: that is what makes a provider usable.
         await Llm.setCredential(_id, LlmCredential.apiKey(_key.text.trim(), env: _env));
-        LlmStores.llm.customProviders.set(list);
+        LlmStores.llm.putCustomProvider(provider);
         await Llm.applyCustomProviders();
       },
     );
@@ -195,10 +191,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
     if (ok != true || !mounted) return;
     await context.showLoadingDialog(
       fn: () async {
-        LlmStores.llm.customProviders.set([
-          for (final e in LlmStores.llm.customProviders.get() ?? const <LlmCustomProvider>[])
-            if (e.id != _id) e,
-        ]);
+        LlmStores.llm.removeCustomProvider(_id);
         await Llm.setCredential(_id, null);
         await Llm.applyCustomProviders();
       },

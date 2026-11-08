@@ -25,7 +25,7 @@ class ProvidersPage extends StatefulWidget {
   /// shows it ([LlmUi.showProvider]), else pushed.
   static void open(BuildContext context, String id) {
     if (LlmUi.showProvider(context, id)) return;
-    final spec = LlmStores.llm.customProviders.get()?.firstWhereOrNull((e) => e.id == id);
+    final spec = LlmStores.llm.customProvider(id);
     if (id.isEmpty || spec != null) {
       CustomProviderPage.route.go(context, args: spec);
     } else {
@@ -36,7 +36,7 @@ class ProvidersPage extends StatefulWidget {
   /// The page for provider [id] ('' for a new custom one), in the settings'
   /// content area.
   static Widget detail(String id, {required VoidCallback onBack}) {
-    final spec = LlmStores.llm.customProviders.get()?.firstWhereOrNull((e) => e.id == id);
+    final spec = LlmStores.llm.customProvider(id);
     if (id.isEmpty || spec != null) return CustomProviderPage(key: ValueKey(id), args: spec, onBack: onBack);
     return ProviderPage(key: ValueKey(id), args: id, onBack: onBack);
   }
