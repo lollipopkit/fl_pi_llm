@@ -115,6 +115,10 @@ struct Harness {
     approvals: Vec<Value>,
     tool_calls: Vec<Value>,
     deny: bool,
+    /// Stored credentials by provider; any other reads as the key `test`.
+    credentials: HashMap<String, Value>,
+    /// Requests to `https://`, which are recorded and refused, never sent.
+    outside: Vec<Value>,
 }
 
 impl Harness {
@@ -128,7 +132,7 @@ impl Harness {
         let tx = Mutex::new(tx);
         let storage = Storage { root: dir.clone(), key: Some(Key::new(&[9; 32]).unwrap()) };
         let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(storage)).unwrap();
-        Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false }
+        Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false, credentials: HashMap::new(), outside: vec![] }
     }
 
     /// An engine with the mock server registered as the custom provider `mock`.
@@ -173,6 +177,14 @@ impl Harness {
                     return v;
                 }
                 Outbound::HostCall { call_id, name, payload, body } => match name.as_str() {
+                    "fetch" if payload.contains("\"url\":\"https://") => {
+                        self.outside.push(serde_json::from_str(&payload).unwrap());
+                        self.engine.send(Inbound::Answer {
+                            call_id,
+                            result: Ok(json!({"status": 401, "statusText": "Unauthorized", "headers": {}, "streamId": call_id}).to_string()),
+                        });
+                        self.engine.send(Inbound::BodyEnd { stream_id: call_id, error: None });
+                    }
                     "fetch" => {
                         let engine = self.engine.clone();
                         thread::spawn(move || do_fetch(engine, call_id, &payload, body));
@@ -194,7 +206,10 @@ impl Harness {
                         });
                     }
                     "auth.read" => {
-                        self.engine.send(Inbound::Answer { call_id, result: Ok(json!({"type":"api_key","key":"test"}).to_string()) });
+                        let p: Value = serde_json::from_str(&payload).unwrap();
+                        let stored = p["providerId"].as_str().and_then(|id| self.credentials.get(id)).cloned();
+                        let credential = stored.unwrap_or_else(|| json!({"type":"api_key","key":"test"}));
+                        self.engine.send(Inbound::Answer { call_id, result: Ok(credential.to_string()) });
                     }
                     "auth.list" => {
                         self.engine.send(Inbound::Answer { call_id, result: Ok(json!([{"providerId":"mock","type":"api_key"}]).to_string()) });
@@ -279,6 +294,24 @@ fn prompt_streams_calls_tools_and_waits_for_approval() {
     let reqs = seen.lock().unwrap();
     assert_eq!(reqs.len(), 2);
     assert!(reqs[1]["messages"].as_array().unwrap().iter().any(|m| m["role"] == "tool"));
+}
+
+#[test]
+fn vertex_is_reached_with_its_stored_key() {
+    let mut h = Harness::new();
+    h.credentials.insert("google-vertex".into(), json!({"type":"api_key","key":"vertex-stored-key"}));
+    let providers = h.ok("providers.list", json!({}));
+    let vertex = providers.as_array().unwrap().iter().find(|p| p["id"] == "google-vertex").unwrap();
+    let id = vertex["models"][0]["id"].clone();
+    open(&mut h, "v", json!({"provider":"google-vertex","id":id}), json!({}));
+
+    h.request("session.prompt", json!({"sessionId":"v","text":"hi"}));
+    let req = h.outside.first().expect("no request to Vertex");
+    let url = req["url"].as_str().unwrap();
+    assert!(url.starts_with("https://aiplatform.googleapis.com/"), "{url}");
+    let headers = req["headers"].as_object().unwrap();
+    let key = headers.iter().find(|(k, _)| k.eq_ignore_ascii_case("x-goog-api-key")).map(|(_, v)| v);
+    assert_eq!(key, Some(&json!("vertex-stored-key")), "{req}");
 }
 
 #[test]
