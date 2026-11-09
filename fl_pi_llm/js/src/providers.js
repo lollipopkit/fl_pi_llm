@@ -35,16 +35,17 @@ export const CUSTOM_APIS = {
 /**
  * Built-in providers that cannot work here.
  *
- * `openai-codex` is the only one left out for its auth: a ChatGPT login,
- * which only exists under Node. The others take a plain key — a Copilot
- * token, a Google Cloud API key — and the key alone reaches their endpoint.
- * What else a provider needs (Vertex's project and location) is stored
- * beside the key, as the credential's variables.
+ * `openai-codex` and `github-copilot` are left out for their auth, a login
+ * that only exists under Node: a ChatGPT login, and Copilot's OAuth. A
+ * Copilot key is the short-lived token that login hands out, sent as is to
+ * the individual plan's endpoint: it stops working within the hour. Vertex
+ * takes a Google Cloud API key, and what else it needs (the project and
+ * location) is stored beside the key, as the credential's variables.
  *
  * `amazon-bedrock` is left out for its API, not its auth: it is the AWS
  * SDK, which is Node-only, and the bundle here cannot load it.
  */
-const UNAVAILABLE = new Set(['amazon-bedrock', 'openai-codex']);
+const UNAVAILABLE = new Set(['amazon-bedrock', 'github-copilot', 'openai-codex']);
 
 const credentials = {
   read: async (providerId) => (await call('auth.read', { providerId })) ?? undefined,
