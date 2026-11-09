@@ -3,3 +3,9 @@ pubspec.lock
 pubspec_overrides.yaml
 .DS_Store
 build/
+# The bundle's build output at the repository root: esbuild's metafile and
+# the installed dependencies. The bundle itself is in fl_pi_llm/js/.
+#
+# Anchored to the root: an unanchored `js/` also matches fl_pi_llm/js/ and
+# fl_pi_llm/rust/js/, which hold the bundle's source and the bundle itself.
+/js/

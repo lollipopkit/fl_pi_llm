@@ -33,10 +33,19 @@ export const CUSTOM_APIS = {
 };
 
 /**
- * Built-in providers that cannot work here: their auth reads files or runs
- * a login that only exists under Node.
+ * Built-in providers that cannot work here.
+ *
+ * `openai-codex` and `github-copilot` are left out for their auth, a login
+ * that only exists under Node: a ChatGPT login, and Copilot's OAuth. A
+ * Copilot key is the short-lived token that login hands out, sent as is to
+ * the individual plan's endpoint: it stops working within the hour. Vertex
+ * takes a Google Cloud API key, and what else it needs (the project and
+ * location) is stored beside the key, as the credential's variables.
+ *
+ * `amazon-bedrock` is left out for its API, not its auth: it is the AWS
+ * SDK, which is Node-only, and the bundle here cannot load it.
  */
-const UNAVAILABLE = new Set(['amazon-bedrock', 'google-vertex', 'openai-codex', 'github-copilot']);
+const UNAVAILABLE = new Set(['amazon-bedrock', 'github-copilot', 'openai-codex']);
 
 const credentials = {
   read: async (providerId) => (await call('auth.read', { providerId })) ?? undefined,
@@ -86,10 +95,41 @@ const authContext = {
   fileExists: async () => false,
 };
 
+/**
+ * A provider's own auth may drop the variables stored with its key
+ * (`GOOGLE_CLOUD_PROJECT`, `AWS_REGION`...): the endpoint reads them itself,
+ * and only some of them come back out. They are put back here, where the
+ * credential is still in hand, so that every provider sees what was stored
+ * with its key.
+ */
+function carriesItsVariables(provider) {
+  const auth = provider.auth?.apiKey;
+  const resolve = auth?.resolve;
+  if (!resolve) return;
+  auth.resolve = async (args) => {
+    const resolved = await resolve.call(auth, args);
+    const vars = args.credential?.env;
+    if (!resolved || !vars) return resolved;
+    return { ...resolved, env: { ...vars, ...(resolved.env ?? {}) } };
+  };
+}
+
 export const models = builtinModels({ credentials, modelsStore, authContext });
 for (const p of [...models.getProviders()]) {
   if (UNAVAILABLE.has(p.id)) models.deleteProvider(p.id);
+  else carriesItsVariables(p);
 }
+
+/**
+ * The providers the host sees: pi-ai's catalog, and the custom ones.
+ *
+ * A built-in provider with no model to chat with is left out (a provider of
+ * classifiers only, say): the host would show it as an empty row. A custom
+ * provider is always there — the user added it, and its models are what its
+ * endpoint lists.
+ */
+export const listedProviders = () =>
+  models.getProviders().filter((p) => p.getModels().length > 0 || customIds.has(p.id));
 
 // ---------------------------------------------------------------------------
 // Custom providers
