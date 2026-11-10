@@ -714,7 +714,12 @@ abstract final class Chats {
   static void _touch(String id) {
     final meta = LlmStores.chat.fetch(id);
     if (meta != null) LlmStores.chat.put(meta.copyWith(updatedAt: DateTime.now()));
-    onChanged?.call(id);
+    // The host's: a failure there is not the chat's.
+    try {
+      onChanged?.call(id);
+    } catch (e, s) {
+      Loggers.app.warning('Chats.onChanged $id', e, s);
+    }
   }
 
   // ---------------------------------------------------------------------------
