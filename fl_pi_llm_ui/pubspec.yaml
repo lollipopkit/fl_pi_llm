@@ -54,6 +54,8 @@ dev_dependencies:
       url: https://github.com/lollipopkit/flutter_secure_storage.git
       ref: serverbox
       path: flutter_secure_storage
+  # Its mock, for what is kept in [PrefStore].
+  shared_preferences: ^2.2.3
   flutter_lints: ^6.0.0
 
 flutter:

@@ -87,4 +87,8 @@ final class LlmStore extends SqliteStore {
   late final thinkingLevel = propertyDefault('thinkingLevel', ThinkingLevel.medium.name);
 
   late final compaction = propertyDefault('compaction', true);
+
+  /// Whether a device signed in to LK Cloud gets Conduit's models
+  /// (`ConduitProvider`).
+  late final conduit = propertyDefault('conduit', true);
 }

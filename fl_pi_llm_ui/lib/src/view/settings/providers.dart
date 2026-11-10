@@ -2,6 +2,7 @@ import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:fl_pi_llm_ui/src/core/chats.dart';
+import 'package:fl_pi_llm_ui/src/core/conduit.dart';
 import 'package:fl_pi_llm_ui/src/core/llm.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
 import 'package:fl_pi_llm_ui/src/res/l10n.dart';
@@ -82,7 +83,7 @@ class _ProvidersPageState extends State<ProvidersPage> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([Llm.providers, Llm.configured, Llm.modelErrors]),
+      listenable: Listenable.merge([Llm.providers, Llm.configured, Llm.modelErrors, ConduitProvider.error, ?ConduitProvider.user]),
       builder: (context, _) {
         final q = _query.text.trim().toLowerCase();
         bool matches(LlmProviderInfo p) => q.isEmpty || p.name.toLowerCase().contains(q) || p.id.contains(q);
@@ -90,7 +91,7 @@ class _ProvidersPageState extends State<ProvidersPage> {
         final all = Llm.providers.value;
         // What the environment set up, apart from what was entered here.
         final system = [
-          for (final p in all) if (p.id == SystemProvider.id) p,
+          for (final p in all) if (p.id == SystemProvider.id || p.id == ConduitProvider.id) p,
           for (final p in all) if (!p.custom && Llm.envAuth.value.containsKey(p.id)) p,
         ];
         final top = [
@@ -100,7 +101,15 @@ class _ProvidersPageState extends State<ProvidersPage> {
         return SectionList(
           children: [
             _models(),
-            if (system.isNotEmpty) SettingsGroup(title: libL10n.system, rows: [for (final p in system) _tile(p)]),
+            if (ConduitProvider.user?.value != null || system.isNotEmpty)
+              SettingsGroup(
+                title: libL10n.system,
+                rows: [
+                  if (ConduitProvider.user?.value != null || ConduitProvider.provider != null) _conduitTile(),
+                  for (final p in system)
+                    if (p.id != ConduitProvider.id) _tile(p),
+                ],
+              ),
             SettingsGroup(
               title: libL10n.configured,
               rows: top.isEmpty
@@ -246,6 +255,19 @@ Widget _systemTileOf(LlmProviderInfo p) => SettingsRow(
   subtitle: [p.baseUrl ?? '', llmL10n.modelsCountFmt(p.models.length), SystemProvider.baseUrlVar].join(' · '),
   error: Llm.modelErrors.value[p.id],
 );
+
+/// Conduit, as signing in to LK Cloud set it up: on or off, nothing to edit.
+Widget _conduitTile() {
+  final p = Llm.provider(ConduitProvider.id);
+  return SettingsRow(
+    icon: Icons.cloud_outlined,
+    title: 'Conduit',
+    subtitle: p == null ? null : [p.baseUrl ?? '', llmL10n.modelsCountFmt(p.models.length)].join(' · '),
+    error: ConduitProvider.error.value ?? Llm.modelErrors.value[ConduitProvider.id],
+    trailing: StoreSwitch(prop: LlmStores.llm.conduit),
+    onTap: ConduitProvider.error.value == null ? null : ConduitProvider.retry,
+  );
+}
 
 /// A favorite star at the end of a model's row.
 class FavoriteStar extends StatelessWidget {
