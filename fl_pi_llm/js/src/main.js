@@ -760,14 +760,15 @@ const methods = {
    */
   'sessions.uids': async (p) => {
     const id = p.sessionId;
-    if (!sessions.has(id) && !storedChats().has(id)) return [];
+    // A legacy one is moved over when opened. TODO: legacy, with legacy.js.
+    if (!sessions.has(id) && !storedChats().has(id) && !(await legacyFiles()).has(id)) return [];
     return withChat(id, async (chat) => exportUids(chat, p.after ?? null));
   },
 
   /** The entries of the chat whose uid is among `uids`, as an export holds them. */
   'sessions.entries': async (p) => {
     const id = p.sessionId;
-    if (!sessions.has(id) && !storedChats().has(id)) return [];
+    if (!sessions.has(id) && !storedChats().has(id) && !(await legacyFiles()).has(id)) return [];
     return withChat(id, async (chat) => exportEntries(chat, p.uids ?? []));
   },
 
