@@ -333,22 +333,34 @@ abstract final class Chats {
     return (entries: entries, tip: tip);
   }
 
+  /// The entries of chat [id] after the one numbered [after], as `(id, uid)`
+  /// ([FlPiLlm.sessionUids]): what an operation-log sync records.
+  static Future<List<({int id, String uid})>> entryUids(String id, {int? after}) =>
+      Llm.rt.sessionUids(id, after: after);
+
+  /// The entries of chat [id] among [uids], as [exportChat] holds them.
+  static Future<List<Map<String, Object?>>> entries(String id, List<String> uids) =>
+      Llm.rt.sessionEntries(id, uids);
+
   /// About how much of a chat one import request carries: the engine's heap
   /// is bounded.
   static const _importChars = 4 << 20;
 
   /// Writes what [entries], another device's [exportChat] of chat [id], has
   /// and the chat lacks ([FlPiLlm.importSession]); [tip] for a chat new here.
-  /// Returns how many entries it wrote. An open chat shows them: now, or when
-  /// the reply it is writing ends.
-  static Future<int> importChat(String id, List<Map<String, Object?>> entries, {String? tip}) async {
+  /// Returns how many entries it wrote, and the uids of those it could not:
+  /// their parent is neither in the chat nor among [entries]. An open chat
+  /// shows them: now, or when the reply it is writing ends.
+  static Future<({int added, Set<String> orphans})> importChat(String id, List<Map<String, Object?>> entries, {String? tip}) async {
     var added = 0;
+    final orphans = <String>{};
     var page = <Map<String, Object?>>[];
     var chars = 0;
     Future<void> send({required bool last}) async {
       final r = await Llm.rt.importSession(id, page, tip: last ? tip : null);
       if (r.orphans.isNotEmpty) Loggers.app.warning('Sync $id: ${r.orphans.length} entries without their parent');
       added += r.added;
+      orphans.addAll(r.orphans);
       page = [];
       chars = 0;
     }
@@ -359,7 +371,7 @@ abstract final class Chats {
       if (chars >= _importChars) await send(last: false);
     }
     await send(last: true);
-    if (added == 0) return 0;
+    if (added == 0) return (added: 0, orphans: orphans);
     try {
       await _opening[id];
     } catch (_) {
@@ -367,7 +379,7 @@ abstract final class Chats {
     }
     final chat = _open[id];
     if (chat != null && !chat.running.value) await chat.reload();
-    return added;
+    return (added: added, orphans: orphans);
   }
 
   /// Closes chat [id], once what borrowed it ([borrow]) is done with it.
@@ -608,8 +620,8 @@ abstract final class Chats {
     // Closed meanwhile — trashed, say: nothing to tell.
     if (closed()) return;
     _claim(chat);
-    _touch(id);
     await _run(chat, () => chat.session.prompt('<$_noticeTag>\n$text\n</$_noticeTag>'));
+    _touch(id);
   }
 
   /// [m]'s text, when it is one of [notify]'s rather than the user's.
@@ -694,9 +706,20 @@ abstract final class Chats {
       'happened, such as a task you started having finished. Act on it as the task calls for; the user may not be '
       'watching.';
 
+  /// Told of each chat whose conversation went on here (a run ended, failed
+  /// or not): a host that syncs records what it added. Not for what an
+  /// import wrote.
+  static void Function(String id)? onChanged;
+
   static void _touch(String id) {
     final meta = LlmStores.chat.fetch(id);
     if (meta != null) LlmStores.chat.put(meta.copyWith(updatedAt: DateTime.now()));
+    // The host's: a failure there is not the chat's.
+    try {
+      onChanged?.call(id);
+    } catch (e, s) {
+      Loggers.app.warning('Chats.onChanged $id', e, s);
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -38,13 +38,9 @@ function firstShownFrom(shape, conversationId, head, max) {
   return shape.history(conversationId, max).find((id) => id >= head);
 }
 
-/**
- * The entries of [chat] after the one numbered [after], up to about
- * [maxChars]; `next` to go on from, null at the end. `tip`: the last entry of
- * the branch the chat stands on, [tipId], by uid.
- */
-export async function exportPage(chat, tipId, after = null, maxChars = PAGE_CHARS) {
-  const { db, storage, shape } = chat;
+/** Every entry of [chat] with a uid, one given now to each without. */
+async function known(chat) {
+  const { db, shape } = chat;
   await shape.refresh();
   const ids = shape.all();
   const known = await uids(db);
@@ -58,42 +54,82 @@ export async function exportPage(chat, tipId, after = null, maxChars = PAGE_CHAR
       }
     });
   }
+  return { ids, known };
+}
+
+/** Entry [id] of [chat] as an export holds it. */
+async function exported(chat, id, known) {
+  const { storage, shape } = chat;
+  const record = (await storage.entry(id, BG)).entry;
+  const e = hostEntry(record, null);
+  const parent = shape.parentOf(id);
+  const out = { uid: known.get(id), parent: parent == null ? null : known.get(parent), type: e.type, timestamp: e.timestamp };
+  switch (e.type) {
+    case 'message':
+      out.message = e.message;
+      break;
+    case 'custom':
+      out.customType = e.customType;
+      out.data = e.data;
+      break;
+    case 'compaction': {
+      // A head pi-durable set may be an entry the host is not shown: the
+      // kept tail starts at the first shown one from there.
+      const head = typeof record.head === 'number' && record.head !== id
+        ? firstShownFrom(shape, shape.entries.get(id).conversationId, record.head, id - 1)
+        : undefined;
+      out.summary = e.summary;
+      if (e.tokensBefore != null) out.tokensBefore = e.tokensBefore;
+      out.firstKept = head == null ? null : known.get(head);
+      break;
+    }
+  }
+  return out;
+}
+
+/**
+ * The entries of [chat] after the one numbered [after], up to about
+ * [maxChars]; `next` to go on from, null at the end. `tip`: the last entry of
+ * the branch the chat stands on, [tipId], by uid.
+ */
+export async function exportPage(chat, tipId, after = null, maxChars = PAGE_CHARS) {
+  const { ids, known: k } = await known(chat);
   const entries = [];
   let chars = 0;
   let next = null;
   for (const id of ids) {
     if (after != null && id <= after) continue;
     if (entries.length && chars >= maxChars) break;
-    const record = (await storage.entry(id, BG)).entry;
-    const e = hostEntry(record, null);
-    const parent = shape.parentOf(id);
-    const out = { uid: known.get(id), parent: parent == null ? null : known.get(parent), type: e.type, timestamp: e.timestamp };
-    switch (e.type) {
-      case 'message':
-        out.message = e.message;
-        break;
-      case 'custom':
-        out.customType = e.customType;
-        out.data = e.data;
-        break;
-      case 'compaction': {
-        // A head pi-durable set may be an entry the host is not shown: the
-        // kept tail starts at the first shown one from there.
-        const head = typeof record.head === 'number' && record.head !== id
-          ? firstShownFrom(shape, shape.entries.get(id).conversationId, record.head, id - 1)
-          : undefined;
-        out.summary = e.summary;
-        if (e.tokensBefore != null) out.tokensBefore = e.tokensBefore;
-        out.firstKept = head == null ? null : known.get(head);
-        break;
-      }
-    }
+    const out = await exported(chat, id, k);
     chars += JSON.stringify(out).length;
     entries.push(out);
     next = id;
   }
   if (next === ids.at(-1)) next = null;
-  return { entries, next, tip: tipId == null ? null : known.get(tipId) ?? null };
+  return { entries, next, tip: tipId == null ? null : k.get(tipId) ?? null };
+}
+
+/**
+ * The entries of [chat] after the one numbered [after], as `{id, uid}`, each
+ * after its parent: what an operation-log sync records, without reading them.
+ */
+export async function exportUids(chat, after = null) {
+  const { ids, known: k } = await known(chat);
+  return ids.filter((id) => after == null || id > after).map((id) => ({ id, uid: k.get(id) }));
+}
+
+/**
+ * The entries of [chat] whose uid is among [wanted], as an export holds them,
+ * each after its parent; one not here is left out.
+ */
+export async function exportEntries(chat, wanted) {
+  const { ids, known: k } = await known(chat);
+  const want = new Set(wanted);
+  const out = [];
+  for (const id of ids) {
+    if (want.has(k.get(id))) out.push(await exported(chat, id, k));
+  }
+  return out;
 }
 
 /**

@@ -372,6 +372,36 @@ void main() {
     await sb.close();
   });
 
+  test('entries go across one at a time, by uid', () async {
+    final a = await FlPiLlm.start(key: testKey, directory: tempDir(), credentials: credentials);
+    final b = await FlPiLlm.start(key: Uint8List.fromList(List.filled(32, 9)), directory: tempDir(), credentials: credentials);
+    addTearDown(a.dispose);
+    addTearDown(b.dispose);
+    for (final rt in [a, b]) {
+      await rt.setCustomProviders([mockProvider(server)]);
+    }
+    expect(await a.sessionUids('none'), isEmpty);
+    final sa = await a.openSession(id: 'one', model: mock);
+    await sa.prompt('first');
+    final first = await a.sessionUids('one');
+    expect(first, hasLength(2));
+    await sa.prompt('second');
+    final more = await a.sessionUids('one', after: first.last.id);
+    expect(more, hasLength(2), reason: 'only what came after');
+    await sa.close();
+    // Each entry as a record of its own, in the order they were made.
+    for (final e in [...first, ...more]) {
+      final entry = await a.sessionEntries('one', [e.uid]);
+      expect(entry.single['uid'], e.uid);
+      expect((await b.importSession('one', entry)).orphans, isEmpty);
+    }
+    final sb = await b.openSession(id: 'one', model: mock);
+    expect([for (final e in await sb.entries()) e.message!.text], hasLength(4));
+    // What came from a keeps its uids on b.
+    expect({for (final e in await b.sessionUids('one')) e.uid}, {for (final e in [...first, ...more]) e.uid});
+    await sb.close();
+  });
+
   test('an answer that comes after dispose goes nowhere', () async {
     // A host call — here an approval — still waiting when the runtime is
     // disposed answered into an engine that was already freed.
