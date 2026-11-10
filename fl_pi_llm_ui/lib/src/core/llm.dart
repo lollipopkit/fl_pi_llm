@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm/legacy.dart';
+import 'package:fl_pi_llm_ui/src/core/conduit.dart';
 import 'package:fl_pi_llm_ui/src/core/credentials.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
@@ -17,6 +18,9 @@ import 'package:path_provider/path_provider.dart';
 /// The app's one fl_pi_llm runtime, and what it knows about providers.
 abstract final class Llm {
   static FlPiLlm? _rt;
+
+  /// Whether [init] has started the runtime.
+  static bool get started => _rt != null;
 
   static FlPiLlm get rt {
     final rt = _rt;
@@ -172,11 +176,12 @@ abstract final class Llm {
         .listen((k) => edited(key: k));
   }
 
-  /// Hands the stored custom providers to the runtime.
+  /// Hands the stored custom providers to the runtime, with the system's
+  /// and Conduit's.
   static Future<void> applyCustomProviders() async {
     if (_rt == null) return;
     try {
-      await rt.setCustomProviders([...LlmStores.llm.customProviders, ?system]);
+      await rt.setCustomProviders([...LlmStores.llm.customProviders, ?system, ?ConduitProvider.provider]);
     } catch (e, s) {
       Loggers.app.warning('Apply custom providers', e, s);
     }

@@ -13,6 +13,7 @@ export 'package:mcp_dart/mcp_dart.dart' show McpError, UnauthorizedError;
 export 'generated/l10n/llm_l10n.dart';
 export 'src/config.dart';
 export 'src/core/chats.dart';
+export 'src/core/conduit.dart';
 export 'src/core/credentials.dart';
 export 'src/core/system_provider.dart';
 export 'src/core/user_input.dart';
