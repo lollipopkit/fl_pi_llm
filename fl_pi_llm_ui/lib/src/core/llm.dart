@@ -201,7 +201,10 @@ abstract final class Llm {
       for (final MapEntry(:key, :value) in sources.entries)
         if (!stored.contains(key) && RegExp(r'^[A-Z][A-Z0-9_]*$').hasMatch(value)) key: value,
     };
-    configured.value = {...stored, ...envAuth.value.keys};
+    // Only providers there are: a key kept for one deleted (moved from the
+    // keychain, say) configures nothing.
+    final known = {for (final p in providers.value) p.id};
+    configured.value = {...stored, ...envAuth.value.keys}.where(known.contains).toSet();
   }
 
   /// Why the last listing of a provider's models failed, by provider id.
