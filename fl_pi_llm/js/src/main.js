@@ -40,7 +40,7 @@ import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
 import { listChats, openChat, removeChat } from './db.js';
 import { legacyFiles, migrate, removeLegacy } from './legacy.js';
 import { hostEntry } from './entry.js';
-import { exportPage, importPage } from './sync.js';
+import { exportEntries, exportPage, exportUids, importPage } from './sync.js';
 import { ChatTree } from './tree.js';
 import { CUSTOM_APIS, listedProviders, models, modelInfo, probeModels, providerInfo, resolveModel, setCustomProviders } from './providers.js';
 
@@ -752,6 +752,23 @@ const methods = {
       return { entries: [], next: null, tip: null };
     }
     return withChat(id, async (chat) => exportPage(chat, await branchEnd(chat), p.after ?? null, p.maxChars ?? undefined));
+  },
+
+  /**
+   * The entries of the chat after the one numbered `after`, as `{id, uid}`:
+   * see `sync.js`. The chat need not be open.
+   */
+  'sessions.uids': async (p) => {
+    const id = p.sessionId;
+    if (!sessions.has(id) && !storedChats().has(id)) return [];
+    return withChat(id, async (chat) => exportUids(chat, p.after ?? null));
+  },
+
+  /** The entries of the chat whose uid is among `uids`, as an export holds them. */
+  'sessions.entries': async (p) => {
+    const id = p.sessionId;
+    if (!sessions.has(id) && !storedChats().has(id)) return [];
+    return withChat(id, async (chat) => exportEntries(chat, p.uids ?? []));
   },
 
   /**

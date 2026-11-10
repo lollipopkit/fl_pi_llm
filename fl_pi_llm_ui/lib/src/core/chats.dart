@@ -333,6 +333,15 @@ abstract final class Chats {
     return (entries: entries, tip: tip);
   }
 
+  /// The entries of chat [id] after the one numbered [after], as `(id, uid)`
+  /// ([FlPiLlm.sessionUids]): what an operation-log sync records.
+  static Future<List<({int id, String uid})>> entryUids(String id, {int? after}) =>
+      Llm.rt.sessionUids(id, after: after);
+
+  /// The entries of chat [id] among [uids], as [exportChat] holds them.
+  static Future<List<Map<String, Object?>>> entries(String id, List<String> uids) =>
+      Llm.rt.sessionEntries(id, uids);
+
   /// About how much of a chat one import request carries: the engine's heap
   /// is bounded.
   static const _importChars = 4 << 20;
@@ -694,9 +703,15 @@ abstract final class Chats {
       'happened, such as a task you started having finished. Act on it as the task calls for; the user may not be '
       'watching.';
 
+  /// Told of each chat whose conversation went on here (a run ended, failed
+  /// or not): a host that syncs records what it added. Not for what an
+  /// import wrote.
+  static void Function(String id)? onChanged;
+
   static void _touch(String id) {
     final meta = LlmStores.chat.fetch(id);
     if (meta != null) LlmStores.chat.put(meta.copyWith(updatedAt: DateTime.now()));
+    onChanged?.call(id);
   }
 
   // ---------------------------------------------------------------------------

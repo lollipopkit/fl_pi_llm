@@ -217,6 +217,24 @@ final class FlPiLlm {
     return LlmSyncPage.fromJson(v.cast<String, Object?>());
   }
 
+  /// The entries of session [id] after the one numbered [after], as
+  /// `(id, uid)`, each after its parent: what an operation-log sync records,
+  /// without reading them. Empty for a session that is not there.
+  Future<List<({int id, String uid})>> sessionUids(String id, {int? after}) async {
+    final v = await _request('sessions.uids', {'sessionId': id, 'after': after}) as List;
+    return [
+      for (final e in v.cast<Map<Object?, Object?>>()) (id: e['id'] as int, uid: e['uid'] as String),
+    ];
+  }
+
+  /// The entries of session [id] whose uid is among [uids], as
+  /// [exportSession] holds them, each after its parent; one not there is
+  /// left out.
+  Future<List<Map<String, Object?>>> sessionEntries(String id, List<String> uids) async {
+    final v = await _request('sessions.entries', {'sessionId': id, 'uids': uids}) as List;
+    return [for (final e in v.cast<Map<Object?, Object?>>()) e.cast<String, Object?>()];
+  }
+
   /// Writes what [entries], pages of another device's [exportSession] in
   /// order, has and session [id] lacks, creating it when there is none. A
   /// conversation running a turn is never written to: what goes on from it
