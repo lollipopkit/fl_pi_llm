@@ -150,7 +150,9 @@ abstract final class ConduitProvider {
     final next = _queue.then((_) async {
       if (await f() && Llm.started) {
         await Llm.applyCustomProviders();
-        if (_held) await Llm.refresh(only: [id]);
+        // Every custom provider is registered again with only its fixed
+        // models: their listings come back on a refresh, as for any edit.
+        await Llm.refresh();
       }
     }).catchError((Object e, StackTrace s) => Loggers.app.warning('Conduit', e, s));
     return _queue = next;
