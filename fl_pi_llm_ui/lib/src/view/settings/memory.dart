@@ -53,7 +53,6 @@ class MemoryPage extends StatelessWidget {
       ],
       title: MemoryStore.pathOf(key),
       at: at,
-      sheet: at == null && isMobile,
     );
     return SettingsRow(
       icon: key == MemoryStore.index ? Icons.list_alt : Icons.description_outlined,
@@ -69,12 +68,14 @@ class MemoryPage extends StatelessWidget {
   /// Asks for a path: null when cancelled; a toast for one the store refuses.
   static Future<String?> _askPath(BuildContext context, {required String title, String? initial}) async {
     final ctrl = TextEditingController(text: initial);
-    final res = await context.showRoundDialog<String>(
+    final res = await context.showSheet<String>(
       title: title,
-      child: Input(controller: ctrl, autoFocus: true, hint: 'user.md', onSubmitted: context.popDialog),
-      actions: [Btn.ok(onTap: () => context.popDialog(ctrl.text))],
+      child: DisposeWith(
+        notifiers: [ctrl],
+        child: Input(controller: ctrl, autoFocus: true, hint: 'user.md', onSubmitted: context.popSheet),
+      ),
+      actions: [Btn.ok(onTap: () => context.popSheet(ctrl.text))],
     );
-    ctrl.dispose();
     if (res == null || res.trim().isEmpty) return null;
     try {
       final key = MemoryStore.keyOf(res);
@@ -106,7 +107,7 @@ class MemoryPage extends StatelessWidget {
   }
 
   Future<void> _delete(BuildContext context, String key) async {
-    final ok = await context.showRoundDialog<bool>(
+    final ok = await context.showSheet<bool>(
       title: libL10n.attention,
       child: Text(libL10n.askContinue('${libL10n.delete} ${MemoryStore.pathOf(key)}')),
       actions: Btnx.cancelRedOk,
@@ -154,13 +155,13 @@ class _MemoryFilePageState extends State<MemoryFilePage> {
 
   Future<void> _leave(bool didPop, Object? _) async {
     if (didPop) return;
-    final save = await context.showRoundDialog<bool>(
+    final save = await context.showSheet<bool>(
       title: libL10n.attention,
       child: Text(llmL10n.unsavedChanges),
       actions: [
-        Btn.text(text: libL10n.cancel, onTap: context.popDialog),
-        Btn.text(text: llmL10n.discard, textStyle: const TextStyle(color: Colors.red), onTap: () => context.popDialog(false)),
-        Btn.ok(onTap: () => context.popDialog(true)),
+        Btn.text(text: libL10n.cancel, onTap: context.popSheet),
+        Btn.text(text: llmL10n.discard, textStyle: const TextStyle(color: Colors.red), onTap: () => context.popSheet(false)),
+        Btn.ok(onTap: () => context.popSheet(true)),
       ],
     );
     if (save == null || !mounted) return;

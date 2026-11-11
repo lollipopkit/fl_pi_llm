@@ -197,12 +197,15 @@ class _ProvidersPageState extends State<ProvidersPage> {
 
   Future<void> _editSystemPrompt() async {
     final ctrl = TextEditingController(text: LlmStores.llm.systemPrompt.get());
-    final v = await context.showRoundDialog<String>(
+    final v = await context.showSheet<String>(
       title: llmL10n.systemPrompt,
-      child: SizedBox(width: 520, child: Input(controller: ctrl, maxLines: 12, minLines: 4, autoFocus: true)),
-      actions: [Btn.ok(onTap: () => context.popDialog(ctrl.text))],
+      // The field outlives the answer by the sheet's exit: see [DisposeWith].
+      child: DisposeWith(
+        notifiers: [ctrl],
+        child: Input(controller: ctrl, maxLines: 12, minLines: 4, autoFocus: true),
+      ),
+      actions: [Btn.ok(onTap: () => context.popSheet(ctrl.text))],
     );
-    ctrl.dispose();
     if (v == null) return;
     LlmStores.llm.systemPrompt.set(v);
     await Chats.reconfigure();

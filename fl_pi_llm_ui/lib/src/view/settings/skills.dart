@@ -63,7 +63,7 @@ class _SkillsPageState extends State<SkillsPage> {
   /// installs them. Whether it did.
   Future<bool> _installFrom(SkillSource source) async {
     if (!mounted) return false;
-    final (found, err) = await context.showLoadingDialog(fn: () => Skills.find(source), timeout: _timeout);
+    final (found, err) = await context.showLoadingSheet(fn: () => Skills.find(source), timeout: _timeout);
     if (found == null || err != null || !mounted) return false;
     if (found.skills.isEmpty) {
       Toast.warn(llmL10n.skillsNotFound);
@@ -71,7 +71,7 @@ class _SkillsPageState extends State<SkillsPage> {
     }
     final chosen = found.skills.length == 1 ? found.skills : await _pick(found.skills);
     if (chosen == null || chosen.isEmpty || !mounted) return false;
-    final (_, err2) = await context.showLoadingDialog(
+    final (_, err2) = await context.showLoadingSheet(
       fn: () async {
         for (final s in chosen) {
           await Skills.install(s, found.source);
@@ -88,7 +88,7 @@ class _SkillsPageState extends State<SkillsPage> {
   /// Which of several to install; none ticked to begin with, as the CLI asks.
   Future<List<FoundSkill>?> _pick(List<FoundSkill> skills) {
     final picked = <FoundSkill>{};
-    return context.showRoundDialog<List<FoundSkill>>(
+    return context.showSheet<List<FoundSkill>>(
       title: llmL10n.skillsPick,
       child: StatefulBuilder(
         builder: (context, setState) => SizedBox(
@@ -123,13 +123,13 @@ class _SkillsPageState extends State<SkillsPage> {
           ),
         ),
       ),
-      actions: [Btn.ok(onTap: () => context.popDialog([for (final s in skills) if (picked.contains(s)) s]))],
+      actions: [Btn.ok(onTap: () => context.popSheet([for (final s in skills) if (picked.contains(s)) s]))],
     );
   }
 
   /// Asks every source now, and says what it found.
   Future<void> _check() async {
-    final (res, err) = await context.showLoadingDialog(fn: () => Skills.check(force: true), timeout: const Duration(minutes: 5));
+    final (res, err) = await context.showLoadingSheet(fn: () => Skills.check(force: true), timeout: const Duration(minutes: 5));
     if (res == null || err != null) return;
     final (:available, :failed) = res;
     if (failed.isNotEmpty) {
@@ -142,7 +142,7 @@ class _SkillsPageState extends State<SkillsPage> {
   }
 
   Future<void> _update() async {
-    final (res, err) = await context.showLoadingDialog(fn: () => Skills.update(), timeout: const Duration(minutes: 5));
+    final (res, err) = await context.showLoadingSheet(fn: () => Skills.update(), timeout: const Duration(minutes: 5));
     if (res == null || err != null) return;
     final (:updated, :failed) = res;
     if (failed.isNotEmpty) {
@@ -234,7 +234,7 @@ class SkillPage extends StatelessWidget {
   static const route = AppRoute<void, String>(page: SkillPage.new, path: '/skills/skill');
 
   Future<void> _delete(BuildContext context, InstalledSkill s) async {
-    final ok = await context.showRoundDialog<bool>(
+    final ok = await context.showSheet<bool>(
       title: libL10n.delete,
       child: Text(libL10n.askContinue('${libL10n.delete} ${s.name}')),
       actions: Btnx.cancelRedOk,
@@ -246,7 +246,7 @@ class SkillPage extends StatelessWidget {
   }
 
   Future<void> _update(BuildContext context, InstalledSkill s) async {
-    final (res, err) = await context.showLoadingDialog(fn: () => Skills.update(only: s.dir), timeout: const Duration(minutes: 2));
+    final (res, err) = await context.showLoadingSheet(fn: () => Skills.update(only: s.dir), timeout: const Duration(minutes: 2));
     if (res == null || err != null) return;
     if (res.failed.values.firstOrNull case final e?) {
       Toast.error(e);

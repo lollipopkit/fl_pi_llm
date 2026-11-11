@@ -79,7 +79,7 @@ class _ProviderPageState extends State<ProviderPage> {
   }
 
   Future<void> _deleteKey() async {
-    final ok = await context.showRoundDialog<bool>(
+    final ok = await context.showSheet<bool>(
       title: llmL10n.deleteKey,
       child: Text(libL10n.askContinue(llmL10n.deleteKey)),
       actions: Btnx.cancelRedOk,
