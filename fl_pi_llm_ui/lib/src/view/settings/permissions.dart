@@ -299,7 +299,7 @@ final class _PermissionsPageState extends State<PermissionsPage> {
 }
 
 Future<bool> _confirmDiscard(BuildContext context) async {
-  final ok = await context.showRoundDialog<bool>(
+  final ok = await context.showSheet<bool>(
     title: libL10n.attention,
     child: Text(llmL10n.discardUnsaved),
     actions: Btnx.cancelRedOk,
@@ -373,7 +373,7 @@ extension on _PermissionsPageState {
       }
       Toast.show(libL10n.success);
     } catch (e) {
-      if (mounted) context.showErrDialog(e);
+      if (mounted) context.showErrSheet(e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

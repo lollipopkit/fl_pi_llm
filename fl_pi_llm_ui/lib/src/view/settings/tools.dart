@@ -157,7 +157,7 @@ class ToolsPage extends StatelessWidget {
 
 
   Future<void> _editPermitted(BuildContext context, List<String> list) async {
-    await context.showRoundDialog(
+    await context.showSheet(
       title: llmL10n.allowedWithoutAsking,
       child: _store.permittedTools.listenable().listenVal((now) {
         if (now.isEmpty) return Text(libL10n.empty, style: UIs.textGrey);

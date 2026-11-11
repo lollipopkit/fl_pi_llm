@@ -163,7 +163,7 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
       models: extra.isEmpty ? null : extra,
       allowInsecure: _insecure && _allowInsecure.value,
     );
-    final (_, err) = await context.showLoadingDialog(
+    final (_, err) = await context.showLoadingSheet(
       fn: () async {
         // An endpoint without a key (a local server) still gets a
         // credential: that is what makes a provider usable.
@@ -183,13 +183,13 @@ class _CustomProviderPageState extends State<CustomProviderPage> {
   void _back() => widget.onBack != null ? widget.onBack!() : context.pop();
 
   Future<void> _delete() async {
-    final ok = await context.showRoundDialog<bool>(
+    final ok = await context.showSheet<bool>(
       title: libL10n.delete,
       child: Text(libL10n.askContinue('${libL10n.delete} ${_name.text}')),
       actions: Btnx.cancelRedOk,
     );
     if (ok != true || !mounted) return;
-    await context.showLoadingDialog(
+    await context.showLoadingSheet(
       fn: () async {
         LlmStores.llm.removeCustomProvider(_id);
         await Llm.setCredential(_id, null);

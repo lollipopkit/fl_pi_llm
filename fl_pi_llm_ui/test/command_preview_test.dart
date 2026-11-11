@@ -61,13 +61,18 @@ void main() {
       addTearDown(tester.view.reset);
     }
 
-    Widget dialogWith(Widget preview) {
+    Widget sheetWith(Widget preview) {
       return MaterialApp(
         home: Scaffold(
-          body: Center(
-            child: AlertDialog(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: PromptSheet(
               title: const Text('Run a high-risk command?'),
-              content: Column(
+              actions: [
+                TextButton(onPressed: () {}, child: const Text('Cancel')),
+                FilledButton(onPressed: () {}, child: const Text('Run')),
+              ],
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -76,22 +81,18 @@ void main() {
                   preview,
                 ],
               ),
-              actions: [
-                TextButton(onPressed: () {}, child: const Text('Cancel')),
-                FilledButton(onPressed: () {}, child: const Text('Run')),
-              ],
             ),
           ),
         ),
       );
     }
 
-    testWidgets('keeps a long command clear of the dialog buttons', (
+    testWidgets('keeps a long command clear of the sheet buttons', (
       tester,
     ) async {
       useReportedPhone(tester);
 
-      await tester.pumpWidget(dialogWith(CommandPreview(text: _longCommand)));
+      await tester.pumpWidget(sheetWith(CommandPreview(text: _longCommand)));
       await tester.pump();
 
       expect(tester.takeException(), isNull);
@@ -120,7 +121,7 @@ void main() {
     ) async {
       useReportedPhone(tester);
 
-      await tester.pumpWidget(dialogWith(CommandPreview(text: _longCommand)));
+      await tester.pumpWidget(sheetWith(CommandPreview(text: _longCommand)));
       await tester.pump();
 
       // `.first` is the outer one. A code block carries a horizontal scroll
@@ -149,7 +150,7 @@ void main() {
       useReportedPhone(tester);
 
       await tester.pumpWidget(
-        dialogWith(const CommandPreview(text: 'echo `date`')),
+        sheetWith(const CommandPreview(text: 'echo `date`')),
       );
       await tester.pump();
 
@@ -171,7 +172,7 @@ void main() {
       useReportedPhone(tester);
 
       await tester.pumpWidget(
-        dialogWith(CommandPreview(text: 'echo ${'x' * 4000}')),
+        sheetWith(CommandPreview(text: 'echo ${'x' * 4000}')),
       );
       await tester.pump();
 
@@ -187,7 +188,7 @@ void main() {
     testWidgets('takes only the height a short command needs', (tester) async {
       useReportedPhone(tester);
 
-      await tester.pumpWidget(dialogWith(const CommandPreview(text: 'ls')));
+      await tester.pumpWidget(sheetWith(const CommandPreview(text: 'ls')));
       await tester.pump();
 
       expect(

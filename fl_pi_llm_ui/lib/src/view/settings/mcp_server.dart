@@ -121,7 +121,7 @@ class _McpServerPageState extends State<McpServerPage> {
     final headers = _readHeaders();
     if (headers == null) return;
     final url = _address;
-    final (_, err) = await context.showLoadingDialog(
+    final (_, err) = await context.showLoadingSheet(
       fn: () => McpTools.saveServer(old: _saved, url: url, headers: headers),
     );
     Chats.reconfigureSoon();
@@ -135,7 +135,7 @@ class _McpServerPageState extends State<McpServerPage> {
   Future<void> _delete() async {
     final url = _saved;
     if (url == null) return;
-    final ok = await context.showRoundDialog<bool>(
+    final ok = await context.showSheet<bool>(
       title: libL10n.delete,
       child: Text(libL10n.askContinue('${libL10n.delete} $url')),
       actions: Btnx.cancelRedOk,

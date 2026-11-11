@@ -9,8 +9,8 @@ import 'package:fl_pi_llm_ui/src/config.dart';
 import 'package:fl_pi_llm_ui/src/view/section_list.dart';
 
 /// Picks a model among those whose provider has a key, favorites first, then
-/// by provider. A dialog on a wide window, a sheet on a phone. Offers the
-/// provider settings, in a toast, when there is nothing to pick.
+/// by provider, in a sheet. Offers the provider settings, in a toast, when
+/// there is nothing to pick.
 Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) async {
   if (Llm.usableModels.isEmpty) {
     final open = LlmUi.openProviders;
@@ -27,20 +27,6 @@ Future<LlmModelRef?> pickModel(BuildContext context, {LlmModelRef? current}) asy
             ),
     );
     return null;
-  }
-  if (MediaQuery.sizeOf(context).width >= AdaptivePanes.kSplitWidth) {
-    return showDialog<LlmModelRef>(
-      context: context,
-      builder: (ctx) => Dialog(
-        clipBehavior: Clip.antiAlias,
-        shape: const RoundedRectangleBorder(borderRadius: CardX.borderRadius),
-        child: SizedBox(
-          width: 500,
-          height: 580,
-          child: ColoredBox(color: context.theme.colorScheme.surfaceContainerHigh, child: _ModelSheet(current: current)),
-        ),
-      ),
-    );
   }
   return showResizableSheet<LlmModelRef>(
     context,
