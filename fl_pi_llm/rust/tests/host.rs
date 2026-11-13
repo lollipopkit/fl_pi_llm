@@ -252,14 +252,15 @@ async fn abort_ends_a_prompt_still_waiting_for_the_answer() {
         .unwrap();
     let abort = session.abort();
     let started = std::time::Instant::now();
-    let (r, _) = tokio::join!(
-        tokio::time::timeout(Duration::from_secs(20), session.prompt("hi", None)),
-        async {
+    let (r, _) = tokio::time::timeout(Duration::from_secs(20), async {
+        tokio::join!(session.prompt("hi", None), async {
             tokio::time::sleep(Duration::from_millis(300)).await;
             abort.await.unwrap();
-        }
-    );
-    assert_eq!(r.unwrap().unwrap()["status"], "aborted");
+        })
+    })
+    .await
+    .expect("the prompt and the abort end");
+    assert_eq!(r.unwrap()["status"], "aborted");
     assert!(started.elapsed() < Duration::from_secs(3), "{:?}", started.elapsed());
     session.close().await.unwrap();
     let _ = std::fs::remove_dir_all(dir);

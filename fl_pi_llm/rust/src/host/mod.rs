@@ -615,8 +615,17 @@ async fn pump(weak: Weak<Inner>, mut rx: mpsc::UnboundedReceiver<Outbound>) {
                                 a = call => a,
                                 Ok(()) = rx => Err("aborted".to_string()),
                             };
-                            inner.fetching.lock().unwrap().remove(&call_id);
-                            answer
+                            // Taken by a cancel that came as the call ended: it
+                            // may have looked for the body before it was here.
+                            let cancelled = inner.fetching.lock().unwrap().remove(&call_id).is_none();
+                            if cancelled && answer.is_ok() {
+                                if let Some(b) = inner.bodies.lock().unwrap().remove(&call_id) {
+                                    b.abort();
+                                }
+                                Err("aborted".to_string())
+                            } else {
+                                answer
+                            }
                         }
                         None => call.await,
                     };
