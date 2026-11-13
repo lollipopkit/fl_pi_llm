@@ -5,7 +5,7 @@
 //   __host.setTimer(ms, cb, repeat) -> id, __host.clearTimer(id)
 //   __host.randomBytes(n) -> Uint8Array
 //   __host.log(level, msg)
-//   __host.call(name, payloadJson, bytes?) -> Promise<string>
+//   __host.call(name, payloadJson, bytes?) -> Promise<string>, its call id as `.id`
 //   __host.notify(name, payloadJson)
 //   __host.read(streamId) -> Promise<Uint8Array | null>   (null: body ended)
 import 'core-js/actual/url';
@@ -285,12 +285,24 @@ g.fetch = async (input, init = {}) => {
   req.signal?.throwIfAborted();
   const headers = {}; req.headers.forEach((v, k) => { headers[k] = v; });
   const body = await bodyBytes(req.body);
-  const res = JSON.parse(await host.call('fetch', JSON.stringify({ url: req.url, method: req.method, headers }), body ?? undefined));
-  const id = res.streamId;
+  req.signal?.throwIfAborted();
+  const call = host.call('fetch', JSON.stringify({ url: req.url, method: req.method, headers }), body ?? undefined);
+  // The body's stream is this call's id: a cancel names it before the answer too.
+  const id = call.id;
   let done = false;
   const cancel = () => { if (!done) { done = true; host.notify('fetch.cancel', JSON.stringify({ streamId: id })); } };
   const onAbort = () => cancel();
   req.signal?.addEventListener('abort', onAbort, { once: true });
+  let res;
+  try {
+    res = JSON.parse(await call);
+  } catch (e) {
+    done = true;
+    req.signal?.removeEventListener('abort', onAbort);
+    throw req.signal?.aborted ? req.signal.reason : e;
+  }
+  // Answered as it was aborted: the cancel has gone, for the body.
+  if (req.signal?.aborted) throw req.signal.reason;
   const stream = new ReadableStream({
     async pull(c) {
       if (req.signal?.aborted) { c.error(req.signal.reason); return; }

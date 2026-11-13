@@ -9,7 +9,9 @@ import 'package:test/test.dart';
 
 /// An OpenAI chat-completions server that streams. A request offering tools
 /// gets a tool call first; one carrying a tool result, or none, gets text one
-/// word per chunk. A summarisation request gets `SUMMARY`.
+/// word per chunk. A summarisation request gets `SUMMARY`. The first
+/// [stalls] text replies stop after their first chunk and never end; the
+/// first [silent] requests are never answered at all.
 class MockServer {
   MockServer._(this._server, this.delay);
 
@@ -20,6 +22,8 @@ class MockServer {
   final Duration delay;
   final requests = <Map<String, Object?>>[];
   final authHeaders = <String?>[];
+  var stalls = 0;
+  var silent = 0;
 
   String get baseUrl => 'http://127.0.0.1:${_server.port}/v1';
 
@@ -53,6 +57,10 @@ class MockServer {
         return;
       }
       final body = jsonDecode(await utf8.decodeStream(req)) as Map<String, Object?>;
+      if (silent > 0) {
+        silent--;
+        return;
+      }
       requests.add(body);
       authHeaders.add(req.headers.value('authorization'));
       final msgs = (body['messages'] as List).cast<Map>();
@@ -89,6 +97,10 @@ class MockServer {
           ],
         });
         await send({}, 'tool_calls');
+      } else if (stalls > 0) {
+        stalls--;
+        await send({'role': 'assistant', 'content': 'It '});
+        return;
       } else {
         for (final w in ['It ', 'is ', '12:00', '.']) {
           await send({'content': w});
@@ -553,6 +565,108 @@ void main() {
     expect(r.completed, isFalse);
     await s.close();
     expect(await llm.info(), isNotEmpty);
+  });
+
+  group('a request that stops receiving', () {
+    late FlPiLlm rt;
+    setUp(() async {
+      rt = await FlPiLlm.start(
+        key: testKey,
+        directory: tempDir(),
+        credentials: credentials,
+        environment: () => const {},
+        stallTimeout: const Duration(seconds: 1),
+      );
+      await rt.setCustomProviders([mockProvider(server)]);
+    });
+    tearDown(() => rt.dispose());
+
+    test('is given up, and pi retries it', () async {
+      server.stalls = 1;
+      final s = await rt.openSession(id: 'stall', model: mock);
+      final retries = <LlmEvent>[];
+      s.events.where((e) => e.type == 'retry_start').listen(retries.add);
+      final r = await s.prompt('hi').timeout(const Duration(seconds: 20));
+      expect(r.status, 'completed');
+      expect((await s.entries()).last.message!.text, 'It is 12:00.');
+      expect(retries.single.json['message'], contains('timed out'));
+      await s.close();
+    });
+
+    test('fails a one-shot completion', () async {
+      server.stalls = 1;
+      final m = await rt.complete(model: mock, messages: [LlmMessage({'role': 'user', 'content': 'hi', 'timestamp': 1})]);
+      expect(m.json['stopReason'], 'error');
+      expect(m.json['errorMessage'], contains('timed out'));
+    });
+  });
+
+  test('abort ends a prompt still waiting for the answer', () async {
+    server.silent = 1;
+    final s = await llm.openSession(id: 'abort-early', model: mock);
+    final sw = Stopwatch()..start();
+    unawaited(Future<void>.delayed(const Duration(milliseconds: 300), s.abort));
+    final r = await s.prompt('hi').timeout(const Duration(seconds: 20));
+    expect(r.status, 'aborted');
+    expect(sw.elapsed, lessThan(const Duration(seconds: 3)));
+    await s.close();
+  });
+
+  test('a connection lost mid-reply is retried', () async {
+    // Chunked SSE: the first chunk, then the socket gone; whole the next time.
+    final down = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(down.close);
+    var first = true;
+    down.listen((sock) async {
+      // Read the request up to the end of its headers and body.
+      final buf = <int>[];
+      final read = Completer<void>();
+      sock.listen((d) {
+        buf.addAll(d);
+        final text = latin1.decode(buf);
+        final end = text.indexOf('\r\n\r\n');
+        if (end < 0 || read.isCompleted) return;
+        final len = int.parse(RegExp(r'content-length: (\d+)', caseSensitive: false).firstMatch(text)!.group(1)!);
+        if (buf.length >= end + 4 + len) read.complete();
+      });
+      await read.future;
+      String chunk(String s) => '${utf8.encode(s).length.toRadixString(16)}\r\n$s\r\n';
+      String data(Map<String, Object?> delta, [String? finish]) => 'data: ${jsonEncode({
+        'id': 'c1', 'object': 'chat.completion.chunk', 'created': 1, 'model': 'mock',
+        'choices': [{'index': 0, 'delta': delta, 'finish_reason': finish}],
+      })}\n\n';
+      sock.write('HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ntransfer-encoding: chunked\r\n\r\n');
+      sock.write(chunk(data({'role': 'assistant', 'content': 'It '})));
+      await sock.flush();
+      if (first) {
+        first = false;
+        sock.destroy();
+        return;
+      }
+      sock
+        ..write(chunk(data({'content': 'is.'}, 'stop')))
+        ..write(chunk('data: [DONE]\n\n'))
+        ..write('0\r\n\r\n');
+      await sock.flush();
+      await sock.close();
+    });
+    await llm.setCustomProviders([
+      LlmCustomProvider(
+        id: 'mock',
+        name: 'Mock',
+        api: LlmApi.openaiCompletions,
+        baseUrl: 'http://127.0.0.1:${down.port}/v1',
+        models: const ['mock'],
+      ),
+    ]);
+    final s = await llm.openSession(id: 'lost', model: mock);
+    final retries = <LlmEvent>[];
+    s.events.where((e) => e.type == 'retry_start').listen(retries.add);
+    final r = await s.prompt('hi').timeout(const Duration(seconds: 20));
+    expect(r.status, 'completed');
+    expect((await s.entries()).last.message!.text, 'It is.');
+    expect(retries, hasLength(1));
+    await s.close();
   });
 
   test('an unknown model rejects', () async {
