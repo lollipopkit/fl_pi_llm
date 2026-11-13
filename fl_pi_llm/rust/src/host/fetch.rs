@@ -126,7 +126,10 @@ mod reqwest_fetch {
                             }
                             Ok(None) => return,
                             Err(e) => {
-                                let _ = tx.send(Err(e.to_string())).await;
+                                // reqwest says `request or response body error`,
+                                // which pi's retry does not take for a lost
+                                // connection: these words it does.
+                                let _ = tx.send(Err(format!("fetch failed: {e}"))).await;
                                 return;
                             }
                         }

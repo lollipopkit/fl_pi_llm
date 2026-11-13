@@ -69,9 +69,9 @@ typedef ChatExport = ({List<Map<String, Object?>> entries, String? tip});
 final class OpenChat {
   OpenChat._(this.id, this.session) {
     _sub = session.events.listen(_onEvent);
-    running.addListener(Chats.runningChanges.notify);
-    approvals.addListener(Chats.runningChanges.notify);
-    pendingInput.addListener(Chats.runningChanges.notify);
+    running.addListener(Chats._runningChanged);
+    approvals.addListener(Chats._runningChanged);
+    pendingInput.addListener(Chats._runningChanged);
   }
 
   final String id;
@@ -244,6 +244,15 @@ abstract final class Chats {
   /// Whether chat [id] is waiting on the user: a call to approve, or a form.
   static bool isWaiting(String id) => _open[id]?.waiting ?? false;
 
+  /// Whether an open chat is writing a reply or running a tool, not waiting
+  /// on the user: work the app's suspension would cut off.
+  static final working = false.vn;
+
+  static void _runningChanged() {
+    runningChanges.notify();
+    working.value = _open.values.any((c) => c.running.value && !c.waiting);
+  }
+
   /// Shows [request] in chat [id] and waits for the user to fill it in or
   /// not. One at a time: a second while one is on screen is refused.
   /// [cancelled] takes this form away, and only this one.
@@ -389,7 +398,10 @@ abstract final class Chats {
       await b!.future;
     }
     final c = _open.remove(id);
-    if (c != null) openChanges.notify();
+    if (c != null) {
+      openChanges.notify();
+      _runningChanged();
+    }
     LlmSecrets.forget(id);
     // Being closed by another call: done when that is.
     if (c == null) return _closing[id];

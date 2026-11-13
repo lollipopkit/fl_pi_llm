@@ -216,6 +216,8 @@ struct Inner {
     sessions: Mutex<HashMap<String, Arc<SessionHost>>>,
     /// Response bodies being streamed in, by stream id (the `fetch` call's id).
     bodies: Mutex<HashMap<u64, tokio::task::AbortHandle>>,
+    /// `fetch` calls not answered yet, by call id: what ends one.
+    fetching: Mutex<HashMap<u64, oneshot::Sender<()>>>,
     /// Tool calls running, by `<session>/<call>`.
     tool_cancels: Mutex<HashMap<String, Cancel>>,
     /// Streamed completions, by stream id.
@@ -240,6 +242,7 @@ impl Runtime {
             pending: Mutex::default(),
             sessions: Mutex::default(),
             bodies: Mutex::default(),
+            fetching: Mutex::default(),
             tool_cancels: Mutex::default(),
             completions: Mutex::default(),
             next_stream: AtomicU64::new(1),
@@ -599,8 +602,24 @@ async fn pump(weak: Weak<Inner>, mut rx: mpsc::UnboundedReceiver<Outbound>) {
             }
             Outbound::HostCall { call_id, name, payload, body } => {
                 let inner = inner.clone();
+                let cancelled = (name == "fetch").then(|| {
+                    let (tx, rx) = oneshot::channel();
+                    inner.fetching.lock().unwrap().insert(call_id, tx);
+                    rx
+                });
                 tokio::spawn(async move {
-                    let answer = host_call(&inner, call_id, &name, &payload, body).await;
+                    let call = host_call(&inner, call_id, &name, &payload, body);
+                    let answer = match cancelled {
+                        Some(rx) => {
+                            let answer = tokio::select! {
+                                a = call => a,
+                                Ok(()) = rx => Err("aborted".to_string()),
+                            };
+                            inner.fetching.lock().unwrap().remove(&call_id);
+                            answer
+                        }
+                        None => call.await,
+                    };
                     if let Some(e) = engine(&inner) {
                         e.send(Inbound::Answer { call_id, result: answer.map(|v| v.to_string()) });
                     }
@@ -649,6 +668,10 @@ fn notify(inner: &Inner, name: &str, payload: &str) {
     match name {
         "fetch.cancel" => {
             let id = p["streamId"].as_u64().unwrap_or_default();
+            // Before the answer; or just after, its body already here.
+            if let Some(tx) = inner.fetching.lock().unwrap().remove(&id) {
+                let _ = tx.send(());
+            }
             if let Some(b) = inner.bodies.lock().unwrap().remove(&id) {
                 b.abort();
                 // The body never ends on its own now, and a `read` may wait.

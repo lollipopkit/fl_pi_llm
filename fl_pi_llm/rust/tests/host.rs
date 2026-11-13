@@ -224,3 +224,43 @@ async fn plain_http_off_this_machine_is_refused() {
     let failed = tokio::time::timeout(Duration::from_secs(1), fetch.fetch(req("http://192.0.2.1:9/v1"))).await;
     assert!(failed.is_err() || !failed.unwrap().err().unwrap().contains("fetch refused"));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn abort_ends_a_prompt_still_waiting_for_the_answer() {
+    // Takes the request and never answers.
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/v1", listener.local_addr().unwrap());
+    std::thread::spawn(move || {
+        let held: Vec<_> = listener.incoming().take(1).collect();
+        std::thread::sleep(Duration::from_secs(60));
+        drop(held);
+    });
+    let dir = temp("abort-early");
+    let rt = runtime(&dir);
+    register(&rt, &url).await;
+    let (session, _events) = rt
+        .open_session(OpenSession {
+            id: "s".into(),
+            model: json!({ "provider": "mock", "id": "mock" }),
+            system_prompt: String::new(),
+            tools: vec![],
+            approver: None,
+            thinking_level: None,
+            compaction: None,
+        })
+        .await
+        .unwrap();
+    let abort = session.abort();
+    let started = std::time::Instant::now();
+    let (r, _) = tokio::join!(
+        tokio::time::timeout(Duration::from_secs(20), session.prompt("hi", None)),
+        async {
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            abort.await.unwrap();
+        }
+    );
+    assert_eq!(r.unwrap().unwrap()["status"], "aborted");
+    assert!(started.elapsed() < Duration::from_secs(3), "{:?}", started.elapsed());
+    session.close().await.unwrap();
+    let _ = std::fs::remove_dir_all(dir);
+}

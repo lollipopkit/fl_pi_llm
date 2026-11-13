@@ -398,6 +398,10 @@ fn install_host<'js>(ctx: &Ctx<'js>, state: &Shared) -> rquickjs::Result<()> {
                     (id, s.sink.clone())
                 };
                 sink(Outbound::HostCall { call_id, name, payload, body });
+                // What a `fetch.cancel` before the answer names.
+                if let Some(o) = promise.as_object() {
+                    o.set("id", call_id)?;
+                }
                 Ok(promise)
             },
         )?,

@@ -7,6 +7,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart' show
 import 'package:meta/meta.dart';
 
 import 'event.dart';
+import 'http.dart';
 import 'model.dart';
 import 'rust/api.dart';
 import 'rust/frb_generated.dart';
@@ -27,7 +28,15 @@ typedef LlmLogger = void Function(String level, String message);
 /// Sessions are kept under the directory the runtime is started with, a
 /// SQLite file each.
 final class FlPiLlm {
-  FlPiLlm._(this._http, this._log, this._directory, this._key, this._credentials, this._environment);
+  FlPiLlm._(
+    this._http,
+    this._log,
+    this._directory,
+    this._key,
+    this._credentials,
+    this._environment,
+    this._stallTimeout,
+  );
 
   static Future<void>? _libInit;
 
@@ -50,6 +59,12 @@ final class FlPiLlm {
   /// [externalLibrary] is the native library, for where the platform's own
   /// loading does not find it — `dart test` puts it in `.dart_tool/lib/`. Only
   /// the first call's value counts.
+  ///
+  /// A request that receives nothing for [stallTimeout] fails as `timed
+  /// out`, which pi retries: a last resort, as the client made here finds a
+  /// dead connection by TCP keepalive (see [keepAliveHttpClient]); one given
+  /// as [httpClient] has only this. As the Monitor's Agent mode, which reads
+  /// with the same keepalive and timeout.
   static Future<FlPiLlm> start({
     required String directory,
     required Uint8List? key,
@@ -58,15 +73,17 @@ final class FlPiLlm {
     LlmLogger? logger,
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
+    Duration stallTimeout = const Duration(minutes: 5),
   }) async {
     await loadLibrary(externalLibrary: externalLibrary);
     final rt = FlPiLlm._(
-      httpClient ?? HttpClient(),
+      httpClient ?? keepAliveHttpClient(),
       logger,
       directory,
       key,
       credentials,
       environment ?? () => Platform.environment,
+      stallTimeout,
     );
     rt._ownsHttp = httpClient == null;
     rt._start();
@@ -95,8 +112,9 @@ final class FlPiLlm {
   final _pending = <int, Completer<Object?>>{};
   final _sessions = <String, LlmSession>{};
   final _completions = <int, void Function(LlmEvent)>{};
-  final _requests = <int, HttpClientRequest>{};
-  final _bodies = <int, StreamSubscription<List<int>>>{};
+  final _fetches = <int, _Fetch>{};
+  final Duration _stallTimeout;
+  Timer? _watchdog;
   final _toolCancels = <String, LlmCancelToken>{};
   String? _fatal;
 
@@ -312,11 +330,12 @@ final class FlPiLlm {
   /// Stops the runtime. Every session ends with it.
   Future<void> dispose() async {
     _disposed = true;
-    for (final r in _requests.values) {
-      r.abort();
-    }
-    for (final b in _bodies.values) {
-      await b.cancel();
+    _watchdog?.cancel();
+    final fetches = [..._fetches.values];
+    _fetches.clear();
+    for (final f in fetches) {
+      f.req?.abort();
+      await f.body?.cancel();
     }
     _fail(const LlmException('Runtime disposed'));
     for (final s in [..._sessions.values]) {
@@ -402,14 +421,7 @@ final class FlPiLlm {
     switch (name) {
       case 'fetch.cancel':
         final id = p['streamId'] as int;
-        _requests.remove(id)?.abort();
-        final body = _bodies.remove(id);
-        if (body != null) {
-          unawaited(body.cancel());
-          // The body will never end on its own now, and a `read` may be
-          // waiting on it.
-          _endBody(id, 'aborted');
-        }
+        if (_fetches.remove(id) case final f?) _end(id, f, 'aborted');
       case 'tool.cancel':
         _toolCancels.remove('${p['sessionId']}/${p['toolCallId']}')?.cancel();
     }
@@ -462,6 +474,11 @@ final class FlPiLlm {
       _answerError(callId, 'fetch refused: $uri is plain http off this device; allow it on its provider');
       return;
     }
+    if (_disposed) return;
+    final f = _fetches[callId] = _Fetch();
+    _watch();
+    // Gone from [_fetches] before it is answered: [_end] answered.
+    bool gone() => !identical(_fetches[callId], f);
     final HttpClientRequest req;
     try {
       req = await _http.openUrl(p['method'] as String, uri);
@@ -469,15 +486,16 @@ final class FlPiLlm {
       // it sends the request on to, headers and key and all.
       req.followRedirects = false;
     } catch (e) {
+      if (gone()) return;
+      _fetches.remove(callId);
       _answerError(callId, 'fetch failed: $e');
       return;
     }
-    // Disposed while connecting: past the requests [dispose] aborted.
-    if (_disposed) {
+    if (_disposed || gone()) {
       req.abort();
       return;
     }
-    _requests[callId] = req;
+    f.req = req;
     try {
       final headers = (p['headers'] as Map?)?.cast<String, Object?>() ?? const {};
       for (final MapEntry(:key, :value) in headers.entries) {
@@ -489,11 +507,12 @@ final class FlPiLlm {
         req.add(body);
       }
       final res = await req.close();
-      if (!_requests.containsKey(callId)) {
-        // Cancelled while connecting.
-        await res.drain<void>();
+      if (gone()) {
+        // Aborted by [_end].
+        unawaited(res.drain<void>().catchError((_) {}));
         return;
       }
+      f.touch();
       final h = <String, String>{};
       res.headers.forEach((k, v) {
         if (!_hopHeaders.contains(k)) h[k] = v.join(', ');
@@ -504,25 +523,67 @@ final class FlPiLlm {
         'headers': h,
         'streamId': callId,
       });
-      _bodies[callId] = res.listen(
+      f.answered = true;
+      f.body = res.listen(
         (chunk) {
+          f.touch();
           if (!_disposed) _engine.pushBody(streamId: callId, chunk: chunk);
         },
         onDone: () {
-          _requests.remove(callId);
-          _bodies.remove(callId);
+          if (!gone()) _fetches.remove(callId);
           _endBody(callId);
         },
         onError: (Object e) {
-          _requests.remove(callId);
-          _bodies.remove(callId);
-          _endBody(callId, '$e');
+          if (!gone()) _fetches.remove(callId);
+          // A connection lost mid-body says so in words pi's retry may not
+          // know (`Connection reset by peer`): these it does.
+          _endBody(callId, 'fetch failed: $e');
         },
         cancelOnError: true,
       );
     } catch (e) {
-      _requests.remove(callId);
+      if (gone()) return;
+      _fetches.remove(callId);
       _answerError(callId, 'fetch failed: $e');
+    }
+  }
+
+  /// What a stalled request fails with: words pi's retry takes for a
+  /// transient failure.
+  String get _stalled => 'fetch failed: timed out, nothing received for ${_stallTimeout.inSeconds} s';
+
+  /// Ends request [id], already out of [_fetches], with [error]: its
+  /// answer when it has had none, else its body.
+  void _end(int id, _Fetch f, String error) {
+    f.req?.abort();
+    if (!f.answered) {
+      _answerError(id, error);
+    } else if (f.body case final body?) {
+      unawaited(body.cancel());
+      // The body will never end on its own now, and a `read` may be
+      // waiting on it.
+      _endBody(id, error);
+    }
+  }
+
+  void _watch() {
+    if (_watchdog != null) return;
+    var tick = _stallTimeout ~/ 4;
+    if (tick > const Duration(seconds: 30)) tick = const Duration(seconds: 30);
+    if (tick < const Duration(milliseconds: 100)) tick = const Duration(milliseconds: 100);
+    _watchdog = Timer.periodic(tick, (_) => _check());
+  }
+
+  /// Gives up every request that has received nothing for [_stallTimeout].
+  void _check() {
+    for (final MapEntry(:key, :value) in [..._fetches.entries]) {
+      if (value.idle.elapsed < _stallTimeout) continue;
+      _fetches.remove(key);
+      _end(key, value, _stalled);
+    }
+    if (_fetches.isEmpty) {
+      _watchdog?.cancel();
+      _watchdog = null;
     }
   }
 
@@ -734,4 +795,18 @@ final class LlmSession {
 
   @visibleForTesting
   Map<String, LlmTool> get tools => _tools;
+}
+
+/// A request [FlPiLlm] is making.
+final class _Fetch {
+  HttpClientRequest? req;
+  StreamSubscription<List<int>>? body;
+
+  /// Its status and headers went to pi: what follows is the body.
+  var answered = false;
+
+  /// Since it last received anything, or was sent.
+  final idle = Stopwatch()..start();
+
+  void touch() => idle.reset();
 }
