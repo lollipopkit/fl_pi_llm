@@ -325,12 +325,19 @@ impl Redactor {
     /// Longest match wins where two rules overlap, so a private key is one
     /// placeholder rather than a block plus a field inside it.
     pub fn redact(&mut self, text: &str) -> String {
-        if !self.enabled || text.is_empty() || self.rules.is_empty() {
+        if !self.enabled || text.is_empty() || (self.rules.is_empty() && self.hidden.is_empty()) {
             return text.to_string();
         }
         let mut hits = Vec::new();
         for (rule, kind) in &self.rules {
             hits.extend(rule.hits(text, kind));
+        }
+        // A value hidden once is hidden wherever it comes up again: an answer
+        // put back quotes it without the `password=` that matched it first.
+        for value in self.hidden.keys() {
+            for (start, v) in text.match_indices(value.as_str()) {
+                hits.push(Hit { start, end: start + v.len(), kind: String::new() });
+            }
         }
         if hits.is_empty() {
             return text.to_string();
@@ -430,6 +437,17 @@ impl Redactor {
             }
         }
         out
+    }
+
+    /// The end of the last issued placeholder in [text] that starts before
+    /// [at] and ends after it.
+    fn placeholder_across(&self, text: &str, at: usize) -> Option<usize> {
+        self.ordered
+            .iter()
+            .flat_map(|p| text.match_indices(p.as_str()).map(|(i, m)| (i, i + m.len())))
+            .filter(|&(start, end)| start < at && at < end)
+            .map(|(_, end)| end)
+            .max()
     }
 
     /// [text], a value about to be stored, with each placeholder put back: as
@@ -574,8 +592,13 @@ impl StreamRestorer {
     /// Restores what is complete and keeps the tail that could still be a
     /// placeholder.
     fn emit(&mut self, text: String, redactor: &Redactor) -> Vec<u8> {
-        let keep = redactor.partial_placeholder_len(&text);
-        let split = text.len() - keep;
+        let mut split = text.len() - redactor.partial_placeholder_len(&text);
+        // A tail starting inside a whole placeholder is not the start of one:
+        // holding it would cut that placeholder in two, and neither half
+        // restores.
+        if let Some(end) = redactor.placeholder_across(&text, split) {
+            split = text.len() - redactor.partial_placeholder_len(&text[end..]);
+        }
         let out = self.restore(&text[..split], redactor);
         self.held = text[split..].to_string();
         out.into_bytes()
@@ -886,6 +909,34 @@ mod tests {
                 "split at {at}"
             );
         }
+    }
+
+    // `__` closing a placeholder, then `_`: the tail `__` reads as the start
+    // of another, and held, it would leave this one cut in two.
+    #[test]
+    fn a_placeholder_followed_by_an_underscore_is_restored() {
+        let mut r = redactor();
+        let p = r.redact("AKIAABCDEFGHIJKLMNOP");
+        let mut s = StreamRestorer::new();
+        let mut out = s.push(format!("key {p}_").as_bytes(), &r);
+        out.extend(s.finish(&r));
+        assert_eq!(String::from_utf8(out).unwrap(), "key AKIAABCDEFGHIJKLMNOP_");
+    }
+
+    // The answer is put back before it is stored, so the next turn sends the
+    // value again, in words no rule matches.
+    #[test]
+    fn a_value_hidden_once_stays_hidden_in_any_words() {
+        let mut r = redactor();
+        let first = r.redact("password=hunter22pass");
+        let p = first.strip_prefix("password=").unwrap();
+        let answer = r.restore_in(&format!("set to {p}"));
+        assert_eq!(answer, "set to hunter22pass");
+        let next = r.redact(&format!("you said {answer}"));
+        assert_eq!(next, format!("you said set to {p}"));
+        // Off still sends everything.
+        r.set_enabled(false);
+        assert_eq!(r.redact("hunter22pass"), "hunter22pass");
     }
 
     #[test]

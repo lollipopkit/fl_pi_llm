@@ -12,9 +12,8 @@ use serde_json::{json, Value};
 /// The last user message's words, when it starts with `ECHO `: what the server
 /// was sent, so a test can check what reached it.
 ///
-/// Split into three-byte pieces so a placeholder lands across chunks. Bytes
-/// rather than characters: the pieces go back out as they came, so a character
-/// cut in half is rejoined by the reader, which is the case worth exercising.
+/// Split into three-character pieces so a placeholder lands across deltas.
+/// Characters, not bytes: each piece is a JSON string of its own.
 fn echo_words(req: &Value) -> Option<Vec<String>> {
     let last = req["messages"].as_array()?.iter().rev()
         .find(|m| m["role"] == "user")?;
@@ -25,7 +24,8 @@ fn echo_words(req: &Value) -> Option<Vec<String>> {
         _ => return None,
     };
     let said = text.strip_prefix("ECHO ")?;
-    Some(said.as_bytes().chunks(3).map(|c| String::from_utf8_lossy(c).to_string()).collect())
+    let chars: Vec<char> = said.chars().collect();
+    Some(chars.chunks(3).map(|c| c.iter().collect()).collect())
 }
 
 /// An OpenAI chat-completions server that streams. The first request gets a

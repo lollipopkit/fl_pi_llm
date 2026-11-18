@@ -31,7 +31,15 @@ abstract final class Llm {
 
   /// Why [redact] would be refused — a rule that does not compile — or null.
   /// Needs no running runtime.
-  static Future<String?> redactError(String redact) => FlPiLlm.redactError(_handling(redact)!);
+  static Future<String?> redactError(String redact) async {
+    final String handled;
+    try {
+      handled = _handling(redact)!;
+    } catch (e) {
+      return '$e';
+    }
+    return FlPiLlm.redactError(handled);
+  }
 
   /// [redact] with this package's own handles added.
   ///

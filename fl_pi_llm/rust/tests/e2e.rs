@@ -944,10 +944,8 @@ fn a_secret_does_not_reach_the_model_and_comes_back_in_the_answer() {
     let text = last["content"][0]["text"].as_str().unwrap();
     assert!(text.contains(key), "the answer did not have it put back: {text}");
     assert!(!text.contains("__SBM_"), "{text}");
-    // Whole, ends included: the mock splits the body every three bytes, so
-    // the last chunk leaves a tail the restorer holds until the body ends —
-    // and a tail dropped there is exactly how a response loses its last
-    // characters.
+    // Whole, ends included: the mock streams three characters a delta, and a
+    // tail a restorer holds must not be dropped at the end.
     assert!(text.ends_with(" ok"), "the end of the body was lost: {text:?}");
 
     // What the host may record: the kind and the count, never the value.
@@ -967,8 +965,17 @@ fn a_secret_does_not_reach_the_model_and_comes_back_in_the_answer() {
     let mut h = Harness::with_store_redacting(dir.clone(), Legacy::default(), Some(fl_pi_llm::redact::Settings::conservative()));
     h.register(&url);
     open(&mut h, "r", model(&url), json!({}));
-    let entries = h.ok("session.entries", json!({"sessionId":"r"})).to_string();
-    assert!(entries.contains(key), "{entries}");
-    assert!(!entries.contains("__SBM_"), "{entries}");
+    let entries = h.ok("session.entries", json!({"sessionId":"r"}));
+    let answer = entries["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .rev()
+        .find(|e| e["message"]["role"] == "assistant")
+        .expect("no answer after the relaunch");
+    let text = answer["message"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains(key), "{text}");
+    assert!(!text.contains("__SBM_"), "{text}");
+    assert!(text.ends_with(" ok"), "{text:?}");
     let _ = std::fs::remove_dir_all(&dir);
 }

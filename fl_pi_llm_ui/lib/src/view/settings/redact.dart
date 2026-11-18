@@ -70,12 +70,25 @@ class _RedactPageState extends State<RedactPage> {
       Loggers.app.warning('Reading the redaction rules', e, s);
       rules = const [];
     }
-    final raw = await widget.args.load();
-    final settings = raw == null
-        ? const <String, Object?>{}
-        : (jsonDecode(raw) as Map).cast<String, Object?>();
+    final Map<String, Object?> settings;
+    try {
+      final raw = await widget.args.load();
+      settings = raw == null
+          ? const <String, Object?>{}
+          : (jsonDecode(raw) as Map).cast<String, Object?>();
+    } catch (e, s) {
+      Loggers.app.warning('Reading the redaction settings', e, s);
+      if (mounted) {
+        setState(() {
+          _loadError = '$e';
+          _loading = false;
+        });
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() {
+      _loadError = null;
       _builtin = rules;
       _enabled = widget.args.enabled;
       _off = {...?(settings['off'] as List?)?.cast<String>()};
@@ -106,9 +119,19 @@ class _RedactPageState extends State<RedactPage> {
   /// Whatever the host set that this page does not edit, kept as it was.
   List<String>? _handles;
 
+  /// Why the settings could not be read; the page offers to try again.
+  String? _loadError;
+
+  /// The save in flight. Edits wait their turn, so a refusal undoes only its
+  /// own edit, never one made after it.
+  Future<void> _saving = Future.value();
+
   /// [change] applied and saved, or undone when the save is refused: a rule
   /// left on the page after that would be refused with every later edit.
-  Future<void> _commit(VoidCallback change) async {
+  Future<void> _commit(VoidCallback change) => _saving = _saving.catchError((Object _) {}).then((_) => _commitNow(change));
+
+  Future<void> _commitNow(VoidCallback change) async {
+    if (!mounted) return;
     final off = {..._off};
     final custom = [..._custom];
     final allow = [..._allow];
@@ -143,6 +166,23 @@ class _RedactPageState extends State<RedactPage> {
       return Scaffold(
         appBar: CustomAppBar(title: Text(llmL10n.redactRules)),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_loadError case final err?) {
+      return Scaffold(
+        appBar: CustomAppBar(title: Text(llmL10n.redactRules)),
+        body: EmptyPane(
+          icon: Icons.error_outline,
+          title: libL10n.error,
+          label: err,
+          action: Btn.text(
+            text: libL10n.retry,
+            onTap: () {
+              setState(() => _loading = true);
+              _load();
+            },
+          ),
+        ),
       );
     }
     return Scaffold(
