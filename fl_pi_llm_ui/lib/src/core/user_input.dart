@@ -226,11 +226,16 @@ final class PendingInput {
 /// and only in the chat it was asked in. In memory alone: never in a
 /// session, never on disk, gone with the app.
 abstract final class LlmSecrets {
+  /// What every handle starts with. A redaction rule must be told it: a
+  /// handle is the one string that has to reach the model as it is, and
+  /// hiding it would leave the app unable to trade it back for the value.
+  static const prefix = 'sec_';
+
   static final _byChat = <String, Map<String, String>>{};
   static final _random = Random.secure();
 
   static String seal(String chatId, String value) {
-    final handle = 'sec_${List.generate(12, (_) => _random.nextInt(36).toRadixString(36)).join()}';
+    final handle = '$prefix${List.generate(12, (_) => _random.nextInt(36).toRadixString(36)).join()}';
     (_byChat[chatId] ??= {})[handle] = value;
     return handle;
   }
@@ -243,7 +248,7 @@ abstract final class LlmSecrets {
       {'secret': final String s} => s,
       _ => null,
     };
-    if (handle == null || !handle.startsWith('sec_')) return null;
+    if (handle == null || !handle.startsWith(prefix)) return null;
     final chat = _byChat[chatId];
     final v = chat?.remove(handle);
     if (chat != null && chat.isEmpty) _byChat.remove(chatId);

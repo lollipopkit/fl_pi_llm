@@ -24,7 +24,7 @@ String permissionsDefaults({required List<String> environment}) => RustLib
     .crateApiPermissionsPermissionsDefaults(environment: environment);
 
 /// What becomes of a call in [mode]: `{decision: run|ask|judge|deny, danger,
-/// allowRule, message}`. [command] is the shell command it runs, none for a
+/// byRule, allowRule, message}`. [command] is the shell command it runs, none for a
 /// tool that runs none; [claimed] `read`, `change` or `danger`, raised to the
 /// command's shape.
 String permissionsDecide({

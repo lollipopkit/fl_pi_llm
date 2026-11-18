@@ -293,5 +293,27 @@
       }
     }
   },
-  "discardUnsaved": "Discard unsaved changes?"
+  "discardUnsaved": "Discard unsaved changes?",
+  "redactRules": "Rules",
+  "redactBuiltIn": "Built-in",
+  "redactCustom": "Your own",
+  "redactAllow": "Never replaced",
+  "redactPattern": "Pattern",
+  "redactPatternHint": "A Rust regex",
+  "redactGroup": "Group",
+  "redactGroupHint": "Which capture to replace; empty for the whole match",
+  "redactName": "Name",
+  "redactNameHint": "Names the placeholder, e.g. MY_TOKEN",
+  "@redactGroupHint": {
+    "description": "Custom redaction rule: which capture group of the regex is replaced."
+  },
+  "@redactNameHint": {
+    "description": "Custom redaction rule: the name its placeholder carries."
+  },
+  "redactEnabled": "Replace secrets",
+  "@redactEnabled": {
+    "description": "Redaction settings: the overall switch; off sends what is written as it is."
+  },
+  "redactAddRule": "Add a rule",
+  "redactAddAllow": "Never replace a value"
 }

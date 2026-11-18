@@ -21,6 +21,7 @@ use rquickjs::{
 use rusqlite::types::{Value as SqlValue, ValueRef};
 
 use crate::db::{Chats, Storage};
+use crate::redact::{Redactor, Settings, StreamRestorer};
 
 /// The bundle built from `js/`: pi-durable, pi-ai and the Web layer, as
 /// QuickJS bytecode compiled by `build.rs`. Empty on 32-bit targets.
@@ -47,6 +48,13 @@ pub enum Inbound {
     BodyChunk { stream_id: u64, chunk: Vec<u8> },
     /// The end of a response body, with the error that ended it if any.
     BodyEnd { stream_id: u64, error: Option<String> },
+    /// What to keep out of what is sent from now on, replacing whatever was
+    /// in force. `None` sends everything.
+    ///
+    /// Applied to a running engine so that a settings switch takes effect
+    /// without a restart, and without losing the placeholders already handed
+    /// out in the chats that are open.
+    Redact { settings: Option<Settings> },
     Shutdown,
 }
 
@@ -77,14 +85,16 @@ pub struct Engine {
 impl Engine {
     /// Starts an engine keeping its chats in [storage]; without one, opening
     /// a chat fails.
-    pub fn spawn(sink: Sink, storage: Option<Storage>) -> std::io::Result<Self> {
+    /// [redact] is what to keep out of what is sent to a model; `None` sends
+    /// everything.
+    pub fn spawn(sink: Sink, storage: Option<Storage>, redact: Option<Settings>) -> std::io::Result<Self> {
         let (tx, rx) = mpsc::channel();
         let thread = std::thread::Builder::new()
             .name("fl_pi_llm".into())
             // QuickJS runs on this thread's stack; the limit above has to fit.
             .stack_size(STACK_LIMIT * 2)
             .spawn(move || {
-                if let Err(e) = run(rx, sink.clone(), storage) {
+                if let Err(e) = run(rx, sink.clone(), storage, redact) {
                     sink(Outbound::Fatal { message: e });
                 }
             })?;
@@ -131,16 +141,26 @@ struct State {
     next_timer: u32,
     timers: HashMap<u32, Timer>,
     chats: Chats,
+    /// One for the whole engine: a `fetch` carries no session of its own.
+    redactor: Option<Redactor>,
+    /// One per response body, so a placeholder split across chunks is put
+    /// back whole.
+    restorers: HashMap<u64, StreamRestorer>,
+    /// One per content block of a streamed answer, by session and
+    /// `contentIndex`: a model writes a placeholder token by token, so it is
+    /// whole only across deltas, never inside one body chunk.
+    answer_restorers: HashMap<(String, u64), StreamRestorer>,
 }
 
 type Shared = Rc<RefCell<State>>;
 
-fn run(rx: Receiver<Inbound>, sink: Sink, storage: Option<Storage>) -> Result<(), String> {
+fn run(rx: Receiver<Inbound>, sink: Sink, storage: Option<Storage>, redact: Option<Settings>) -> Result<(), String> {
     let rt = Runtime::new().map_err(|e| format!("QuickJS runtime: {e}"))?;
     rt.set_memory_limit(MEMORY_LIMIT);
     rt.set_max_stack_size(STACK_LIMIT);
     let ctx = Context::full(&rt).map_err(|e| format!("QuickJS context: {e}"))?;
 
+    let redactor = redact.filter(|s| s.enabled).map(|s| build_redactor(&s, &sink));
     let state: Shared = Rc::new(RefCell::new(State {
         sink: sink.clone(),
         next_call: 1,
@@ -149,6 +169,9 @@ fn run(rx: Receiver<Inbound>, sink: Sink, storage: Option<Storage>) -> Result<()
         next_timer: 1,
         timers: HashMap::new(),
         chats: Chats::new(storage),
+        redactor,
+        restorers: HashMap::new(),
+        answer_restorers: HashMap::new(),
     }));
 
     ctx.with(|ctx| -> Result<(), String> {
@@ -189,6 +212,8 @@ fn run(rx: Receiver<Inbound>, sink: Sink, storage: Option<Storage>) -> Result<()
     let mut st = state.borrow_mut();
     st.calls.clear();
     st.streams.clear();
+    st.restorers.clear();
+    st.answer_restorers.clear();
     st.timers.clear();
     Ok(())
 }
@@ -260,7 +285,13 @@ fn handle<'js>(ctx: &Ctx<'js>, state: &Shared, msg: Inbound) -> rquickjs::Result
             let dispatch: Function = fl.get("dispatch")?;
             let promise: Promise = dispatch.call((method, payload))?;
             let sink = state.borrow().sink.clone();
+            let st = state.clone();
             let on_ok = Function::new(ctx.clone(), move |payload: String| {
+                // What JS assembled from deltas still holds placeholders.
+                let payload = match st.borrow().redactor.as_ref() {
+                    Some(r) => r.restore_json(&payload),
+                    None => payload,
+                };
                 sink(Outbound::Result { req_id, payload });
             })?;
             // `dispatch` never rejects; this only catches a broken bundle.
@@ -280,7 +311,15 @@ fn handle<'js>(ctx: &Ctx<'js>, state: &Shared, msg: Inbound) -> rquickjs::Result
                 Err(e) => err.restore(ctx)?.call::<_, ()>((Exception::from_message(ctx.clone(), &e)?,))?,
             }
         }
-        Inbound::BodyChunk { stream_id, chunk } => {
+        Inbound::BodyChunk { stream_id, mut chunk } => {
+            if state.borrow().redactor.is_some() {
+                let mut st = state.borrow_mut();
+                let State { redactor, restorers, .. } = &mut *st;
+                if let Some(redactor) = redactor.as_ref() {
+                    // JSON, or SSE lines of it: a value put back is escaped.
+                    chunk = restorers.entry(stream_id).or_insert_with(StreamRestorer::new_json).push(&chunk, redactor);
+                }
+            }
             let waiter = {
                 let mut st = state.borrow_mut();
                 let s = st.streams.entry(stream_id).or_default();
@@ -298,18 +337,56 @@ fn handle<'js>(ctx: &Ctx<'js>, state: &Shared, msg: Inbound) -> rquickjs::Result
             }
         }
         Inbound::BodyEnd { stream_id, error } => {
-            let waiter = {
+            let (tail, waiter) = {
                 let mut st = state.borrow_mut();
+                // What the restorer held back is the last of the body: a read
+                // already waiting is handed it before the end.
+                let State { redactor, restorers, .. } = &mut *st;
+                let tail = match (redactor.as_ref(), restorers.remove(&stream_id)) {
+                    (Some(redactor), Some(mut restorer)) => restorer.finish(redactor),
+                    _ => Vec::new(),
+                };
                 let s = st.streams.entry(stream_id).or_default();
                 s.ended = Some(error.clone());
-                s.waiter.take()
+                (tail, s.waiter.take())
             };
-            if let Some((ok, err)) = waiter {
+            // A body that ended in an error drops what was held back.
+            if !tail.is_empty() && error.is_none() {
+                match waiter {
+                    Some((ok, _)) => {
+                        let arr = TypedArray::<u8>::new(ctx.clone(), tail)?;
+                        ok.restore(ctx)?.call::<_, ()>((arr,))?;
+                    }
+                    // Queued; `ended` is what the read after it finds.
+                    None => {
+                        state.borrow_mut().streams.entry(stream_id).or_default().queue.push_back(tail);
+                    }
+                }
+            } else if let Some((ok, err)) = waiter {
                 state.borrow_mut().streams.remove(&stream_id);
                 match error {
                     None => ok.restore(ctx)?.call::<_, ()>((Value::new_null(ctx.clone()),))?,
                     Some(e) => err.restore(ctx)?.call::<_, ()>((Exception::from_message(ctx.clone(), &e)?,))?,
                 }
+            }
+        }
+        Inbound::Redact { settings } => {
+            let sink = state.borrow().sink.clone();
+            let mut st = state.borrow_mut();
+            if let Some(r) = st.redactor.as_mut() {
+                // What was hidden before stays restorable either way.
+                match settings {
+                    None => r.set_enabled(false),
+                    // Checked by a settings page before it is stored; one that
+                    // came in some other way leaves only itself out.
+                    Some(s) => {
+                        for e in r.apply_lenient(&s) {
+                            sink(Outbound::Log { level: "error".into(), message: format!("redact rule not used: {e}") });
+                        }
+                    }
+                }
+            } else if let Some(s) = settings.filter(|s| s.enabled) {
+                st.redactor = Some(build_redactor(&s, &sink));
             }
         }
         Inbound::Shutdown => {}
@@ -366,6 +443,7 @@ fn install_host<'js>(ctx: &Ctx<'js>, state: &Shared) -> rquickjs::Result<()> {
         "emit",
         Function::new(ctx.clone(), move |payload: String| {
             let sink = st.borrow().sink.clone();
+            let payload = restore_event(&payload, &mut st.borrow_mut());
             sink(Outbound::Event { payload });
         })?,
     )?;
@@ -397,6 +475,25 @@ fn install_host<'js>(ctx: &Ctx<'js>, state: &Shared) -> rquickjs::Result<()> {
                     s.calls.insert(id, (Persistent::save(&ctx, ok), Persistent::save(&ctx, err)));
                     (id, s.sink.clone())
                 };
+                // A `fetch` body is the conversation: the one place a secret
+                // leaves from. The host is told the kinds and counts hidden,
+                // never a value: `{"github_token": 1}`. A tool call (and its
+                // approval) is the model's, so it is acted on, and read, with
+                // the values put back.
+                let (payload, body, report) = match st.borrow_mut().redactor.as_mut() {
+                    Some(r) if name == "tool" || name == "approve" => (restore_tool_args(&payload, r), body, None),
+                    Some(r) if name == "fetch" => {
+                        let body = body.map(|b| redact_body(&b, r));
+                        (payload, body, r.take_report())
+                    }
+                    _ => (payload, body, None),
+                };
+                if let Some(report) = report {
+                    let counts = serde_json::Value::Object(
+                        report.into_iter().map(|(k, n)| (k, serde_json::Value::from(n))).collect(),
+                    );
+                    sink(Outbound::Notify { name: "redact".into(), payload: counts.to_string() });
+                }
                 sink(Outbound::HostCall { call_id, name, payload, body });
                 // What a `fetch.cancel` before the answer names.
                 if let Some(o) = promise.as_object() {
@@ -469,8 +566,17 @@ fn install_db<'js>(ctx: &Ctx<'js>, host: &Object<'js>, state: &Shared) -> rquick
         Function::new(
             ctx.clone(),
             move |ctx: Ctx<'js>, h: u32, sql: String, params: Array<'js>, mode: u8| -> rquickjs::Result<Value<'js>> {
-                let params = params.iter::<Value>().map(|v| sql_value(&ctx, v?)).collect::<rquickjs::Result<Vec<_>>>()?;
+                let mut params = params.iter::<Value>().map(|v| sql_value(&ctx, v?)).collect::<rquickjs::Result<Vec<_>>>()?;
                 let s = st.borrow();
+                // A chat is stored with the values put back: a placeholder's
+                // nonce lives only as long as this process.
+                if let Some(r) = s.redactor.as_ref() {
+                    for p in &mut params {
+                        if let SqlValue::Text(t) = p {
+                            *t = r.restore_stored(t);
+                        }
+                    }
+                }
                 let conn = s.chats.get(h).map_err(|e| throw(&ctx, e))?;
                 query(&ctx, conn, &sql, params, mode).map_err(|e| match e {
                     QueryError::Sql(e) => throw(&ctx, e.to_string()),
@@ -646,4 +752,91 @@ fn describe(_ctx: &Ctx<'_>, v: Value<'_>) -> String {
         return s.to_string().unwrap_or_default();
     }
     format!("{v:?}")
+}
+
+/// A request body with every secret replaced.
+///
+/// A JSON body is walked string by string rather than matched as one text: a
+/// rule run over the document can begin inside one string and end in the
+/// next — a URL rule's password class stops at an `@`, and the next `@` in
+/// the document may be in another message — and replacing across that boundary
+/// would leave a document the endpoint cannot read. A body that is not JSON is
+/// still text a secret can be in, and is matched as it is.
+fn redact_body(body: &[u8], redactor: &mut Redactor) -> Vec<u8> {
+    let Ok(text) = std::str::from_utf8(body) else {
+        // Not text: nothing here can recognise a secret in it either.
+        return body.to_vec();
+    };
+    let Ok(mut doc) = serde_json::from_str::<serde_json::Value>(text) else {
+        return redactor.redact(text).into_bytes();
+    };
+    // Unchanged is sent as it arrived: a body written a particular way — key
+    // order, spacing, escapes — is the caller's, and nothing here should
+    // rewrite it for nothing.
+    if !redact_value(&mut doc, redactor) {
+        return body.to_vec();
+    }
+    serde_json::to_vec(&doc).unwrap_or_else(|_| body.to_vec())
+}
+
+/// Redacts every string in [value], and says whether any of them changed.
+fn redact_value(value: &mut serde_json::Value, redactor: &mut Redactor) -> bool {
+    match value {
+        serde_json::Value::String(s) => {
+            let redacted = redactor.redact(s);
+            let changed = redacted != *s;
+            *s = redacted;
+            changed
+        }
+        serde_json::Value::Array(a) => a.iter_mut().fold(false, |any, v| redact_value(v, redactor) | any),
+        serde_json::Value::Object(o) => o.values_mut().fold(false, |any, v| redact_value(v, redactor) | any),
+        _ => false,
+    }
+}
+
+/// A redactor for [settings], leaving out a custom rule that does not compile
+/// rather than starting with none: a stored typo must not cost the Agent.
+fn build_redactor(settings: &Settings, sink: &Sink) -> Redactor {
+    let (redactor, errors) = Redactor::lenient(settings);
+    for e in errors {
+        sink(Outbound::Log { level: "error".into(), message: format!("redact rule not used: {e}") });
+    }
+    redactor
+}
+
+/// A tool call's arguments with every placeholder put back, or unchanged when
+/// that would leave JSON that does not parse.
+fn restore_tool_args(payload: &str, redactor: &Redactor) -> String {
+    let restored = redactor.restore_json(payload);
+    if restored == payload || serde_json::from_str::<serde_json::Value>(&restored).is_err() {
+        return payload.to_string();
+    }
+    restored
+}
+
+/// One event from the engine with its placeholders put back: a streamed delta
+/// through its content block's restorer, anything else whole.
+fn restore_event(payload: &str, state: &mut State) -> String {
+    let Some(redactor) = state.redactor.as_ref() else { return payload.to_string() };
+    let Ok(mut event) = serde_json::from_str::<serde_json::Value>(payload) else {
+        return redactor.restore_json(payload);
+    };
+    let Some(session) = event["sessionId"].as_str().map(str::to_string) else {
+        return redactor.restore_json(payload);
+    };
+    // `{sessionId, event: {type, event?: {type, contentIndex, delta}}}`.
+    let outer = event["event"]["type"].as_str().unwrap_or_default();
+    if matches!(outer, "message_start" | "message_end" | "run_end") {
+        // What a restorer still held is in the whole message this carries.
+        state.answer_restorers.retain(|(s, _), _| *s != session);
+    }
+    let inner = &event["event"]["event"];
+    let streamed = matches!(inner["type"].as_str(), Some("text_delta" | "thinking_delta"));
+    let (Some(index), Some(delta), true) = (inner["contentIndex"].as_u64(), inner["delta"].as_str(), streamed) else {
+        return redactor.restore_json(payload);
+    };
+    let restorer = state.answer_restorers.entry((session, index)).or_default();
+    let restored = String::from_utf8_lossy(&restorer.push(delta.as_bytes(), redactor)).into_owned();
+    event["event"]["event"]["delta"] = serde_json::Value::String(restored);
+    event.to_string()
 }

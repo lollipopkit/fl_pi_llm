@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:fl_lib/fl_lib.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
-import 'package:flutter/material.dart' as legacy show Theme;
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -30,10 +29,7 @@ class ChatMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Flutter's own ThemeData: flutter_markdown_plus takes nothing else. The
-    // app provides it with material_ui's `MaterialUiCompatibilityBridge`.
-    // TODO: material_ui's, once flutter_markdown_plus moves to it.
-    final theme = legacy.Theme.of(context);
+    final theme = Theme.of(context);
     final base = muted
         ? TextStyle(fontSize: 13, height: 1.55, color: UIs.textGrey.color)
         : const TextStyle(fontSize: 14, height: 1.6);
@@ -43,7 +39,11 @@ class ChatMarkdown extends StatelessWidget {
         'code': CodeElementBuilder(onCopy: forCapture ? null : Pfs.copy, isForCapture: forCapture),
         'latex': LatexElementBuilder(),
       },
-      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+      // Built here rather than by `MarkdownStyleSheet.fromTheme`, which takes
+      // Flutter's own `ThemeData`: this app draws with material_ui's, and the
+      // two are different types. What it fills in from the theme is the same
+      // five fields either way.
+      styleSheet: _styleSheet(theme).copyWith(
         p: base,
         listBullet: base,
         a: base.copyWith(color: theme.colorScheme.primary),
@@ -59,6 +59,35 @@ class ChatMarkdown extends StatelessWidget {
     // from one paragraph or a code block into the next. On every platform: a
     // phone has the same text to copy part of.
     return forCapture ? body : SelectionArea(child: body);
+  }
+
+  /// The markdown styles a message starts from, from this app's theme.
+  ///
+  /// `MarkdownStyleSheet.fromTheme` is the same thing for Flutter's own
+  /// `ThemeData`; material_ui's is a different type, and `TextStyle` is not.
+  static MarkdownStyleSheet _styleSheet(ThemeData theme) {
+    final text = theme.textTheme;
+    final body = text.bodyMedium;
+    return MarkdownStyleSheet(
+      p: body,
+      code: body?.copyWith(
+        backgroundColor: theme.cardTheme.color,
+        fontFamily: 'monospace',
+        fontSize: body.fontSize == null ? null : body.fontSize! * 0.85,
+      ),
+      h1: text.headlineSmall,
+      h2: text.titleLarge,
+      h3: text.titleMedium,
+      h4: text.bodyLarge,
+      h5: text.bodyLarge,
+      h6: text.bodyLarge,
+      blockquote: body,
+      listBullet: body,
+      tableBody: body,
+      tableHead: const TextStyle(fontWeight: FontWeight.w600),
+      tableBorder: TableBorder.all(color: theme.dividerColor),
+      checkbox: body?.copyWith(color: theme.primaryColor),
+    );
   }
 }
 

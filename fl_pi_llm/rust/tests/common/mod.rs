@@ -9,6 +9,25 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 
+/// The last user message's words, when it starts with `ECHO `: what the server
+/// was sent, so a test can check what reached it.
+///
+/// Split into three-byte pieces so a placeholder lands across chunks. Bytes
+/// rather than characters: the pieces go back out as they came, so a character
+/// cut in half is rejoined by the reader, which is the case worth exercising.
+fn echo_words(req: &Value) -> Option<Vec<String>> {
+    let last = req["messages"].as_array()?.iter().rev()
+        .find(|m| m["role"] == "user")?;
+    let text = match &last["content"] {
+        Value::String(t) => t.clone(),
+        // A request to an OpenAI-compatible endpoint carries parts.
+        Value::Array(parts) => parts.iter().filter_map(|p| p["text"].as_str()).collect::<Vec<_>>().join(""),
+        _ => return None,
+    };
+    let said = text.strip_prefix("ECHO ")?;
+    Some(said.as_bytes().chunks(3).map(|c| String::from_utf8_lossy(c).to_string()).collect())
+}
+
 /// An OpenAI chat-completions server that streams. The first request gets a
 /// tool call; any request carrying a tool result gets text, one word per chunk.
 pub fn mock_server(delay: Duration) -> (String, Arc<Mutex<Vec<Value>>>) {
@@ -53,6 +72,12 @@ pub fn mock_server(delay: Duration) -> (String, Arc<Mutex<Vec<Value>>>) {
                 let tools_offered = req.get("tools").is_some();
                 if is_summary {
                     send(json!({"role":"assistant","content":"SUMMARY"}), None);
+                    send(json!({}), Some("stop"));
+                } else if let Some(echo) = echo_words(&req) {
+                    for w in echo {
+                        send(json!({"content": w}), None);
+                        thread::sleep(delay);
+                    }
                     send(json!({}), Some("stop"));
                 } else if !has_tool && tools_offered {
                     send(json!({"role":"assistant","tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"get_time","arguments":""}}]}), None);

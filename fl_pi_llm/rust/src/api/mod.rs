@@ -25,6 +25,22 @@ use flutter_rust_bridge::frb;
 use crate::engine::{Engine, Inbound, Outbound};
 use crate::frb_generated::StreamSink;
 
+/// The built-in redaction rules, as JSON: one `{kind, pattern}` per rule,
+/// `kind` being what a placeholder is named after and what a
+/// `fl_pi_llm::redact::Settings`'s `off` names to switch one off.
+pub fn builtin_redactions() -> String {
+    serde_json::to_string(&crate::redact::builtin_rules()).unwrap_or_else(|_| "[]".into())
+}
+
+/// Why redaction settings, as [LlmEngine::start]'s `redact`, would be
+/// refused: a rule that does not compile. Needs no running engine, so a
+/// settings page can check before it stores anything.
+#[frb(sync)]
+pub fn check_redact(redact: String) -> anyhow::Result<()> {
+    let settings: crate::redact::Settings = serde_json::from_str(&redact)?;
+    crate::redact::check(&settings).map_err(anyhow::Error::msg)
+}
+
 /// What a [HostMessage] is.
 pub enum HostMessageKind {
     /// [HostMessage::id] is the request; [HostMessage::payload] its JSON result.
@@ -84,19 +100,44 @@ impl LlmEngine {
     /// Starts the runtime, keeping chats under [dir], encrypted with [key]
     /// (32 bytes) when there is one. Everything it says arrives on [sink], in
     /// order.
+    ///
+    /// [redact] is `fl_pi_llm::redact::Settings` as JSON: what to keep out of
+    /// what is sent to a model. Absent sends everything. [LlmEngine::set_redact]
+    /// changes it without a restart.
     #[frb(sync)]
-    pub fn start(&self, dir: String, key: Option<Vec<u8>>, sink: StreamSink<HostMessage>) -> anyhow::Result<()> {
+    pub fn start(
+        &self,
+        dir: String,
+        key: Option<Vec<u8>>,
+        redact: Option<String>,
+        sink: StreamSink<HostMessage>,
+    ) -> anyhow::Result<()> {
+        // A rule that does not compile is left out and logged by the engine.
+        let redact = redact.map(|json| serde_json::from_str::<crate::redact::Settings>(&json)).transpose()?;
         let engine = Engine::spawn(
             std::sync::Arc::new(move |o: Outbound| {
                 let _ = sink.add(o.into());
             }),
             Some(storage(dir, key)?),
+            redact,
         )?;
         self.inner.set(engine).map_err(|_| anyhow::anyhow!("already started"))
     }
 
     fn send(&self, msg: Inbound) -> bool {
         self.inner.get().is_some_and(|e| e.send(msg))
+    }
+
+    /// What to keep out of what is sent from now on, as [LlmEngine::start]'s
+    /// `redact`; null sends everything. A chat that is open keeps the
+    /// placeholders it already handed out restorable.
+    ///
+    /// A rule that does not compile is left out and logged, as at start: a
+    /// stored setting must not turn the rest off. [check_redact] refuses it.
+    #[frb(sync)]
+    pub fn set_redact(&self, redact: Option<String>) -> anyhow::Result<bool> {
+        let settings = redact.map(|json| serde_json::from_str::<crate::redact::Settings>(&json)).transpose()?;
+        Ok(self.send(Inbound::Redact { settings }))
     }
 
     /// Asks `__fl.dispatch(method, payload)`; answered by a result message.

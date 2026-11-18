@@ -522,4 +522,44 @@ class LlmLocalizationsEn extends LlmLocalizations {
 
   @override
   String get discardUnsaved => 'Discard unsaved changes?';
+
+  @override
+  String get redactRules => 'Rules';
+
+  @override
+  String get redactBuiltIn => 'Built-in';
+
+  @override
+  String get redactCustom => 'Your own';
+
+  @override
+  String get redactAllow => 'Never replaced';
+
+  @override
+  String get redactPattern => 'Pattern';
+
+  @override
+  String get redactPatternHint => 'A Rust regex';
+
+  @override
+  String get redactGroup => 'Group';
+
+  @override
+  String get redactGroupHint =>
+      'Which capture to replace; empty for the whole match';
+
+  @override
+  String get redactName => 'Name';
+
+  @override
+  String get redactNameHint => 'Names the placeholder, e.g. MY_TOKEN';
+
+  @override
+  String get redactEnabled => 'Replace secrets';
+
+  @override
+  String get redactAddRule => 'Add a rule';
+
+  @override
+  String get redactAddAllow => 'Never replace a value';
 }

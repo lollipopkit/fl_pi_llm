@@ -489,6 +489,45 @@ class LlmLocalizationsZh extends LlmLocalizations {
 
   @override
   String get discardUnsaved => '放弃未保存的修改？';
+
+  @override
+  String get redactRules => '规则';
+
+  @override
+  String get redactBuiltIn => '内置';
+
+  @override
+  String get redactCustom => '自定义';
+
+  @override
+  String get redactAllow => '永不替换';
+
+  @override
+  String get redactPattern => '正则';
+
+  @override
+  String get redactPatternHint => 'Rust 正则';
+
+  @override
+  String get redactGroup => '分组';
+
+  @override
+  String get redactGroupHint => '替换哪个捕获组；留空替换整个匹配';
+
+  @override
+  String get redactName => '名称';
+
+  @override
+  String get redactNameHint => '用作占位符名称，如 MY_TOKEN';
+
+  @override
+  String get redactEnabled => '替换机密';
+
+  @override
+  String get redactAddRule => '添加规则';
+
+  @override
+  String get redactAddAllow => '添加例外值';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
