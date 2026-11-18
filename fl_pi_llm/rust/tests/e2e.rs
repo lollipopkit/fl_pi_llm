@@ -119,6 +119,8 @@ struct Harness {
     credentials: HashMap<String, Value>,
     /// Requests to `https://`, which are recorded and refused, never sent.
     outside: Vec<Value>,
+    /// What the engine told the host unsolicited, by name.
+    notifications: Vec<(String, Value)>,
 }
 
 impl Harness {
@@ -128,11 +130,15 @@ impl Harness {
 
     /// A fresh engine over an existing store, as after a relaunch.
     fn with_store(dir: std::path::PathBuf, legacy: Legacy) -> Self {
+        Self::with_store_redacting(dir, legacy, None)
+    }
+
+    fn with_store_redacting(dir: std::path::PathBuf, legacy: Legacy, redact: Option<fl_pi_llm::redact::Settings>) -> Self {
         let (tx, rx) = mpsc::channel();
         let tx = Mutex::new(tx);
         let storage = Storage { root: dir.clone(), key: Some(Key::new(&[9; 32]).unwrap()) };
-        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(storage)).unwrap();
-        Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false, credentials: HashMap::new(), outside: vec![] }
+        let engine = Engine::spawn(Arc::new(move |o| { let _ = tx.lock().unwrap().send(o); }), Some(storage), redact).unwrap();
+        Self { engine: Arc::new(engine), dir, legacy, rx, next_req: 1, events: vec![], approvals: vec![], tool_calls: vec![], deny: false, credentials: HashMap::new(), outside: vec![], notifications: vec![] }
     }
 
     /// An engine with the mock server registered as the custom provider `mock`.
@@ -222,6 +228,7 @@ impl Harness {
                     other => panic!("unexpected host call {other}"),
                 },
                 Outbound::Event { payload } => self.events.push((Instant::now(), serde_json::from_str(&payload).unwrap())),
+                Outbound::Notify { name, payload } => self.notifications.push((name, serde_json::from_str(&payload).unwrap())),
                 Outbound::Fatal { message } => panic!("fatal: {message}"),
                 Outbound::Log { level, message } if level == "error" => eprintln!("[js error] {message}"),
                 _ => {}
@@ -901,4 +908,74 @@ fn an_import_without_the_parent_leaves_the_entry_out() {
     // A chat there is none of exports nothing, and is not made.
     assert_eq!(h.ok("sessions.export", json!({"sessionId":"none"})), json!({"entries":[],"next":null,"tip":null}));
     assert_eq!(h.ok("sessions.list", json!({})).as_array().unwrap().len(), 1);
+}
+
+/// What a model endpoint is sent, and what comes back to the app.
+///
+/// Two halves of one property: the endpoint never sees the secret, and the
+/// answer has it put back before anyone reads it.
+#[test]
+fn a_secret_does_not_reach_the_model_and_comes_back_in_the_answer() {
+    let (url, seen) = mock_server(Duration::from_millis(5));
+    let dir = temp_dir();
+    let mut h = Harness::with_store_redacting(
+        dir.clone(),
+        Legacy::default(),
+        Some(fl_pi_llm::redact::Settings::conservative()),
+    );
+    h.register(&url);
+    open(&mut h, "r", model(&url), json!({}));
+
+    let key = "ghp_abcdefghijklmnopqrstuvwxyz012345";
+    h.ok("session.prompt", json!({"sessionId":"r","text": format!("ECHO my token is {key} ok")}));
+
+    let reqs = seen.lock().unwrap();
+    let sent = reqs[0].to_string();
+    assert!(!sent.contains(key), "the token was sent: {sent}");
+    // The kind and number are readable; the nonce is random, since a
+    // placeholder a model could guess is one it could ask to have restored.
+    assert!(sent.contains("__SBM_GITHUB_TOKEN_1_"), "{sent}");
+    drop(reqs);
+
+    // The answer echoes what the server was sent, so the placeholder is what
+    // travelled; the app reads the real value back.
+    let entries = h.ok("session.entries", json!({"sessionId":"r"}));
+    let last = entries["entries"].as_array().unwrap().last().unwrap()["message"].clone();
+    let text = last["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains(key), "the answer did not have it put back: {text}");
+    assert!(!text.contains("__SBM_"), "{text}");
+    // Whole, ends included: the mock streams three characters a delta, and a
+    // tail a restorer holds must not be dropped at the end.
+    assert!(text.ends_with(" ok"), "the end of the body was lost: {text:?}");
+
+    // What the host may record: the kind and the count, never the value.
+    let (name, counts) = h
+        .notifications
+        .iter()
+        .find(|(n, _)| n == "redact")
+        .expect("nothing reported the redaction");
+    assert_eq!(name, "redact");
+    assert_eq!(counts["github_token"], 1, "{counts}");
+    assert!(!counts.to_string().contains(key), "{counts}");
+    h.ok("session.close", json!({"sessionId":"r"}));
+    drop(h);
+
+    // Stored with the value: the nonce did not outlive the process, and a
+    // relaunched chat must not show what nothing can restore any more.
+    let mut h = Harness::with_store_redacting(dir.clone(), Legacy::default(), Some(fl_pi_llm::redact::Settings::conservative()));
+    h.register(&url);
+    open(&mut h, "r", model(&url), json!({}));
+    let entries = h.ok("session.entries", json!({"sessionId":"r"}));
+    let answer = entries["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .rev()
+        .find(|e| e["message"]["role"] == "assistant")
+        .expect("no answer after the relaunch");
+    let text = answer["message"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains(key), "{text}");
+    assert!(!text.contains("__SBM_"), "{text}");
+    assert!(text.ends_with(" ok"), "{text:?}");
+    let _ = std::fs::remove_dir_all(&dir);
 }

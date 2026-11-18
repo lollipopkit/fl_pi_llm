@@ -74,6 +74,7 @@ final class FlPiLlm {
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
     Duration stallTimeout = const Duration(minutes: 5),
+    String? redact,
   }) async {
     await loadLibrary(externalLibrary: externalLibrary);
     final rt = FlPiLlm._(
@@ -86,6 +87,7 @@ final class FlPiLlm {
       stallTimeout,
     );
     rt._ownsHttp = httpClient == null;
+    rt._redact = redact;
     rt._start();
     return rt;
   }
@@ -114,6 +116,19 @@ final class FlPiLlm {
   final _completions = <int, void Function(LlmEvent)>{};
   final _fetches = <int, _Fetch>{};
   final Duration _stallTimeout;
+
+  /// What to keep out of what is sent to a model, as
+  /// `fl_pi_llm::redact::Settings` JSON. Null sends everything.
+  String? _redact;
+
+  /// How many of each kind have been kept out this run, by rule kind. The
+  /// values themselves never leave the engine and never reach Dart.
+  final redactionCounts = <String, int>{};
+
+  /// What each turn hid, by rule kind — what a log may record, and all it may
+  /// record. A host that wants them counted across turns adds to
+  /// [redactionCounts]; this stream reports the turn.
+  final redactions = StreamController<Map<String, int>>.broadcast();
   Timer? _watchdog;
   final _toolCancels = <String, LlmCancelToken>{};
   String? _fatal;
@@ -124,8 +139,45 @@ final class FlPiLlm {
 
   void _start() {
     _engine = LlmEngine();
-    _sub = _engine.start(dir: _directory, key: _key).listen(_onMessage, onError: (Object e) => _die('$e'));
+    _sub = _engine
+        .start(dir: _directory, key: _key, redact: _redact)
+        .listen(_onMessage, onError: (Object e) => _die('$e'));
   }
+
+  /// Why [redact], as `Settings` JSON, would be refused — a rule that does
+  /// not compile — or null.
+  ///
+  /// Needs no running runtime, only the library: [start] loads it, and so
+  /// does this.
+  static Future<String?> redactError(String redact) async {
+    try {
+      await loadLibrary();
+      checkRedact(redact: redact);
+      return null;
+    } catch (e) {
+      return '$e';
+    }
+  }
+
+  /// What to keep out of what is sent from now on, as `Settings` JSON, null
+  /// sending everything. A chat that is open keeps the placeholders it was
+  /// already sent with restorable; a rule that does not compile is left out.
+  /// False when the runtime is gone.
+  bool setRedact(String? redact) {
+    _redact = redact;
+    if (_disposed) return false;
+    return _engine.setRedact(redact: redact);
+  }
+
+  /// The built-in redaction rules, as `[{kind, pattern}]` — what a settings
+  /// page lists, and what a `Settings`'s `off` names to switch one off.
+  ///
+  /// Read from Rust rather than repeated here, so a page cannot list a rule
+  /// the engine does not run.
+  Future<List<Map<String, Object?>>> redactionRules() async => [
+    for (final r in jsonDecode(await builtinRedactions()) as List)
+      (r as Map).cast<String, Object?>(),
+  ];
 
   /// Versions of what is running, and the APIs it can speak.
   Future<Map<String, Object?>> info() async =>
@@ -342,6 +394,7 @@ final class FlPiLlm {
       await s._events.close();
     }
     _sessions.clear();
+    await redactions.close();
     // The engine first: stopping it ends the stream from the Rust side. Not
     // awaited, because cancelling that stream while the engine still holds
     // its sink never completes.
@@ -424,6 +477,15 @@ final class FlPiLlm {
         if (_fetches.remove(id) case final f?) _end(id, f, 'aborted');
       case 'tool.cancel':
         _toolCancels.remove('${p['sessionId']}/${p['toolCallId']}')?.cancel();
+      case 'redact':
+        final turn = {
+          for (final MapEntry(key: kind, :value) in p.entries)
+            if (value case final int n) kind: n,
+        };
+        for (final MapEntry(key: kind, value: n) in turn.entries) {
+          redactionCounts.update(kind, (v) => v + n, ifAbsent: () => n);
+        }
+        if (turn.isNotEmpty) redactions.add(turn);
     }
   }
 

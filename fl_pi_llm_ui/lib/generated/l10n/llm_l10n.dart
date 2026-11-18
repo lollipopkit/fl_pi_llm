@@ -996,6 +996,84 @@ abstract class LlmLocalizations {
   /// In en, this message translates to:
   /// **'Discard unsaved changes?'**
   String get discardUnsaved;
+
+  /// No description provided for @redactRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules'**
+  String get redactRules;
+
+  /// No description provided for @redactBuiltIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get redactBuiltIn;
+
+  /// No description provided for @redactCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own'**
+  String get redactCustom;
+
+  /// No description provided for @redactAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Never replaced'**
+  String get redactAllow;
+
+  /// No description provided for @redactPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Pattern'**
+  String get redactPattern;
+
+  /// No description provided for @redactPatternHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A Rust regex'**
+  String get redactPatternHint;
+
+  /// No description provided for @redactGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get redactGroup;
+
+  /// Custom redaction rule: which capture group of the regex is replaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Which capture to replace; empty for the whole match'**
+  String get redactGroupHint;
+
+  /// No description provided for @redactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get redactName;
+
+  /// Custom redaction rule: the name its placeholder carries.
+  ///
+  /// In en, this message translates to:
+  /// **'Names the placeholder, e.g. MY_TOKEN'**
+  String get redactNameHint;
+
+  /// Redaction settings: the overall switch; off sends what is written as it is.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace secrets'**
+  String get redactEnabled;
+
+  /// No description provided for @redactAddRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a rule'**
+  String get redactAddRule;
+
+  /// No description provided for @redactAddAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Never replace a value'**
+  String get redactAddAllow;
 }
 
 class _LlmLocalizationsDelegate

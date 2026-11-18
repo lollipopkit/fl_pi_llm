@@ -77,6 +77,10 @@ fn runtime(dir: &std::path::Path) -> Runtime {
         credentials: Arc::new(Key),
         fetch: Arc::new(ReqwestFetch::new(client)),
         logger: None,
+        // The default every host had before it existed: the e2e sends
+        // whatever it is given, so a redaction rule would change what the
+        // mock is asked about.
+        redact: None,
     })
     .unwrap()
 }

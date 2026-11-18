@@ -193,6 +193,9 @@ pub struct Config {
     pub credentials: Arc<dyn Credentials>,
     pub fetch: Arc<dyn Fetch>,
     pub logger: Option<Logger>,
+    /// What to keep out of what is sent to a model. `None` sends everything —
+    /// the behaviour every host had before this existed.
+    pub redact: Option<crate::redact::Settings>,
 }
 
 impl Config {
@@ -254,6 +257,8 @@ impl Runtime {
                 let _ = tx.send(o);
             }),
             Some(storage),
+            // A rule that does not compile is left out and logged.
+            inner.config.redact.clone(),
         )
         .map_err(|e| Error(format!("starting the engine: {e}")))?;
         *inner.engine.lock().unwrap() = Some(Arc::new(engine));

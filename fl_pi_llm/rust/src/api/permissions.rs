@@ -40,8 +40,9 @@ pub fn permissions_defaults(environment: Vec<String>) -> String {
     p::defaults(environment).to_string()
 }
 
-/// What becomes of a call in [mode]: `{decision: run|ask|judge|deny, danger,
-/// byRule, allowRule, message}`. [command] is the shell command it runs, none for a
+/// What becomes of a call in [mode], by `decision`: `{decision: run}`,
+/// `{decision: judge}`, `{decision: ask, danger, byRule, allowRule}` or
+/// `{decision: deny, rule, message}`. [command] is the shell command it runs, none for a
 /// tool that runs none; [claimed] `read`, `change` or `danger`, raised to the
 /// command's shape.
 #[frb(sync)]

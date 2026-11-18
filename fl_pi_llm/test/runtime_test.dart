@@ -116,14 +116,32 @@ class MockServer {
   Future<void> close() => _server.close(force: true);
 }
 
-/// Where `dart test` puts the library the build hook produced.
+/// The library the build hook produced, from wherever this run put it.
+///
+/// `.dart_tool/lib/` is where `dart test` copies an external library it was
+/// told about; a run that only built the asset leaves it under the hook's own
+/// output instead, and either is the same file.
 ExternalLibrary testLibrary() {
   final name = Platform.isMacOS
       ? 'libfl_pi_llm.dylib'
       : Platform.isWindows
       ? 'fl_pi_llm.dll'
       : 'libfl_pi_llm.so';
-  return ExternalLibrary.open('.dart_tool/lib/$name');
+  final copied = File('.dart_tool/lib/$name');
+  if (copied.existsSync()) return ExternalLibrary.open(copied.path);
+  // `<build>/target/<host triple>/release/<name>`, whatever the host is.
+  final built = [
+    for (final build in Directory('.dart_tool/hooks_runner/shared/fl_pi_llm/build').listSync().whereType<Directory>())
+      if (Directory('${build.path}/target').existsSync())
+        for (final triple in Directory('${build.path}/target').listSync().whereType<Directory>())
+          File('${triple.path}/release/$name'),
+  ].where((f) => f.existsSync()).toList();
+  if (built.isEmpty) {
+    throw StateError('No $name under .dart_tool: run `dart test` once to build it, or point `externalLibrary` at one');
+  }
+  // The newest, as a stale build from another configuration is older.
+  built.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+  return ExternalLibrary.open(built.first.path);
 }
 
 const mock = LlmModelRef('mock', 'mock');

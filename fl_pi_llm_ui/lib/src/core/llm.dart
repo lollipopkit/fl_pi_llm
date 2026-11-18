@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -10,6 +11,7 @@ import 'package:fl_pi_llm_ui/src/core/credentials.dart';
 import 'package:fl_pi_llm_ui/src/skills/skills.dart';
 import 'package:fl_pi_llm_ui/src/core/session_store.dart';
 import 'package:fl_pi_llm_ui/src/core/system_provider.dart';
+import 'package:fl_pi_llm_ui/src/core/user_input.dart';
 import 'package:fl_pi_llm_ui/src/store/llm.dart';
 import 'package:fl_pi_llm_ui/src/store/stores.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -21,6 +23,36 @@ abstract final class Llm {
 
   /// Whether [init] has started the runtime.
   static bool get started => _rt != null;
+
+  /// What to keep out of what is sent to a model from now on, as
+  /// `fl_pi_llm::redact::Settings` JSON, null sending everything. Applied to
+  /// the running engine, which leaves out a rule [redactError] refuses.
+  static void setRedact(String? redact) => _rt?.setRedact(_handling(redact));
+
+  /// Why [redact] would be refused — a rule that does not compile — or null.
+  /// Needs no running runtime.
+  static Future<String?> redactError(String redact) async {
+    final String handled;
+    try {
+      handled = _handling(redact)!;
+    } catch (e) {
+      return '$e';
+    }
+    return FlPiLlm.redactError(handled);
+  }
+
+  /// [redact] with this package's own handles added.
+  ///
+  /// [LlmSecrets] issues `sec_…` here, so it is this layer that has to say
+  /// they are not secrets: a redaction rule hiding one leaves the tool it is
+  /// meant for unable to trade it back.
+  static String? _handling(String? redact) {
+    if (redact == null) return null;
+    final settings = jsonDecode(redact);
+    if (settings is! Map<String, Object?>) return redact;
+    final handles = {...?settings['handles'] as List?, LlmSecrets.prefix};
+    return jsonEncode({...settings, 'handles': handles.toList()});
+  }
 
   static FlPiLlm get rt {
     final rt = _rt;
@@ -64,6 +96,7 @@ abstract final class Llm {
     LlmCredentials? credentials,
     ExternalLibrary? externalLibrary,
     Map<String, String> Function()? environment,
+    String? redact,
   }) async {
     if (credentials != null) {
       _credentials = credentials;
@@ -79,6 +112,10 @@ abstract final class Llm {
       key: key ?? await ChatKey.read(encryptedChats: await encryptedChats(dir)),
       credentials: _all,
       externalLibrary: externalLibrary,
+      // What the host wants kept out of what is sent to a model, as
+      // `fl_pi_llm::redact::Settings` JSON. The embedder decides: this
+      // package runs in more than one app.
+      redact: _handling(redact),
       environment: () => SystemProvider.forBuiltins(_environment()),
       logger: (level, msg) => switch (level) {
         'error' => Loggers.app.warning('[llm] $msg'),

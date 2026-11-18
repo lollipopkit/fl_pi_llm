@@ -21,6 +21,18 @@ Future<List<String>> searchChats({
   needle: needle,
 );
 
+/// The built-in redaction rules, as JSON: one `{kind, pattern}` per rule,
+/// `kind` being what a placeholder is named after and what a
+/// `fl_pi_llm::redact::Settings`'s `off` names to switch one off.
+Future<String> builtinRedactions() =>
+    RustLib.instance.api.crateApiBuiltinRedactions();
+
+/// Why redaction settings, as [LlmEngine::start]'s `redact`, would be
+/// refused: a rule that does not compile. Needs no running engine, so a
+/// settings page can check before it stores anything.
+void checkRedact({required String redact}) =>
+    RustLib.instance.api.crateApiCheckRedact(redact: redact);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LlmEngine>>
 abstract class LlmEngine implements RustOpaqueInterface {
   /// Answers a host call: [error] when set, [payload] otherwise.
@@ -45,10 +57,26 @@ abstract class LlmEngine implements RustOpaqueInterface {
     required String payload,
   });
 
+  /// What to keep out of what is sent from now on, as [LlmEngine::start]'s
+  /// `redact`; null sends everything. A chat that is open keeps the
+  /// placeholders it already handed out restorable.
+  ///
+  /// A rule that does not compile is left out and logged, as at start: a
+  /// stored setting must not turn the rest off. [check_redact] refuses it.
+  bool setRedact({String? redact});
+
   /// Starts the runtime, keeping chats under [dir], encrypted with [key]
   /// (32 bytes) when there is one. Everything it says arrives on [sink], in
   /// order.
-  Stream<HostMessage> start({required String dir, Uint8List? key});
+  ///
+  /// [redact] is `fl_pi_llm::redact::Settings` as JSON: what to keep out of
+  /// what is sent to a model. Absent sends everything. [LlmEngine::set_redact]
+  /// changes it without a restart.
+  Stream<HostMessage> start({
+    required String dir,
+    Uint8List? key,
+    String? redact,
+  });
 }
 
 /// A message from the engine. A flat struct rather than an enum with fields,
