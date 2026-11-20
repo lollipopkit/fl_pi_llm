@@ -69,6 +69,7 @@
   "titleModel": "Model voor titels",
   "tokensFmt": "{n} tokens",
   "tool": "Tool",
+  "toolCallsFmt": "{n} toolaanroepen",
   "toolHttpReqName": "HTTP-verzoek",
   "unsavedChanges": "Wijzigingen opslaan voor het verlaten?",
   "untitled": "Naamloos",

@@ -69,6 +69,7 @@
   "titleModel": "生成标题的模型",
   "tokensFmt": "{n} tokens",
   "tool": "工具",
+  "toolCallsFmt": "{n} 次工具调用",
   "toolHttpReqName": "Http 请求",
   "unsavedChanges": "离开前保存更改?",
   "untitled": "未命名",

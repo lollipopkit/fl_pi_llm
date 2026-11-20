@@ -69,6 +69,7 @@
   "titleModel": "Modell für Titel",
   "tokensFmt": "{n} Tokens",
   "tool": "Werkzeug",
+  "toolCallsFmt": "{n} Tool-Aufrufe",
   "toolHttpReqName": "HTTP-Anfrage",
   "unsavedChanges": "Änderungen vor dem Verlassen speichern?",
   "untitled": "Unbenannt",

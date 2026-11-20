@@ -247,6 +247,18 @@ class LlmLocalizationsUk extends LlmLocalizations {
   String get tool => 'Інструмент';
 
   @override
+  String toolCallsFmt(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n викликів інструментів',
+      few: '$n виклики інструментів',
+      one: '$n виклик інструмента',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP-запит';
 
   @override

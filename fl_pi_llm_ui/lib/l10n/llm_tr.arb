@@ -69,6 +69,7 @@
   "titleModel": "Başlık modeli",
   "tokensFmt": "{n} token",
   "tool": "Araç",
+  "toolCallsFmt": "{n} araç çağrısı",
   "toolHttpReqName": "HTTP isteği",
   "unsavedChanges": "Çıkmadan önce değişiklikler kaydedilsin mi?",
   "untitled": "Başlıksız",

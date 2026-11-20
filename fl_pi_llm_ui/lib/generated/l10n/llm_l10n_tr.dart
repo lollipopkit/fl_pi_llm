@@ -247,6 +247,11 @@ class LlmLocalizationsTr extends LlmLocalizations {
   String get tool => 'Araç';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n araç çağrısı';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP isteği';
 
   @override

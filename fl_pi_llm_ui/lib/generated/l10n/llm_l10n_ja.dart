@@ -244,6 +244,11 @@ class LlmLocalizationsJa extends LlmLocalizations {
   String get tool => 'ツール';
 
   @override
+  String toolCallsFmt(int n) {
+    return 'ツール呼び出し $n 件';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP要求';
 
   @override

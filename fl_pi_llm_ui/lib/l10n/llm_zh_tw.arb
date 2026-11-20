@@ -69,6 +69,7 @@
   "titleModel": "標題模型",
   "tokensFmt": "{n} tokens",
   "tool": "工具",
+  "toolCallsFmt": "{n} 次工具呼叫",
   "toolHttpReqName": "Http 請求",
   "unsavedChanges": "離開前儲存變更?",
   "untitled": "未命名",

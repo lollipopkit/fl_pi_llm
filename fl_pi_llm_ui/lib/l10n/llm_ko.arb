@@ -69,6 +69,7 @@
   "titleModel": "제목용 모델",
   "tokensFmt": "토큰 {n}개",
   "tool": "도구",
+  "toolCallsFmt": "도구 호출 {n}회",
   "toolHttpReqName": "HTTP 요청",
   "unsavedChanges": "나가기 전에 변경 사항을 저장할까요?",
   "untitled": "제목 없음",

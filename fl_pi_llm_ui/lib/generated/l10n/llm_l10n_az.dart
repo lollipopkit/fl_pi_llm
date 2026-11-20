@@ -259,6 +259,11 @@ class LlmLocalizationsAz extends LlmLocalizations {
   String get tool => 'Alət';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n alət çağırışı';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP sorğusu';
 
   @override

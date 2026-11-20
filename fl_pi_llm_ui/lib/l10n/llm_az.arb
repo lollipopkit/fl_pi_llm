@@ -69,6 +69,7 @@
   "titleModel": "Başlıqlar üçün model",
   "tokensFmt": "{n} token",
   "tool": "Alət",
+  "toolCallsFmt": "{n} alət çağırışı",
   "toolHttpReqName": "HTTP sorğusu",
   "unsavedChanges": "Çıxmazdan əvvəl dəyişiklikləri yadda saxlamaq istəyirsiniz?",
   "untitled": "Adsız",
