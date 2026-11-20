@@ -69,6 +69,7 @@
   "titleModel": "مدل برای عنوان‌ها",
   "tokensFmt": "{n} توکن",
   "tool": "ابزار",
+  "toolCallsFmt": "{n} فراخوانی ابزار",
   "toolHttpReqName": "درخواست HTTP",
   "unsavedChanges": "پیش از خروج، تغییرات ذخیره شوند؟",
   "untitled": "بدون عنوان",

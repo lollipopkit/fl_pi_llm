@@ -69,6 +69,7 @@
   "titleModel": "Modèle pour les titres",
   "tokensFmt": "{n} jetons",
   "tool": "Outil",
+  "toolCallsFmt": "{n} appels d'outils",
   "toolHttpReqName": "Requête HTTP",
   "unsavedChanges": "Enregistrer les modifications avant de quitter ?",
   "untitled": "Sans titre",

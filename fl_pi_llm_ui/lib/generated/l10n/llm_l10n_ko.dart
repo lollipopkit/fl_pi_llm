@@ -256,6 +256,11 @@ class LlmLocalizationsKo extends LlmLocalizations {
   String get tool => '도구';
 
   @override
+  String toolCallsFmt(int n) {
+    return '도구 호출 $n회';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP 요청';
 
   @override

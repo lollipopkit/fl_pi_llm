@@ -32,8 +32,9 @@ class _LlmConversationState extends State<LlmConversation> {
   late final Future<OpenChat> _open = Chats.open(widget.chatId);
   final _scroll = ScrollController();
 
-  /// Whether the view is at the bottom, and so follows new content.
-  var _atBottom = true;
+  /// Whether the view follows new content: off once the user scrolls up,
+  /// on again once they are back at the bottom.
+  var _follows = true;
 
   /// The last entry seen: a new message from the user scrolls down to it
   /// wherever the view was.
@@ -44,15 +45,17 @@ class _LlmConversationState extends State<LlmConversation> {
     super.initState();
     _scroll.addListener(() {
       if (!_scroll.hasClients) return;
-      _atBottom = _scroll.position.pixels >= _scroll.position.maxScrollExtent - 48;
-      if (_scroll.position.pixels <= _scroll.position.viewportDimension) _loadEarlier();
+      final p = _scroll.position;
+      // By where it is, however it got there: a drag, a key, the scrollbar.
+      _follows = p.pixels >= p.maxScrollExtent - 8;
+      if (p.pixels <= p.viewportDimension) _loadEarlier();
     });
     _open.then((c) {
       c.streaming.addListener(_follow);
       c.entries.addListener(_follow);
       c.approvals.addListener(_follow);
       _lastEntry = c.entries.value.lastOrNull?.id;
-      if (LlmUi.scrollAfterSwitch() || c.entries.value.length < 3) _jumpToEnd();
+      if (LlmUi.scrollAfterSwitch() || c.entries.value.length < 3) _jumpToEnd(force: true);
     }, onError: (_) {});
   }
 
@@ -73,11 +76,11 @@ class _LlmConversationState extends State<LlmConversation> {
     if (last != null && last.id != _lastEntry) {
       _lastEntry = last.id;
       if (last.message?.role == 'user') {
-        _jumpToEnd();
+        _jumpToEnd(force: true);
         return;
       }
     }
-    if (_atBottom && LlmUi.scrollBottom()) _jumpToEnd();
+    if (_follows && LlmUi.scrollBottom()) _jumpToEnd();
   }
 
   /// Reads the page before what is shown, and keeps what was on screen
@@ -95,9 +98,14 @@ class _LlmConversationState extends State<LlmConversation> {
     }, onError: (Object e) => Loggers.app.warning('Read earlier messages of ${widget.chatId}', e));
   }
 
-  void _jumpToEnd() {
+  /// To the end; unless [force], only while following and not while the
+  /// list moves: a jump would end a drag, a fling or a scroll by key.
+  void _jumpToEnd({bool force = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      if (!_scroll.hasClients) return;
+      final p = _scroll.position;
+      if (!force && (!_follows || p.isScrollingNotifier.value)) return;
+      p.jumpTo(p.maxScrollExtent);
     });
   }
 

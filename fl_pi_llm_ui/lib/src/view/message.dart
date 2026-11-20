@@ -408,6 +408,17 @@ class _Reply extends StatelessWidget {
     }
     final called = <String>{};
     final children = <Widget>[];
+    // Thinking and tool calls between what the reply says.
+    final steps = <_Step>[];
+    void flush() {
+      if (steps.isEmpty) return;
+      children.add(_StepGroup(key: ValueKey(steps.first.id), steps: [...steps], grouped: !forCapture));
+      steps.clear();
+    }
+
+    // A call with no result yet may still get one.
+    final waiting = live || streaming != null;
+
     LlmMessage? last;
     for (final e in entries) {
       final m = e.message;
@@ -416,7 +427,7 @@ class _Reply extends StatelessWidget {
         // Drawn with its call; one whose call is not in this block alone.
         final id = m.json['toolCallId'] as String? ?? '';
         if (!called.contains(id)) {
-          children.add(_ToolCard(name: m.json['toolName'] as String? ?? '?', args: const {}, result: m));
+          steps.add(_Step('result/$id', _ToolCard(name: m.json['toolName'] as String? ?? '?', args: const {}, result: m)));
         }
         continue;
       }
@@ -426,26 +437,30 @@ class _Reply extends StatelessWidget {
         // called tools took as long as its message was open.
         final ms = chat?.thoughtMs[e.id] ??
             (m.text.isEmpty && m.json['timestamp'] is int ? e.timestamp - (m.json['timestamp'] as int) : null);
-        children.add(_Thinking(
+        steps.add(_Step('thinking/${e.id}', _Thinking(
           label: ms == null || ms <= 0 ? llmL10n.thought : llmL10n.thoughtForFmt(formatSeconds(ms)),
           text: m.thinking,
-        ));
+        )));
       }
       for (final c in m.toolCalls) {
         final id = c['id'] as String? ?? '';
         called.add(id);
-        children.add(_ToolCard(
+        steps.add(_Step('call/$id', _ToolCard(
           name: c['name'] as String? ?? '?',
           args: (c['arguments'] as Map?)?.cast<String, Object?>() ?? const {},
           result: results[id],
-        ));
+          waiting: waiting,
+        )));
       }
+      if (m.text.isNotEmpty || m.stopReason == 'aborted' || m.stopReason == 'error') flush();
       if (m.text.isNotEmpty) children.add(ChatMarkdown(m.text, forCapture: forCapture));
       if (m.stopReason == 'aborted') children.add(Text(libL10n.stopped, style: UIs.text13Grey));
       if (m.stopReason == 'error' && (m.errorMessage ?? '').isNotEmpty) {
         children.add(Text(m.errorMessage!, style: TextStyle(fontSize: 13, color: context.theme.colorScheme.error)));
       }
     }
+    // What is still being written stays out of the group until it is done.
+    flush();
     final s = streaming;
     if (s != null) {
       if (s.thinking.isNotEmpty) {
@@ -524,12 +539,21 @@ class _Reply extends StatelessWidget {
 /// A tool the reply called: what, with what, and how it went. Opens to the
 /// result.
 class _ToolCard extends StatefulWidget {
-  const _ToolCard({required this.name, required this.args, this.result, this.running = false});
+  const _ToolCard({required this.name, required this.args, this.result, this.running = false, this.waiting = false});
 
   final String name;
   final Map<String, Object?> args;
   final LlmMessage? result;
   final bool running;
+
+  /// The reply is still going: a call with no result yet may get one.
+  final bool waiting;
+
+  bool get isRunning => running || result == null && waiting;
+  bool get failed => result?.json['isError'] == true;
+
+  /// Ended with no result: the reply stopped before it came.
+  bool get stopped => !isRunning && result == null;
 
   @override
   State<_ToolCard> createState() => _ToolCardState();
@@ -537,6 +561,162 @@ class _ToolCard extends StatefulWidget {
 
 class _ToolCardState extends State<_ToolCard> {
   var _open = false;
+
+  void _toggle() {
+    setState(() => _open = !_open);
+    _StepToggled(_open).dispatch(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = widget.result;
+    final summary = widget.args.isEmpty ? '' : Tools.summaryOf(widget.name, widget.args);
+    final text = result?.text ?? '';
+    final details = (result?.json['details'] as Map?)?.cast<String, Object?>();
+    final facts = [
+      if (details?['status'] case final Object status) '$status',
+      if (details?['ms'] case final int ms) formatSeconds(ms),
+    ].join(' · ');
+    return _ToolShell(
+      onTap: text.isEmpty ? null : _toggle,
+      header: _ToolHeader(
+        tool: widget.name,
+        title: Tools.labelOf(widget.name, widget.args),
+        subtitle: summary,
+        trailing: [
+          if (facts.isNotEmpty) Text(facts, style: _tabular12),
+          _ToolState(running: widget.isRunning, failed: widget.failed, stopped: widget.stopped),
+        ],
+      ),
+      body: _open && text.isNotEmpty
+          ? SelectableText(text.length > 20000 ? '${text.substring(0, 20000)}\n…' : text, style: _mono12)
+          : null,
+    );
+  }
+}
+
+/// A step of a reply: thinking or a tool call, by an id that stays the same
+/// as the reply grows.
+class _Step {
+  const _Step(this.id, this.child);
+
+  final String id;
+  final Widget child;
+}
+
+/// A step opened or closed by the user.
+class _StepToggled extends Notification {
+  const _StepToggled(this.open);
+
+  final bool open;
+}
+
+/// Steps of a reply in a row. Two tool calls or more are one card: the
+/// latest call on it, every step under it once opened.
+class _StepGroup extends StatefulWidget {
+  const _StepGroup({super.key, required this.steps, this.grouped = true});
+
+  final List<_Step> steps;
+
+  /// Whether two calls or more fold into a card; a capture shows them all.
+  final bool grouped;
+
+  @override
+  State<_StepGroup> createState() => _StepGroupState();
+}
+
+class _StepGroupState extends State<_StepGroup> {
+  /// Open as the user last left a step: one opened before the steps folded
+  /// stays in view, with what it showed.
+  var _open = false;
+
+  /// Each step keeps its state when it moves into the card.
+  final _keys = <String, GlobalKey>{};
+
+  Widget _steps() {
+    final ids = {for (final s in widget.steps) s.id};
+    _keys.removeWhere((id, _) => !ids.contains(id));
+    return NotificationListener<_StepToggled>(
+      onNotification: (n) {
+        _open = n.open;
+        return true;
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          for (final s in widget.steps) KeyedSubtree(key: _keys.putIfAbsent(s.id, GlobalKey.new), child: s.child),
+        ].joinWith(const SizedBox(height: 9)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = widget.steps.map((s) => s.child).whereType<_ToolCard>().toList();
+    if (!widget.grouped || tools.length < 2) return _steps();
+    final last = tools.last;
+    final summary = last.args.isEmpty ? '' : Tools.summaryOf(last.name, last.args);
+    final running = tools.any((t) => t.isRunning);
+    final failed = tools.any((t) => t.failed);
+    return _ToolShell(
+      onTap: () => setState(() => _open = !_open),
+      header: _ToolHeader(
+        tool: last.name,
+        title: llmL10n.toolCallsFmt(tools.length),
+        subtitle: summary.isEmpty ? Tools.labelOf(last.name, last.args) : summary,
+        trailing: [
+          Icon(_open ? Icons.expand_more : Icons.chevron_right, size: 17, color: UIs.textGrey.color),
+          _ToolState(running: running, failed: failed, stopped: !running && !failed && tools.any((t) => t.stopped)),
+        ],
+      ),
+      body: _open ? _steps() : null,
+    );
+  }
+}
+
+/// The card a tool call, or a group of them, is drawn on.
+class _ToolShell extends StatelessWidget {
+  const _ToolShell({required this.header, this.body, this.onTap});
+
+  final Widget header;
+  final Widget? body;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = this.body;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: Material(
+        color: context.theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(9),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                if (body != null) Padding(padding: const EdgeInsets.only(top: 9), child: body),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tool's icon, a title, a line under it, and what goes at the end.
+class _ToolHeader extends StatelessWidget {
+  const _ToolHeader({required this.tool, required this.title, required this.subtitle, required this.trailing});
+
+  final String tool;
+  final String title;
+  final String subtitle;
+  final List<Widget> trailing;
 
   static IconData iconOf(String name) => switch (Tools.internal(name)) {
     ToolFunc(:final icon?) => icon,
@@ -548,76 +728,55 @@ class _ToolCardState extends State<_ToolCard> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.theme.colorScheme;
-    final result = widget.result;
-    final failed = result?.json['isError'] == true;
-    final summary = widget.args.isEmpty ? '' : Tools.summaryOf(widget.name, widget.args);
-    final Widget state = widget.running || result == null
-        ? const SizedLoading(21, padding: 4, builder: SizedLoading.circularBuilder)
-        : Icon(
-            failed ? Icons.error : Icons.check_circle,
-            size: 17,
-            color: failed ? StateColors.failed : StateColors.running,
-          );
-    final text = result?.text ?? '';
-    final details = (result?.json['details'] as Map?)?.cast<String, Object?>();
-    final facts = [
-      if (details?['status'] case final Object status) '$status',
-      if (details?['ms'] case final int ms) formatSeconds(ms),
-    ].join(' · ');
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 520),
-      child: Material(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(9),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: text.isEmpty ? null : () => setState(() => _open = !_open),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    if (McpTools.serverOfTool(widget.name) case final server?)
-                      McpIconView(server: server, tool: widget.name, size: 19, color: scheme.onSurfaceVariant)
-                    else
-                      Icon(iconOf(widget.name), size: 19, color: scheme.onSurfaceVariant),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            Tools.labelOf(widget.name, widget.args),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 13, height: 18 / 13, fontWeight: FontWeight.w500),
-                          ),
-                          if (summary.isNotEmpty)
-                            Text(
-                              summary,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _mono12.copyWith(color: UIs.textGrey.color),
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (facts.isNotEmpty) Text(facts, style: _tabular12),
-                    state,
-                  ].joinWith(const SizedBox(width: 11)),
+    final color = context.theme.colorScheme.onSurfaceVariant;
+    return Row(
+      children: [
+        if (McpTools.serverOfTool(tool) case final server?)
+          McpIconView(server: server, tool: tool, size: 19, color: color)
+        else
+          Icon(iconOf(tool), size: 19, color: color),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, height: 18 / 13, fontWeight: FontWeight.w500),
+              ),
+              if (subtitle.isNotEmpty)
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _mono12.copyWith(color: UIs.textGrey.color),
                 ),
-                if (_open && text.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 9),
-                    child: SelectableText(text.length > 20000 ? '${text.substring(0, 20000)}\n…' : text, style: _mono12),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
-      ),
+        ...trailing,
+      ].joinWith(const SizedBox(width: 11)),
+    );
+  }
+}
+
+/// Running, failed, stopped or done.
+class _ToolState extends StatelessWidget {
+  const _ToolState({required this.running, required this.failed, this.stopped = false});
+
+  final bool running;
+  final bool failed;
+  final bool stopped;
+
+  @override
+  Widget build(BuildContext context) {
+    if (running) return const SizedLoading(21, padding: 4, builder: SizedLoading.circularBuilder);
+    if (stopped) return Icon(Icons.remove_circle_outline, size: 17, color: UIs.textGrey.color);
+    return Icon(
+      failed ? Icons.error : Icons.check_circle,
+      size: 17,
+      color: failed ? StateColors.failed : StateColors.running,
     );
   }
 }
@@ -653,7 +812,10 @@ class _ThinkingState extends State<_Thinking> {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(7),
-          onTap: () => setState(() => _open = !_open),
+          onTap: () {
+            setState(() => _open = !_open);
+            _StepToggled(_open).dispatch(context);
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[

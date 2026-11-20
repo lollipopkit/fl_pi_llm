@@ -69,6 +69,7 @@
   "titleModel": "Model untuk judul",
   "tokensFmt": "{n} token",
   "tool": "Alat",
+  "toolCallsFmt": "{n} panggilan alat",
   "toolHttpReqName": "Permintaan Http",
   "unsavedChanges": "Simpan perubahan sebelum keluar?",
   "untitled": "Tanpa judul",

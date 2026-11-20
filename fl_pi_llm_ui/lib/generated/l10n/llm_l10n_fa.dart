@@ -259,6 +259,11 @@ class LlmLocalizationsFa extends LlmLocalizations {
   String get tool => 'ابزار';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n فراخوانی ابزار';
+  }
+
+  @override
   String get toolHttpReqName => 'درخواست HTTP';
 
   @override

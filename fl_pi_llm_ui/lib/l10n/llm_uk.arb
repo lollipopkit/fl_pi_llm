@@ -69,6 +69,7 @@
   "titleModel": "Модель для заголовків",
   "tokensFmt": "Токенів: {n}",
   "tool": "Інструмент",
+  "toolCallsFmt": "{n, plural, one{{n} виклик інструмента} few{{n} виклики інструментів} other{{n} викликів інструментів}}",
   "toolHttpReqName": "HTTP-запит",
   "unsavedChanges": "Зберегти зміни перед виходом?",
   "untitled": "Без назви",

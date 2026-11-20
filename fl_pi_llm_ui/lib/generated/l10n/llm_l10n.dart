@@ -541,6 +541,12 @@ abstract class LlmLocalizations {
   /// **'Tool'**
   String get tool;
 
+  /// No description provided for @toolCallsFmt.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} tool calls'**
+  String toolCallsFmt(int n);
+
   /// No description provided for @toolHttpReqName.
   ///
   /// In en, this message translates to:

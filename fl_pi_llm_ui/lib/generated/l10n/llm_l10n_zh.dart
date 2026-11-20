@@ -242,6 +242,11 @@ class LlmLocalizationsZh extends LlmLocalizations {
   String get tool => '工具';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n 次工具调用';
+  }
+
+  @override
   String get toolHttpReqName => 'Http 请求';
 
   @override
@@ -765,6 +770,11 @@ class LlmLocalizationsZhTw extends LlmLocalizationsZh {
 
   @override
   String get tool => '工具';
+
+  @override
+  String toolCallsFmt(int n) {
+    return '$n 次工具呼叫';
+  }
 
   @override
   String get toolHttpReqName => 'Http 請求';

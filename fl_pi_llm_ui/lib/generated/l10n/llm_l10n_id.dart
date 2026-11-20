@@ -247,6 +247,11 @@ class LlmLocalizationsId extends LlmLocalizations {
   String get tool => 'Alat';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n panggilan alat';
+  }
+
+  @override
   String get toolHttpReqName => 'Permintaan Http';
 
   @override

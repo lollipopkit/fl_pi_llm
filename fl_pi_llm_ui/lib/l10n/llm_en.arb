@@ -149,6 +149,14 @@
     }
   },
   "tool": "Tool",
+  "toolCallsFmt": "{n} tool calls",
+  "@toolCallsFmt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "toolHttpReqName": "HTTP request",
   "unsavedChanges": "Save your changes before leaving?",
   "untitled": "Untitled",

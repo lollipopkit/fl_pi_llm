@@ -260,6 +260,11 @@ class LlmLocalizationsDe extends LlmLocalizations {
   String get tool => 'Werkzeug';
 
   @override
+  String toolCallsFmt(int n) {
+    return '$n Tool-Aufrufe';
+  }
+
+  @override
   String get toolHttpReqName => 'HTTP-Anfrage';
 
   @override

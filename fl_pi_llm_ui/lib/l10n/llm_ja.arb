@@ -69,6 +69,7 @@
   "titleModel": "タイトル用モデル",
   "tokensFmt": "{n} トークン",
   "tool": "ツール",
+  "toolCallsFmt": "ツール呼び出し {n} 件",
   "toolHttpReqName": "HTTP要求",
   "unsavedChanges": "離れる前に変更を保存しますか?",
   "untitled": "無題",
