@@ -1,0 +1,10 @@
+[package]
+name = "fl_pi_rules"
+version = "0.1.0"
+edition = "2024"
+description = "Command permission rules (allow, ask, deny), shared by fl_pi_llm and its hosts"
+license = "AGPL-3.0-only"
+
+[dependencies]
+regex = "1"
+serde = { version = "1", features = ["derive"] }

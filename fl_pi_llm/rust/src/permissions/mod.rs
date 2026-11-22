@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 pub mod risk;
-pub mod rules;
+pub use fl_pi_rules as rules;
 
 use risk::{self as command_risk, CommandRisk};
 use rules::{self as command_rules, CommandRules, RuleVerdict};
