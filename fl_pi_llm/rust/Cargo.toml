@@ -10,6 +10,7 @@ license = "AGPL-3.0-only"
 # workspace of its own — Server Box does — would otherwise have cargo take the
 # crate for an unlisted member of that one and refuse to build it.
 [workspace]
+members = ["rules"]
 
 [lib]
 name = "fl_pi_llm"
@@ -25,6 +26,9 @@ host = ["dep:tokio"]
 reqwest = ["host", "dep:reqwest"]
 
 [dependencies]
+# The command rules (`permissions::rules`), a crate of their own so a host
+# that only checks commands needs nothing else of this one.
+fl_pi_rules = { path = "rules" }
 anyhow = { version = "1", optional = true }
 flutter_rust_bridge = { version = "=2.13.0", optional = true }
 getrandom = "0.4"

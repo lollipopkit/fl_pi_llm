@@ -355,6 +355,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "cc",
+ "fl_pi_rules",
  "flutter_rust_bridge",
  "getrandom",
  "regex",
@@ -366,6 +367,14 @@ dependencies = [
  "sqlite3mc-src",
  "tokio",
  "yaml-rust2",
+]
+
+[[package]]
+name = "fl_pi_rules"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "serde",
 ]
 
 [[package]]
