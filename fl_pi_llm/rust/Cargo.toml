@@ -10,7 +10,6 @@ license = "AGPL-3.0-only"
 # workspace of its own — Server Box does — would otherwise have cargo take the
 # crate for an unlisted member of that one and refuse to build it.
 [workspace]
-members = ["rules"]
 
 [lib]
 name = "fl_pi_llm"
@@ -26,9 +25,11 @@ host = ["dep:tokio"]
 reqwest = ["host", "dep:reqwest"]
 
 [dependencies]
-# The command rules (`permissions::rules`), a crate of their own so a host
-# that only checks commands needs nothing else of this one.
-fl_pi_rules = { path = "rules" }
+# The command rules (`permissions::rules`), a repository of their own so a
+# host that only checks commands needs nothing else of this one. A host that
+# also depends on them names the same source, or `[patch]`es it, so one copy
+# is built.
+cmd_rules = { git = "https://github.com/lollipopkit/cmd_rules", rev = "cc79ef83d97bf50d46975e70b87993c53e726a19" }
 anyhow = { version = "1", optional = true }
 flutter_rust_bridge = { version = "=2.13.0", optional = true }
 getrandom = "0.4"
