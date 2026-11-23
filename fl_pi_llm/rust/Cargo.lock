@@ -207,6 +207,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmd_rules"
+version = "0.1.0"
+source = "git+https://github.com/lollipopkit/cmd_rules?rev=cc79ef83d97bf50d46975e70b87993c53e726a19#cc79ef83d97bf50d46975e70b87993c53e726a19"
+dependencies = [
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "console_error_panic_hook"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -355,7 +364,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "cc",
- "fl_pi_rules",
+ "cmd_rules",
  "flutter_rust_bridge",
  "getrandom",
  "regex",
@@ -367,14 +376,6 @@ dependencies = [
  "sqlite3mc-src",
  "tokio",
  "yaml-rust2",
-]
-
-[[package]]
-name = "fl_pi_rules"
-version = "0.1.0"
-dependencies = [
- "regex",
- "serde",
 ]
 
 [[package]]
