@@ -16,23 +16,27 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## @earendil-works/chord@1.4.0
+## @earendil-works/chord@1.6.0
 
 License: MIT
 
-## @earendil-works/pi-ai@1.4.0
+## @earendil-works/pi-ai@1.6.0
 
 License: MIT
 
-## @earendil-works/pi-durable@1.4.0
+## @earendil-works/pi-durable@1.6.0
 
 License: MIT
 
-## @earendil-works/pi-telemetry@1.4.0
+## @earendil-works/pi-schema@1.6.0
 
 License: MIT
 
-## @google/genai@2.21.0
+## @earendil-works/pi-telemetry@1.6.0
+
+License: MIT
+
+## @google/genai@2.32.0
 
 License: Apache-2.0
 
@@ -268,7 +272,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## core-js@3.50.0
+## core-js@3.51.0
 
 License: MIT
 
@@ -354,7 +358,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org>
 ```
 
-## openai@7.19.0
+## openai@7.59.0
 
 License: Apache-2.0
 
@@ -638,37 +642,7 @@ Felix Geisendörfer (felix@debuggable.com)
 
 License: MIT
 
-## typebox@1.3.27
-
-License: MIT
-
-```
-TypeBox
-
-The MIT License (MIT)
-
-Copyright (c) 2017-2026 Haydn Paterson
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-## web-streams-polyfill@4.3.0
+## web-streams-polyfill@4.5.1
 
 License: MIT
 

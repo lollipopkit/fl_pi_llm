@@ -252,7 +252,7 @@ fn runtime_info() {
     let mut h = Harness::new();
     let v = h.request("runtime.info", json!({}));
     assert_eq!(v["ok"], true, "{v}");
-    assert_eq!(v["value"]["piDurable"], "1.4.0");
+    assert_eq!(v["value"]["piDurable"], "1.6.0");
 }
 
 #[test]
@@ -977,5 +977,50 @@ fn a_secret_does_not_reach_the_model_and_comes_back_in_the_answer() {
     assert!(text.contains(key), "{text}");
     assert!(!text.contains("__SBM_"), "{text}");
     assert!(text.ends_with(" ok"), "{text:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_multiline_secret_survives_batch_json_storage_and_relaunch() {
+    let (url, seen) = mock_server(Duration::from_millis(5));
+    let dir = temp_dir();
+    let mut h = Harness::with_store_redacting(
+        dir.clone(),
+        Legacy::default(),
+        Some(fl_pi_llm::redact::Settings::conservative()),
+    );
+    h.register(&url);
+    open(&mut h, "pem", model(&url), json!({}));
+
+    let pem = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3Bl\"\\test\n-----END OPENSSH PRIVATE KEY-----";
+    h.ok("session.prompt", json!({"sessionId":"pem","text": format!("ECHO key:\n{pem}\ndone")}));
+
+    let reqs = seen.lock().unwrap();
+    let sent = reqs[0].to_string();
+    assert!(!sent.contains("BEGIN OPENSSH PRIVATE KEY"), "the key was sent: {sent}");
+    assert!(sent.contains("__SBM_PRIVATE_KEY_1_"), "{sent}");
+    drop(reqs);
+
+    h.ok("session.close", json!({"sessionId":"pem"}));
+    drop(h);
+
+    let mut h = Harness::with_store_redacting(
+        dir.clone(),
+        Legacy::default(),
+        Some(fl_pi_llm::redact::Settings::conservative()),
+    );
+    h.register(&url);
+    open(&mut h, "pem", model(&url), json!({}));
+    let entries = h.ok("session.entries", json!({"sessionId":"pem"}));
+    let answer = entries["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .rev()
+        .find(|e| e["message"]["role"] == "assistant")
+        .expect("no answer after the relaunch");
+    let text = answer["message"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains(pem), "PEM key was corrupted or missing: {text:?}");
+    assert!(!text.contains("__SBM_"), "{text}");
     let _ = std::fs::remove_dir_all(&dir);
 }

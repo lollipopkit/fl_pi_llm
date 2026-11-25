@@ -559,7 +559,7 @@ fn install_db<'js>(ctx: &Ctx<'js>, host: &Object<'js>, state: &Shared) -> rquick
         })?,
     )?;
 
-    // `mode`: 0 runs, 1 returns the first row or undefined, 2 every row.
+    // `mode`: 0 runs, 1 returns the first row or undefined, 2 every row, 3 runs and returns changed row count.
     let st = state.clone();
     host.set(
         "dbQuery",
@@ -647,6 +647,10 @@ fn query<'js>(ctx: &Ctx<'js>, conn: &rusqlite::Connection, sql: &str, params: Ve
     if mode == 0 {
         stmt.execute(rusqlite::params_from_iter(params))?;
         return Ok(Value::new_undefined(ctx.clone()));
+    }
+    if mode == 3 {
+        let n = stmt.execute(rusqlite::params_from_iter(params))?;
+        return Ok(Value::new_number(ctx.clone(), n as f64));
     }
     let names: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
     let mut rows = stmt.query(rusqlite::params_from_iter(params))?;
