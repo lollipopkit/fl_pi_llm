@@ -50,10 +50,19 @@ class _SkillsPageState extends State<SkillsPage> {
   }
 
   Future<void> _fromFolder() async {
-    // TODO: migrate to FilePicker.pickDirectory once fl_lib upgrades to file_picker ^13.0.0.
-    // ignore: deprecated_member_use
-    final dir = await FilePicker.getDirectoryPath();
-    if (dir != null) await _installFrom(LocalSource(dir));
+    final Uri? dir;
+    try {
+      dir = await FilePicker.pickDirectory();
+    } catch (_) {
+      Toast.warn(llmL10n.skillSourceInvalid);
+      return;
+    }
+    if (dir == null) return;
+    if (!dir.isScheme('file')) {
+      Toast.warn(llmL10n.skillSourceInvalid);
+      return;
+    }
+    await _installFrom(LocalSource(dir.toFilePath()));
   }
 
   Future<void> _fromZip() async {
@@ -188,7 +197,8 @@ class _SkillsPageState extends State<SkillsPage> {
                 ],
               ),
               rows: [
-                SettingsRow(icon: Icons.folder_open_outlined, title: llmL10n.skillsFromFolder, onTap: _fromFolder),
+                if (!isAndroid)
+                  SettingsRow(icon: Icons.folder_open_outlined, title: llmL10n.skillsFromFolder, onTap: _fromFolder),
                 SettingsRow(icon: Icons.folder_zip_outlined, title: llmL10n.skillsFromZip, onTap: _fromZip),
               ],
             ),

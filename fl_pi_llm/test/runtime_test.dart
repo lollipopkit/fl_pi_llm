@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:code_assets/code_assets.dart';
 import 'package:fl_pi_llm/fl_pi_llm.dart';
 import 'package:fl_pi_llm/legacy.dart';
 import 'package:test/test.dart';
@@ -118,9 +119,12 @@ class MockServer {
 
 /// The library the build hook produced, from wherever this run put it.
 ///
-/// `.dart_tool/lib/` is where `dart test` copies an external library it was
-/// told about; a run that only built the asset leaves it under the hook's own
-/// output instead, and either is the same file.
+/// `.dart_tool/lib/` is where older `dart test` runs copied an external library;
+/// Dart 3.14+ maps native assets to a temp dir instead, and on Windows
+/// `flutter_rust_bridge_hooks` redirects Cargo's build directory to system temp.
+/// Every hook run records its exact output path in
+/// `.dart_tool/hooks_runner/fl_pi_llm/<hash>/output.json` alongside its target
+/// OS and architecture in `input.json`.
 ExternalLibrary testLibrary() {
   final name = Platform.isMacOS
       ? 'libfl_pi_llm.dylib'
@@ -129,13 +133,66 @@ ExternalLibrary testLibrary() {
       : 'libfl_pi_llm.so';
   final copied = File('.dart_tool/lib/$name');
   if (copied.existsSync()) return ExternalLibrary.open(copied.path);
-  // `<build>/target/<host triple>/release/<name>`, whatever the host is.
-  final built = [
-    for (final build in Directory('.dart_tool/hooks_runner/shared/fl_pi_llm/build').listSync().whereType<Directory>())
-      if (Directory('${build.path}/target').existsSync())
-        for (final triple in Directory('${build.path}/target').listSync().whereType<Directory>())
-          File('${triple.path}/release/$name'),
-  ].where((f) => f.existsSync()).toList();
+
+  final built = <File>[];
+  final hookRuns = Directory('.dart_tool/hooks_runner/fl_pi_llm');
+  if (hookRuns.existsSync()) {
+    final hostOs = OS.current.name;
+    final hostArch = Architecture.current.name;
+    for (final run in hookRuns.listSync().whereType<Directory>()) {
+      try {
+        final inputFile = File('${run.path}${Platform.pathSeparator}input.json');
+        final outFile = File('${run.path}${Platform.pathSeparator}output.json');
+        if (!inputFile.existsSync() || !outFile.existsSync()) continue;
+        final input = jsonDecode(inputFile.readAsStringSync());
+        final config = input is Map ? input['config'] : null;
+        final extensions = config is Map ? config['extensions'] : null;
+        final target = extensions is Map ? extensions['code_assets'] : null;
+        if (target is! Map || target['target_os'] != hostOs || target['target_architecture'] != hostArch) {
+          continue;
+        }
+        final doc = jsonDecode(outFile.readAsStringSync());
+        if (doc is! Map || doc['status'] == 'failure' || doc['assets'] is! List) continue;
+        for (final asset in doc['assets'] as List) {
+          if (asset is! Map || asset['type'] != 'code_assets/code') continue;
+          final encoding = asset['encoding'];
+          if (encoding is! Map) continue;
+          if (encoding['id'] != 'package:fl_pi_llm/src/rust/frb_generated.io.dart') continue;
+          final linkMode = encoding['link_mode'];
+          if (linkMode is! Map || linkMode['type'] != 'dynamic_loading_bundle') continue;
+          final raw = encoding['file'];
+          if (raw is! String || raw.isEmpty) continue;
+          final path = raw.toLowerCase().startsWith('file://') ? Uri.parse(raw).toFilePath() : raw;
+          if (!path.endsWith(name)) continue;
+          final file = File(path);
+          if (file.existsSync()) built.add(file);
+        }
+      } on Object {
+        continue;
+      }
+    }
+  }
+  final shared = Directory('.dart_tool/hooks_runner/shared/fl_pi_llm/build');
+  if (built.isEmpty && shared.existsSync()) {
+    final hostArch = Architecture.current.name;
+    final archToken = hostArch == 'arm64' ? 'aarch64' : hostArch == 'x64' ? 'x86_64' : hostArch;
+    final osToken = Platform.isMacOS ? 'apple-darwin' : Platform.isWindows ? 'windows' : 'linux';
+    // `<build>/target/<host triple>/release/<name>`, matching the host platform.
+    try {
+      for (final build in shared.listSync().whereType<Directory>()) {
+        final target = Directory('${build.path}/target');
+        if (!target.existsSync()) continue;
+        for (final triple in target.listSync().whereType<Directory>()) {
+          final tripleName = triple.uri.pathSegments.where((s) => s.isNotEmpty).last;
+          if (!tripleName.contains(archToken) || !tripleName.contains(osToken)) continue;
+          final file = File('${triple.path}/release/$name');
+          if (file.existsSync()) built.add(file);
+        }
+      }
+    } on Object {
+      // Ignore partial or unreadable build directories.
+    }
+  }
   if (built.isEmpty) {
     throw StateError('No $name under .dart_tool: run `dart test` once to build it, or point `externalLibrary` at one');
   }
