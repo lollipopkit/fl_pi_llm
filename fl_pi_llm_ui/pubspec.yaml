@@ -22,9 +22,7 @@ dependencies:
       url: https://github.com/lollipopkit/fl_lib
       ref: main
   dio: ^5.4.2+1
-  # TODO: tighten to ^13.4.1 and migrate getDirectoryPath() -> pickDirectory()
-  # once fl_lib's file_picker 13 PR lands on main.
-  file_picker: ">=12.3.0 <14.0.0"
+  file_picker: ^13.4.1
   highlight: ^0.7.0
   flutter_markdown_plus: ^1.0.12
   flutter_markdown_plus_latex: ^1.0.5
