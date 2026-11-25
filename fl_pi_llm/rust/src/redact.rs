@@ -451,14 +451,45 @@ impl Redactor {
     }
 
     /// [text], a value about to be stored, with each placeholder put back: as
-    /// a JSON value when [text] is a JSON document, as it is otherwise.
+    /// a JSON value when [text] is a JSON document (including nested JSON
+    /// strings such as `json_each(?)` batch payloads), as it is otherwise.
     pub fn restore_stored(&self, text: &str) -> String {
         if self.restore.is_empty() || !text.contains(PLACEHOLDER_START) {
             return text.to_string();
         }
-        match serde_json::from_str::<serde::de::IgnoredAny>(text) {
-            Ok(_) => self.restore_json(text),
+        match serde_json::from_str::<serde_json::Value>(text) {
+            Ok(mut value) => {
+                self.restore_json_value(&mut value);
+                serde_json::to_string(&value).unwrap_or_else(|_| self.restore_json(text))
+            }
             Err(_) => self.restore_in(text),
+        }
+    }
+
+    fn restore_json_value(&self, value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::String(s) => {
+                if s.contains(PLACEHOLDER_START) {
+                    *s = self.restore_stored(s);
+                }
+            }
+            serde_json::Value::Array(items) => {
+                for item in items {
+                    self.restore_json_value(item);
+                }
+            }
+            serde_json::Value::Object(map) => {
+                let mut rebuilt = serde_json::Map::with_capacity(map.len());
+                for (mut k, mut v) in std::mem::take(map) {
+                    if k.contains(PLACEHOLDER_START) {
+                        k = self.restore_in(&k);
+                    }
+                    self.restore_json_value(&mut v);
+                    rebuilt.insert(k, v);
+                }
+                *map = rebuilt;
+            }
+            _ => {}
         }
     }
 
@@ -813,11 +844,19 @@ mod tests {
     #[test]
     fn a_stored_value_is_restored_as_what_it_is() {
         let mut r = redactor();
-        let key = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3Blbn\n-----END OPENSSH PRIVATE KEY-----";
+        let key = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3Blbn\"\\x\n-----END OPENSSH PRIVATE KEY-----";
         let p = r.redact(key);
         let doc = format!(r#"{{"text":"{p}"}}"#);
         let parsed: serde_json::Value = serde_json::from_str(&r.restore_stored(&doc)).unwrap();
         assert_eq!(parsed["text"], key);
+        // Nested JSON batch rows (as `pi-durable` writes via `json_each(?)`)
+        // must preserve valid JSON after the outer array string is unpacked.
+        let batch = serde_json::to_string(&serde_json::json!([[1, doc]])).unwrap();
+        let restored_batch: serde_json::Value =
+            serde_json::from_str(&r.restore_stored(&batch)).unwrap();
+        let inner = restored_batch[0][1].as_str().unwrap();
+        let inner_parsed: serde_json::Value = serde_json::from_str(inner).unwrap();
+        assert_eq!(inner_parsed["text"], key);
         assert_eq!(r.restore_stored(&format!("plain {p}")), format!("plain {key}"));
     }
 

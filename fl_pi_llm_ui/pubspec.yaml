@@ -5,8 +5,8 @@ publish_to: none
 repository: https://github.com/lollipopkit/fl_pi_llm
 
 environment:
-  sdk: ">=3.13.0 <4.0.0"
-  flutter: ">=3.47.0"
+  sdk: ">=3.14.0 <4.0.0"
+  flutter: ">=3.50.0"
 
 dependencies:
   flutter:
@@ -22,14 +22,16 @@ dependencies:
       url: https://github.com/lollipopkit/fl_lib
       ref: main
   dio: ^5.4.2+1
-  file_picker: ^12.3.0
+  # TODO: tighten to ^13.4.1 and migrate getDirectoryPath() -> pickDirectory()
+  # once fl_lib's file_picker 13 PR lands on main.
+  file_picker: ">=12.3.0 <14.0.0"
   highlight: ^0.7.0
   flutter_markdown_plus: ^1.0.12
   flutter_markdown_plus_latex: ^1.0.5
   html: ^0.15.7
   image_picker: ^1.2.0
   markdown: ^7.3.0
-  material_ui: ^1.5.0
+  material_ui: ^1.11.0
   # A fork for `OAuthClientMetadata`, so that a sign-in names the app rather
   # than `mcp_dart`. TODO: back to leehack/mcp_dart once it has that.
   mcp_dart:
@@ -38,9 +40,9 @@ dependencies:
       ref: main
   shortid: ^0.1.2
   url_launcher: ^6.2.6
-  flutter_svg: ^2.2.1
-  archive: ^4.3.0
-  crypto: ^3.0.3
+  flutter_svg: ^2.5.0
+  archive: ^4.7.0
+  crypto: ^3.0.8
   yaml: ^3.1.2
   logging: ^1.2.0
   path_provider: ^2.1.4

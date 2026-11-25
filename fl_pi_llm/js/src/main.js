@@ -19,7 +19,7 @@
 //
 // The host sees pi-durable's entries and events in the shape it has always
 // had (`type: message | compaction | custom`, a `parentId` chain, the
-// harness event names); `hostEntry` and `hostEvents` translate.
+// harness event names); `hostEntry` and `Session.#diffView` translate.
 //
 // Imported first so every global pi reaches for exists before its modules run.
 import './web.js';
@@ -32,9 +32,9 @@ import {
   defineTool,
   Harness,
   hook,
+  LiveDoc,
   section,
   ToolTask,
-  watchEvents,
 } from '@earendil-works/pi-durable';
 import { SqliteStorage } from '@earendil-works/pi-durable/storage/sqlite';
 import { listChats, openChat, removeChat } from './db.js';
@@ -50,7 +50,7 @@ const BG = BACKGROUND_CONTEXT;
 const hostCall = async (name, payload) => JSON.parse(await host.call(name, JSON.stringify(payload)));
 const emit = (payload) => host.emit(JSON.stringify(payload));
 
-const PI_VERSION = '1.4.0';
+const PI_VERSION = '1.6.0';
 
 // ---------------------------------------------------------------------------
 // Storage
@@ -294,6 +294,15 @@ class Session {
       settings: {
         get compaction() { return session.compaction; },
       },
+      onReport(report) {
+        if (report.kind === 'task_faulted' || report.kind === 'storage_failed') {
+          emit({
+            type: 'session.event',
+            sessionId: session.id,
+            event: { type: 'fault', kind: report.kind, error: { message: errorText(report.error) } },
+          });
+        }
+      },
     }, BG);
 
     const place = await this.harness.snapshot(ChatDoc, BG);
@@ -340,17 +349,59 @@ class Session {
     await setPlace(this.harness, current, tip, name);
   }
 
-  /** Forwards the current conversation's events, in the host's shape. */
+  /** Forwards the current conversation's view changes, in the host's event shape. */
   async #watch() {
     await this.stream?.stop?.();
     const last = (await this.#branchIds()).at(-1);
     this.lastId = last == null ? null : String(last);
-    this.stream = await watchEvents(this.harness, this.current.id, BG);
-    this.stream.start(async (events) => {
-      for (const e of events) {
-        for (const out of this.#hostEvents(e)) emit({ type: 'session.event', sessionId: this.id, event: out });
+    this.streaming = false;
+    this.streamed = new Map();
+    this.toolArgs = new Map();
+    this.toolSlots = new Map();
+    this.stream = await this.current.watch(BG);
+    let prev = this.stream.value;
+    this.seenEntryId = prev.entries.at(-1)?.id ?? 0;
+    const prevTools = prev.docs?.['pi.live']?.tools ?? [];
+    if (prevTools.length > 0) {
+      const activeIds = new Set(prevTools.map((s) => s.callId));
+      for (const record of prev.entries) this.#rememberToolArgs(record, activeIds);
+      for (const slot of prevTools) {
+        this.toolSlots.set(slot.callId, {
+          taskId: slot.taskId,
+          started: slot.status !== 'pending',
+          ended: slot.status === 'done',
+          name: slot.name,
+          output: slot.output,
+          details: slot.details,
+        });
       }
+    }
+    this.stream.start(async (call) => {
+      if (call.kind !== 'value') return;
+      const next = call.value;
+      const out = this.#diffView(prev, next);
+      prev = next;
+      for (const ev of out) emit({ type: 'session.event', sessionId: this.id, event: ev });
     });
+  }
+
+  #rememberToolArgs(record, filterIds = null) {
+    const m = record?.model?.[0];
+    if (m?.role !== 'assistant' || !Array.isArray(m.content)) return;
+    for (const c of m.content) {
+      if (c?.type === 'toolCall' && c.id != null && (!filterIds || filterIds.has(c.id))) {
+        this.toolArgs.set(c.id, c.arguments ?? {});
+      }
+    }
+  }
+
+  #clearEndedToolSlots() {
+    for (const [id, state] of this.toolSlots) {
+      if (state.ended) {
+        this.toolSlots.delete(id);
+        this.toolArgs.delete(id);
+      }
+    }
   }
 
   /** The text and thinking of [m] the host has not been sent yet, as deltas. */
@@ -374,65 +425,189 @@ class Session {
     return [{ type: 'entry_added', entry: h }];
   }
 
-  #hostEvents(e) {
-    switch (e.type) {
-      case 'message_start': {
-        const m = e.message;
-        if (m?.role === 'system') return [];
-        if (m?.role !== 'assistant' || !Array.isArray(m.content)) return [{ type: 'message_start', message: m }];
-        // A partial is committed at most every 100 ms, so an answer may start
-        // with text in it; the host streams from an empty message.
-        this.streamed = new Map();
-        return [{ type: 'message_start', message: { ...m, content: [] } }, ...this.#catchUp(m)];
-      }
-      case 'message_update':
-        return (e.changes ?? [])
-          .filter((c) => c.type === 'text_delta' || c.type === 'thinking_delta' || c.type === 'toolcall_delta')
-          .map((c) => {
-            if (c.type !== 'toolcall_delta') this.streamed.set(c.contentIndex, (this.streamed.get(c.contentIndex) ?? 0) + c.delta.length);
-            return { type: 'message_update', event: { type: c.type, contentIndex: c.contentIndex, delta: c.delta } };
-          });
-      case 'message_end': {
-        const m = e.entry?.model?.[0];
-        if (!m || m.role === 'system') return [];
-        // What came after the last committed partial reaches the host here.
-        const rest = m.role === 'assistant' ? this.#catchUp(m) : [];
-        this.streamed = new Map();
-        return [...rest, { type: 'message_end', message: m }, ...this.#added(e.entry)];
-      }
-      case 'entry_appended':
-        return this.#added(e.entry);
-      case 'tool_execution_start':
-        return [{ type: 'tool_start', toolCallId: e.toolCallId, toolName: e.toolName, args: e.args }];
-      case 'tool_execution_update':
-        return [{ type: 'tool_update', toolCallId: e.toolCallId, toolName: e.toolName, output: e.output, details: e.details }];
-      case 'tool_execution_end':
-        return [{ type: 'tool_end', toolCallId: e.toolCallId, toolName: e.toolName, isError: !!e.entry?.model?.[0]?.isError }];
-      case 'run_start':
-      case 'turn_start':
-      case 'turn_end':
-        return [{ type: e.type }];
-      case 'submission': {
-        // A run ends for the host when its input is answered, or is not.
-        const r = e.record;
-        if (r?.type !== 'input' || (r.status !== 'done' && r.status !== 'unanswered')) return [];
-        return [{ type: 'run_end', ...runResult(r) }];
-      }
-      case 'compaction_start':
-        return [{ type: 'compaction_start', reason: e.reason }];
-      case 'compaction_end':
-        return [{ type: 'compaction_end', reason: e.reason }];
-      case 'auto_retry_start':
-        return [{ type: 'retry_start', attempt: e.attempt, at: e.at, message: e.errorMessage }];
-      case 'auto_retry_end':
-        return [{ type: 'retry_end', attempt: e.attempt }];
-      case 'usage_changed':
-        return [{ type: 'usage', usage: e.usage }];
-      case 'task_failed':
-        return [{ type: 'fault', message: e.message }];
-      default:
-        return [];
+  #emitRunEnd(out, prevLive, nextLive, failureChanged) {
+    this.streaming = false;
+    this.streamed = new Map();
+    this.toolArgs.clear();
+    out.push({ type: 'turn_end' });
+    const fail = nextLive?.runFailure;
+    if (fail && (failureChanged || (prevLive?.run && fail.taskId === prevLive.run.taskId))) {
+      out.push(fail.reason === 'aborted'
+        ? { type: 'run_end', status: 'aborted' }
+        : { type: 'run_end', status: 'failed', error: { message: fail.detail ?? fail.reason } });
+    } else {
+      out.push({ type: 'run_end', status: 'completed', tipId: this.lastId });
     }
+  }
+
+  #diffView(prev, next) {
+    const out = [];
+    const prevLive = prev.docs?.['pi.live'];
+    const nextLive = next.docs?.['pi.live'];
+    const newEntries = next.entries.filter((r) => r.id > this.seenEntryId);
+    const isRunAssistant = (r) => r.kind === 'pi.assistant' && r.model?.[0]?.role === 'assistant';
+    const isRunToolResult = (r) => r.kind === 'pi.tool-result' && r.model?.[0]?.role === 'toolResult';
+    const sameInputs = (a = [], b = []) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+    const runStarted = !prevLive?.run && !!nextLive?.run;
+    const runEnded = !!prevLive?.run && !nextLive?.run;
+    const failureChanged = nextLive?.runFailure != null && nextLive.runFailure !== prevLive?.runFailure;
+    const runReplaced = !!prevLive?.run && !!nextLive?.run && (
+      failureChanged || !sameInputs(prevLive.run.inputs, nextLive.run.inputs)
+    );
+    // A fast run can start and finish within one folded watch callback.
+    const foldedRun = !prevLive?.run && !nextLive?.run && (
+      failureChanged || newEntries.some(isRunAssistant)
+    );
+
+    if (runStarted || foldedRun) {
+      out.push({ type: 'run_start' }, { type: 'turn_start' });
+    } else if (runReplaced) {
+      this.#clearEndedToolSlots();
+      this.#emitRunEnd(out, prevLive, nextLive, failureChanged);
+      out.push({ type: 'run_start' }, { type: 'turn_start' });
+    } else if (prevLive?.run && nextLive?.run && prevLive.run.taskId !== nextLive.run.taskId) {
+      this.#clearEndedToolSlots();
+      out.push({ type: 'turn_end' }, { type: 'turn_start' });
+    }
+
+    const entryById = new Map(next.entries.map((r) => [r.id, r]));
+    for (const record of newEntries) {
+      this.seenEntryId = record.id;
+      const m = record.model?.[0];
+      if (isRunAssistant(record)) {
+        this.#clearEndedToolSlots();
+        this.#rememberToolArgs(record);
+        if (!this.streaming) {
+          this.streamed = new Map();
+          out.push({ type: 'message_start', message: { ...m, content: [] } });
+        }
+        out.push(...this.#catchUp(m));
+        this.streaming = false;
+        this.streamed = new Map();
+        out.push({ type: 'message_end', message: m }, ...this.#added(record));
+      } else if (isRunToolResult(record)) {
+        const callId = m.toolCallId;
+        if (callId != null) {
+          const state = this.toolSlots.get(callId) ?? {
+            taskId: undefined, started: false, ended: false, name: m.toolName ?? '', output: undefined, details: undefined,
+          };
+          if (!state.started) {
+            state.started = true;
+            const args = this.toolArgs.get(callId) ?? {};
+            this.toolArgs.delete(callId);
+            out.push({
+              type: 'tool_start',
+              toolCallId: callId,
+              toolName: m.toolName ?? state.name,
+              args,
+            });
+          }
+          if (!state.ended) {
+            state.ended = true;
+            out.push({ type: 'tool_end', toolCallId: callId, toolName: m.toolName ?? state.name, isError: !!m.isError });
+          }
+          this.toolSlots.set(callId, state);
+        }
+        out.push({ type: 'message_end', message: m }, ...this.#added(record));
+      } else if (record.kind === 'pi.user' && m && m.role !== 'system') {
+        out.push({ type: 'message_end', message: m }, ...this.#added(record));
+      } else {
+        out.push(...this.#added(record));
+      }
+    }
+
+    const liveMsg = nextLive?.generation?.message;
+    if (liveMsg?.role === 'assistant') {
+      if (!this.streaming) {
+        this.streaming = true;
+        this.streamed = new Map();
+        out.push({ type: 'message_start', message: { ...liveMsg, content: [] } });
+      }
+      out.push(...this.#catchUp(liveMsg));
+    }
+
+    const prevRetry = prevLive?.generation?.retry;
+    const nextRetry = nextLive?.generation?.retry;
+    if (!prevRetry && nextRetry) {
+      out.push({ type: 'retry_start', attempt: nextLive.generation.attempt, at: nextRetry.at, message: nextRetry.error });
+    } else if (prevRetry && !nextRetry) {
+      out.push({ type: 'retry_end', attempt: prevLive.generation.attempt });
+    } else if (prevRetry && nextRetry && (prevRetry !== nextRetry || prevLive.generation.attempt !== nextLive.generation.attempt)) {
+      out.push(
+        { type: 'retry_end', attempt: prevLive.generation.attempt },
+        { type: 'retry_start', attempt: nextLive.generation.attempt, at: nextRetry.at, message: nextRetry.error },
+      );
+    }
+
+    const nextSlots = nextLive?.tools ?? [];
+    const nextCallIds = new Set(nextSlots.map((s) => s.callId));
+    for (const [callId, state] of this.toolSlots) {
+      if (nextCallIds.has(callId)) continue;
+      if (state.started && !state.ended) {
+        out.push({ type: 'tool_end', toolCallId: callId, toolName: state.name, isError: true });
+      }
+      this.toolSlots.delete(callId);
+      this.toolArgs.delete(callId);
+    }
+    for (const slot of nextSlots) {
+      let state = this.toolSlots.get(slot.callId);
+      if (state != null && slot.taskId != null && state.taskId != null && state.taskId !== slot.taskId) {
+        if (state.started && !state.ended) {
+          out.push({ type: 'tool_end', toolCallId: slot.callId, toolName: state.name, isError: true });
+        }
+        state = undefined;
+      }
+      state ??= {
+        taskId: slot.taskId, started: false, ended: false, name: slot.name, output: undefined, details: undefined,
+      };
+      if (slot.taskId != null) state.taskId = slot.taskId;
+      if (!state.started && (slot.status === 'running' || slot.status === 'done')) {
+        state.started = true;
+        const args = this.toolArgs.get(slot.callId) ?? {};
+        this.toolArgs.delete(slot.callId);
+        out.push({
+          type: 'tool_start',
+          toolCallId: slot.callId,
+          toolName: slot.name,
+          args,
+        });
+      }
+      if (slot.output !== state.output || slot.details !== state.details) {
+        state.output = slot.output;
+        state.details = slot.details;
+        if (slot.output !== undefined || slot.details !== undefined) {
+          out.push({ type: 'tool_update', toolCallId: slot.callId, toolName: slot.name, output: slot.output, details: slot.details });
+        }
+      }
+      if (!state.ended && slot.status === 'done') {
+        state.ended = true;
+        const entry = slot.entry != null ? entryById.get(slot.entry) : undefined;
+        const isError = slot.entry == null ? true : !!entry?.model?.[0]?.isError;
+        out.push({ type: 'tool_end', toolCallId: slot.callId, toolName: slot.name, isError });
+      }
+      this.toolSlots.set(slot.callId, state);
+    }
+
+    const prevComp = new Map((prevLive?.compactions ?? []).map((c) => [c.taskId, c]));
+    const nextComp = new Map((nextLive?.compactions ?? []).map((c) => [c.taskId, c]));
+    for (const [id, c] of nextComp) {
+      if (!prevComp.has(id)) out.push({ type: 'compaction_start', reason: c.trigger });
+    }
+    for (const [id, c] of prevComp) {
+      if (!nextComp.has(id)) out.push({ type: 'compaction_end', reason: c.trigger });
+    }
+
+    const nextUsage = next.docs?.['pi.usage'];
+    if (nextUsage != null && nextUsage !== prev.docs?.['pi.usage']) {
+      out.push({ type: 'usage', usage: nextUsage });
+    }
+
+    if (runEnded || foldedRun) {
+      this.#emitRunEnd(out, prevLive, nextLive, failureChanged);
+    }
+
+    return out;
   }
 
   /** The ids of the current branch's shown entries, root first. */
@@ -566,6 +741,12 @@ class Session {
     this.harness.resume();
     await this.current.waitForIdle(BG);
     this.interrupted = false;
+    const fail = (await this.harness.snapshot(LiveDoc, this.current.id, BG))?.runFailure;
+    if (fail) {
+      return fail.reason === 'aborted'
+        ? { status: 'aborted' }
+        : { status: 'failed', error: { message: fail.detail ?? fail.reason } };
+    }
     const lastId = (await this.#branchIds()).at(-1);
     const last = lastId == null ? undefined : (await this.storage.entry(lastId, BG)).entry.model?.[0];
     if (last?.role === 'assistant' && last.stopReason === 'aborted') return { status: 'aborted' };

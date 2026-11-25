@@ -8,7 +8,7 @@
 //   __host.dbExec(handle, sql)            several statements, no bindings
 //   __host.dbQuery(handle, sql, params, mode)
 //                                         mode 0: run; 1: first row or
-//                                         undefined; 2: every row
+//                                         undefined; 2: every row; 3: runCounted
 //   __host.dbList()                       -> [{id, createdAt, modifiedAt}]
 //   __host.dbRemove(id)
 //   __host.cacheGet(key)                  -> string | undefined
@@ -35,6 +35,10 @@ class Executor {
 
   run(sql, ...params) {
     return this.op(() => { host.dbQuery(this.handle, sql, params, 0); });
+  }
+
+  runCounted(sql, ...params) {
+    return this.op(() => host.dbQuery(this.handle, sql, params, 3));
   }
 
   get(sql, ...params) {

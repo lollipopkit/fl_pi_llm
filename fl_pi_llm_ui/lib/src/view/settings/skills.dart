@@ -50,6 +50,8 @@ class _SkillsPageState extends State<SkillsPage> {
   }
 
   Future<void> _fromFolder() async {
+    // TODO: migrate to FilePicker.pickDirectory once fl_lib upgrades to file_picker ^13.0.0.
+    // ignore: deprecated_member_use
     final dir = await FilePicker.getDirectoryPath();
     if (dir != null) await _installFrom(LocalSource(dir));
   }
